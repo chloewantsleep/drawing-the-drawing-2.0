@@ -344,25 +344,27 @@ const SCENES={
     study:{corridor:3,bedroom:3,living:2,balcony:2},
     balcony:{living:4,bedroom:3,dining:3},
   },maxCount:{living:1,kitchen:1,dining:1,corridor:2,balcony:2,study:2,bedroom:null,bathroom:null}},
-  office:{name:'Office',startType:'reception',types:{
-    reception: {name:'Reception',      fill:'#DBEAFE',stroke:'#2563EB',wRange:[200,300],hRange:[160,240]},
-    openoffice:{name:'Open Office',    fill:'#DCFCE7',stroke:'#16A34A',wRange:[300,480],hRange:[240,360]},
-    meeting:   {name:'Meeting Room',   fill:'#FEF9C3',stroke:'#CA8A04',wRange:[160,260],hRange:[140,200]},
+  healthcare:{name:'Healthcare',startType:'reception',types:{
+    reception: {name:'Reception',      fill:'#DBEAFE',stroke:'#2563EB',wRange:[200,300],hRange:[140,200]},
+    waiting:   {name:'Waiting Room',   fill:'#FCE7F3',stroke:'#DB2777',wRange:[200,320],hRange:[160,240]},
+    exam:      {name:'Exam Room',      fill:'#DCFCE7',stroke:'#16A34A',wRange:[120,180],hRange:[120,170]},
+    consult:   {name:'Consult Room',   fill:'#CCFBF1',stroke:'#0D9488',wRange:[130,190],hRange:[120,170]},
+    nurse:     {name:'Nurse Station',  fill:'#FEF9C3',stroke:'#CA8A04',wRange:[120,200],hRange:[100,150]},
+    lab:       {name:'Laboratory',     fill:'#EDE9FE',stroke:'#7C3AED',wRange:[160,240],hRange:[140,200]},
+    imaging:   {name:'Imaging',        fill:'#FEF3C7',stroke:'#92400E',wRange:[180,260],hRange:[160,220]},
     restroom:  {name:'Restroom',       fill:'#FEE2E2',stroke:'#DC2626',wRange:[80,120], hRange:[100,140]},
-    breakroom: {name:'Break Room',     fill:'#FCE7F3',stroke:'#DB2777',wRange:[140,200],hRange:[120,180]},
-    corridor:  {name:'Corridor',       fill:'#EDE9FE',stroke:'#7C3AED',wRange:[60,100], hRange:[240,400]},
-    storage:   {name:'Storage',        fill:'#F3F4F6',stroke:'#6B7280',wRange:[80,140], hRange:[80,120]},
-    exec:      {name:'Executive Room', fill:'#FEF3C7',stroke:'#92400E',wRange:[180,280],hRange:[160,240]},
+    corridor:  {name:'Corridor',       fill:'#F3F4F6',stroke:'#6B7280',wRange:[60,100], hRange:[240,400]},
   },adj:{
-    reception:{openoffice:4,corridor:4,meeting:2,restroom:1,exec:2},
-    openoffice:{meeting:4,corridor:3,breakroom:3,storage:2,restroom:2,exec:2},
-    meeting:{corridor:4,openoffice:3,reception:2,exec:2},
-    restroom:{corridor:5,openoffice:2,reception:1},
-    breakroom:{openoffice:4,corridor:3,restroom:2},
-    corridor:{restroom:4,meeting:3,openoffice:2,breakroom:2,storage:2,exec:2},
-    storage:{corridor:4,openoffice:2,breakroom:2},
-    exec:{corridor:3,meeting:3,openoffice:2,reception:2},
-  },maxCount:{reception:1,corridor:3,storage:3,restroom:3,meeting:null,openoffice:null,breakroom:2,exec:2}},
+    reception:{waiting:5,corridor:4,restroom:2},
+    waiting:{reception:5,corridor:4,restroom:3,exam:2,imaging:2},
+    exam:{corridor:4,nurse:4,consult:3,waiting:2,lab:2},
+    consult:{corridor:4,exam:3,nurse:2,waiting:2},
+    nurse:{exam:4,corridor:4,consult:2,lab:3,restroom:2},
+    lab:{corridor:4,nurse:3,exam:2,imaging:2},
+    imaging:{corridor:4,waiting:2,nurse:2,lab:2},
+    restroom:{corridor:5,waiting:3,reception:2},
+    corridor:{exam:4,restroom:4,nurse:4,consult:3,lab:3,imaging:3,waiting:2},
+  },maxCount:{reception:1,waiting:2,corridor:3,restroom:3,exam:null,consult:null,nurse:2,lab:2,imaging:2}},
   mall:{name:'Mall',startType:'entrance',types:{
     entrance: {name:'Entrance Hall',fill:'#DBEAFE',stroke:'#2563EB',wRange:[200,300],hRange:[160,240]},
     atrium:   {name:'Atrium',       fill:'#FEF9C3',stroke:'#A16207',wRange:[300,480],hRange:[280,460]},
@@ -1350,7 +1352,7 @@ function openRadialDisc(sx,sy){
   if(!sc){
     items=[
       {label:'Apartment',color:'#2563EB',fill:'#DBEAFE',conf:null,action:()=>startScene('apartment')},
-      {label:'Office',   color:'#16A34A',fill:'#DCFCE7',conf:null,action:()=>startScene('office')},
+      {label:'Healthcare',color:'#16A34A',fill:'#DCFCE7',conf:null,action:()=>startScene('healthcare')},
       {label:'Mall',     color:'#CA8A04',fill:'#FEF9C3',conf:null,action:()=>startScene('mall')},
     ];
     document.getElementById('rd-center').textContent='Scene';
@@ -2239,7 +2241,7 @@ const EXPLAIN={
     const sc=getScene();
     if(!sc){
       host.innerHTML=`<div class="xp-sec"><span class="n">1</span>Predict the next room</div>`+
-        `<div class="xp-card"><div class="xp-p">No scene yet. Press <b>E</b> (or middle-click) to open the radial menu and pick Apartment / Office / Mall — the algorithm then starts predicting the most likely next room.</div></div>`;
+        `<div class="xp-card"><div class="xp-p">No scene yet. Press <b>E</b> (or middle-click) to open the radial menu and pick Apartment / Healthcare / Mall — the algorithm then starts predicting the most likely next room.</div></div>`;
       return;
     }
     const tr=getTypedRooms();
