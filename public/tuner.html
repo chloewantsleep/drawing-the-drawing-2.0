@@ -6,58 +6,155 @@
 <title>dtd2 · plan tuner</title>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#F2F2EF;--border:#E3E2DE;--accent:#1D6AF5;--text:#1C1C1C;--muted:#8B8B8B;--surface:#fff}
-body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
-.top{height:42px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0}
-.top .logo{font-size:13px;font-weight:700;letter-spacing:-.5px;opacity:.5}
-.top .sub{font-size:11px;color:var(--muted)}
-.top .sep{flex:1}
-.scene-sel{display:flex;gap:4px}
-.scene-sel button{border:1px solid var(--border);background:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer;color:var(--muted)}
-.scene-sel button.on{background:var(--accent);border-color:var(--accent);color:#fff}
-.save{background:var(--text);color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer}
-.save:disabled{opacity:.4;cursor:default}
-.saved{font-size:11px;color:#16A34A;font-weight:600;opacity:0;transition:opacity .2s}
-.saved.show{opacity:1}
+:root{
+  --bg:#F6F6F4;--panel:#FFFFFF;--border:#E6E5E1;--border-2:#EFEEEB;
+  --accent:#1D6AF5;--accent-2:#0E48C2;--accent-soft:rgba(29,106,245,.08);
+  --text:#1A1A19;--muted:#8A8A85;--muted-2:#B6B6B0;
+  --good:#16A34A;--ink:#2B2B2B;
+  --sh-sm:0 1px 2px rgba(20,20,19,.05),0 1px 1px rgba(20,20,19,.03);
+  --sh-md:0 6px 24px rgba(20,20,19,.08);
+  --r:12px;--mono:'SF Mono','JetBrains Mono','Menlo',monospace;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);height:100vh;overflow:hidden;
+  display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility}
+
+/* ── top bar ── */
+.top{height:52px;background:var(--panel);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 18px;gap:14px;flex-shrink:0;z-index:10}
+.brand{display:flex;align-items:baseline;gap:8px}
+.brand .logo{font-size:15px;font-weight:800;letter-spacing:-.4px}
+.brand .logo b{color:var(--accent)}
+.brand .sub{font-size:11px;color:var(--muted);font-weight:500}
+.seg{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.seg button{border:none;background:none;border-radius:6px;padding:5px 13px;font-size:12px;
+  font-weight:600;cursor:pointer;color:var(--muted);transition:.15s;letter-spacing:-.1px}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--panel);color:var(--accent);box-shadow:var(--sh-sm)}
+.spacer{flex:1}
+.applied{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--good);font-weight:600;
+  opacity:0;transition:opacity .25s}
+.applied.show{opacity:1}
+.applied .dot{width:7px;height:7px;border-radius:50%;background:var(--good)}
+.save{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 16px;
+  font-size:12px;font-weight:600;cursor:pointer;transition:.15s;letter-spacing:-.1px}
+.save:hover{transform:translateY(-1px);box-shadow:var(--sh-md)}
+.save:active{transform:none}
+
+/* ── layout ── */
 .main{flex:1;display:flex;overflow:hidden}
-.panel{width:380px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto;padding:16px}
-.preview{flex:1;display:flex;align-items:center;justify-content:center;position:relative;background:#FBFBFA}
-#cv{background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.06)}
-.pv-note{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--muted)}
-.sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:18px 0 9px}
+.panel{width:392px;flex-shrink:0;border-right:1px solid var(--border);background:var(--panel);
+  overflow-y:auto;padding:20px 18px 40px}
+.panel::-webkit-scrollbar{width:9px}
+.panel::-webkit-scrollbar-thumb{background:#E2E1DC;border-radius:8px;border:2px solid var(--panel)}
+.stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative;
+  background:
+    radial-gradient(circle at 1px 1px,rgba(20,20,19,.05) 1px,transparent 0) 0 0/22px 22px,
+    linear-gradient(180deg,#FCFCFB,#F4F4F2)}
+
+/* ── sections ── */
+.sec{display:flex;align-items:center;gap:8px;margin:24px 0 12px}
 .sec:first-child{margin-top:0}
-.ctl{margin-bottom:13px}
-.ctl .lbl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
-.ctl .lbl b{font-family:'SF Mono','Menlo',monospace;font-weight:600;color:var(--accent)}
-.ctl input[type=range]{width:100%;accent-color:var(--accent)}
-.ctl .hint{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.3}
-.toggle{display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer}
-.matrix-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px}
-table{border-collapse:collapse;font-size:10px}
-th,td{border:1px solid var(--border);padding:0;text-align:center}
-th{background:#F7F7F5;font-weight:600;color:var(--muted);padding:4px 5px;white-space:nowrap;position:sticky;top:0}
-th.row{position:sticky;left:0;z-index:1;text-align:right;padding-right:6px}
-td input{width:34px;height:26px;border:none;text-align:center;font-family:'SF Mono','Menlo',monospace;font-size:11px;background:none;outline:none}
-td input:focus{background:#EFF6FF}
-td.diag{background:#F0F0EE}
-td.hi{background:#E7F0FF}
-.legend{font-size:10px;color:var(--muted);margin-top:7px;line-height:1.4}
+.sec .t{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.sec .ln{flex:1;height:1px;background:var(--border-2)}
+.sec .tag{font-size:9.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);
+  padding:2px 7px;border-radius:20px;letter-spacing:.02em}
+
+/* ── sliders ── */
+.ctl{margin-bottom:15px}
+.ctl .lbl{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.ctl .lbl span{font-size:12.5px;font-weight:550}
+.ctl .lbl .val{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);
+  background:var(--accent-soft);padding:2px 9px;border-radius:7px;min-width:38px;text-align:center}
+input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:6px;
+  background:linear-gradient(90deg,var(--accent) var(--p,40%),#E9E8E4 var(--p,40%));outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;
+  background:#fff;border:1px solid var(--border);box-shadow:0 1px 4px rgba(20,20,19,.18);
+  cursor:grab;transition:transform .1s}
+input[type=range]::-webkit-slider-thumb:active{transform:scale(1.12);cursor:grabbing}
+.ctl .hint{font-size:10.5px;color:var(--muted);margin-top:7px;line-height:1.45}
+.toggle{display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;border:1px solid var(--border);
+  border-radius:10px;background:#FCFCFB;transition:.15s}
+.toggle:hover{border-color:var(--muted-2)}
+.toggle input{margin-top:1px;accent-color:var(--accent);width:15px;height:15px;cursor:pointer;flex-shrink:0}
+.toggle .tx{font-size:12px;line-height:1.4}
+.toggle .tx b{font-weight:600}.toggle .tx small{color:var(--muted);font-size:10.5px;display:block;margin-top:2px}
+
+/* ── adjacency matrix ── */
+.matrix-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff}
+.matrix-wrap::-webkit-scrollbar{height:9px;width:9px}
+.matrix-wrap::-webkit-scrollbar-thumb{background:#E2E1DC;border-radius:8px;border:2px solid #fff}
+table{border-collapse:separate;border-spacing:0;font-size:10.5px}
+th,td{text-align:center;border-right:1px solid var(--border-2);border-bottom:1px solid var(--border-2)}
+th{background:#FAFAF9;font-weight:700;color:var(--muted);padding:6px 7px;white-space:nowrap;
+  position:sticky;top:0;z-index:2}
+th.row{position:sticky;left:0;z-index:3;text-align:right;padding-right:9px;background:#FAFAF9}
+th.corner{position:sticky;left:0;top:0;z-index:4}
+td{padding:0}
+td.diag{background:repeating-linear-gradient(-45deg,#F4F4F2,#F4F4F2 3px,#EEEEEB 3px,#EEEEEB 6px)}
+td input{width:38px;height:30px;border:none;text-align:center;font-family:var(--mono);
+  font-size:11.5px;font-weight:600;background:none;outline:none;color:var(--ink);transition:.12s}
+td input:focus{box-shadow:inset 0 0 0 2px var(--accent);border-radius:5px}
+td input::placeholder{color:var(--muted-2);font-weight:400}
+.legend{font-size:10.5px;color:var(--muted);margin-top:9px;line-height:1.5;
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.legend .chip{display:inline-flex;align-items:center;gap:5px}
+.legend .sw{width:11px;height:11px;border-radius:3px}
+
+/* ── prediction viz ── */
+.pred-rooms{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:550;
+  border:1px solid var(--border);border-radius:20px;padding:3px 10px;background:#fff}
+.pill .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pred-list{display:flex;flex-direction:column;gap:9px}
+.pred{display:grid;grid-template-columns:108px 1fr 42px;align-items:center;gap:10px}
+.pred .nm{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:550;min-width:0}
+.pred .nm .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.pred .nm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pred .track{height:9px;border-radius:6px;background:#EEEEEB;overflow:hidden}
+.pred .track i{display:block;height:100%;border-radius:6px;transition:width .4s cubic-bezier(.3,.8,.4,1)}
+.pred .pct{font-family:var(--mono);font-size:12px;font-weight:700;text-align:right}
+.pred.lead .nm{font-weight:700}
+.pred-note{font-size:10.5px;color:var(--muted);line-height:1.5;margin-top:13px;
+  padding:11px;background:var(--accent-soft);border:1px solid rgba(29,106,245,.18);border-radius:10px}
+.pred-note b{color:var(--accent-2)}
+.pred-note code{font-family:var(--mono);font-size:10px;background:#fff;padding:2px 6px;
+  border-radius:5px;display:inline-block;margin-top:6px}
+
+/* ── preview ── */
+.canvas-card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:var(--sh-md);
+  padding:14px;position:relative}
+#cv{display:block;border-radius:8px;width:600px;height:520px}
+.cap{position:absolute;left:50%;bottom:-42px;transform:translateX(-50%);
+  display:flex;align-items:center;gap:14px;font-size:11px;color:var(--muted);white-space:nowrap}
+.cap .stat{display:flex;align-items:center;gap:5px}
+.cap .stat b{color:var(--ink);font-family:var(--mono);font-weight:700;font-size:12px}
+.cap .vline{width:1px;height:12px;background:var(--border)}
+.title-cap{position:absolute;top:18px;left:24px;font-size:11px;color:var(--muted);font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase}
 </style>
 </head>
 <body>
-<div class="top">
-  <span class="logo">dtd2</span><span class="sub">plan tuner</span>
-  <div class="scene-sel" id="scene-sel"></div>
-  <div class="sep"></div>
-  <span class="saved" id="saved">Saved ✓</span>
-  <button class="save" id="save">Save to app</button>
-</div>
-<div class="main">
-  <div class="panel" id="panel"></div>
-  <div class="preview">
-    <canvas id="cv" width="640" height="560"></canvas>
-    <div class="pv-note" id="pvnote">live preview · changes apply to the app after Save</div>
+<header class="top">
+  <div class="brand">
+    <div class="logo">d<b>td</b>2</div>
+    <div class="sub">plan tuner</div>
   </div>
+  <div class="seg" id="scene-sel"></div>
+  <div class="spacer"></div>
+  <div class="applied" id="applied"><span class="dot"></span><span id="applied-tx">Applied to app</span></div>
+  <button class="save" id="save">Save to app</button>
+</header>
+<div class="main">
+  <aside class="panel" id="panel"></aside>
+  <section class="stage">
+    <div class="title-cap" id="stage-title">Sample plan</div>
+    <div class="canvas-card">
+      <canvas id="cv" width="600" height="520"></canvas>
+      <div class="cap" id="cap">live preview · applies to the app on Save</div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -66,7 +163,7 @@ const API='';                 // same origin as the server
 let CFG=null, scene='apartment', dirty=false;
 const $=id=>document.getElementById(id);
 
-// ── small baked sample layouts so the preview shows real walls/doors ──
+// ── baked sample layouts so the preview + prediction show something real ──
 const SAMPLES={
   apartment:[
     {type:'rect',x:0,y:0,w:200,h:160,roomType:'living'},
@@ -88,55 +185,113 @@ const SAMPLES={
   ],
 };
 
+// ── helpers ──
+function pretty(t){return t.replace(/(^|[\s_])\w/g,m=>m.toUpperCase());}
+function hueOf(t){let h=7;for(let i=0;i<t.length;i++)h=(h*33+t.charCodeAt(i))%360;return h;}
+function colorOf(t){return `hsl(${hueOf(t)},58%,52%)`;}
+
 // ── load config, build UI ──
-fetch(API+'/api/config').then(r=>r.json()).then(c=>{CFG=c;buildScenes();buildPanel();preview();});
+fetch(API+'/api/config').then(r=>r.json()).then(c=>{CFG=c;buildScenes();buildPanel();render();})
+  .catch(()=>{$('cap').textContent='cannot reach the server — run: node server.js';});
 
 function buildScenes(){
   const sel=$('scene-sel');sel.innerHTML='';
   for(const k of Object.keys(CFG.scenes)){
-    const b=document.createElement('button');b.textContent=CFG.scenes[k].startType?k:k;b.className=k===scene?'on':'';
-    b.onclick=()=>{scene=k;buildScenes();buildPanel();preview();};
+    const b=document.createElement('button');b.textContent=pretty(k);b.className=k===scene?'on':'';
+    b.onclick=()=>{scene=k;buildScenes();buildPanel();render();};
     sel.appendChild(b);
   }
 }
 
 function buildPanel(){
   const p=$('panel');p.innerHTML='';
+
   // ── numeric params ──
   p.appendChild(sec('Door & wall parameters'));
   p.appendChild(slider('Door threshold','doorThreshold',0,5,1,'Adjacency weight needed to auto-open a door. Higher = fewer doors, more reliance on the connectivity net.'));
-  p.appendChild(slider('Door width','doorWidth',24,100,2,'Width of each door opening (world units; 20 = 1ft).'));
+  p.appendChild(slider('Door width','doorWidth',24,100,2,'Width of each door opening (world units; 20 = 1 ft).'));
   p.appendChild(slider('Exterior wall','wallExt',2,20,1,'Thickness of perimeter walls.'));
   p.appendChild(slider('Interior wall','wallInt',2,16,1,'Thickness of partition walls between rooms.'));
   const tg=document.createElement('label');tg.className='toggle';
   const cb=document.createElement('input');cb.type='checkbox';cb.checked=CFG.connectivity!==false;
-  cb.onchange=()=>{CFG.connectivity=cb.checked;mark();preview();};
-  tg.appendChild(cb);tg.appendChild(document.createTextNode('Connectivity safety net (never leave a room unreachable)'));
-  const tgw=document.createElement('div');tgw.className='ctl';tgw.appendChild(tg);p.appendChild(tgw);
+  cb.onchange=()=>{CFG.connectivity=cb.checked;mark();render();};
+  const tx=document.createElement('div');tx.className='tx';
+  tx.innerHTML='<b>Connectivity safety net</b><small>Never leave a room unreachable from the entrance.</small>';
+  tg.appendChild(cb);tg.appendChild(tx);p.appendChild(tg);
 
   // ── adjacency matrix ──
-  p.appendChild(sec(scene+' · adjacency weights'));
+  const head=secTag('Adjacency · '+pretty(scene),'drives both algorithms');
+  p.appendChild(head);
+  p.appendChild(buildMatrix());
+  const lg=document.createElement('div');lg.className='legend';
+  lg.innerHTML='<span class="chip"><span class="sw" style="background:hsl(214,80%,90%)"></span>weak</span>'+
+    '<span class="chip"><span class="sw" style="background:hsl(214,82%,62%)"></span>strong</span>'+
+    '<span class="chip"><span class="sw" style="background:hsl(214,82%,46%);box-shadow:0 0 0 2px rgba(29,106,245,.3)"></span>≥ threshold → door</span>'+
+    '<span style="flex-basis:100%;margin-top:3px">Row → column weight; the generator uses the larger of the two directions.</span>';
+  p.appendChild(lg);
+
+  // ── prediction viz (NEW) ──
+  p.appendChild(secTag('Next-room prediction','from this matrix'));
+  const proomsLbl=document.createElement('div');proomsLbl.style.cssText='font-size:11px;color:var(--muted);margin-bottom:9px;line-height:1.45';
+  proomsLbl.textContent='Given the sample rooms, here is what the app would predict as the next room:';
+  p.appendChild(proomsLbl);
+  const prooms=document.createElement('div');prooms.className='pred-rooms';prooms.id='pred-rooms';p.appendChild(prooms);
+  const plist=document.createElement('div');plist.className='pred-list';plist.id='pred-list';p.appendChild(plist);
+  const note=document.createElement('div');note.className='pred-note';
+  note.innerHTML='<b>type fit</b> = sum of adjacency weights from every existing room to the candidate, '+
+    'normalized against the strongest. The app then multiplies it by a geometric <b>wall fit</b> for the on-canvas %.'+
+    '<code>confidence = type fit × (0.6 + 0.4 × wall fit)</code>';
+  p.appendChild(note);
+}
+
+function sec(title){
+  const d=document.createElement('div');d.className='sec';
+  d.innerHTML=`<span class="t">${title}</span><span class="ln"></span>`;
+  return d;
+}
+function secTag(title,tag){
+  const d=document.createElement('div');d.className='sec';
+  d.innerHTML=`<span class="t">${title}</span><span class="ln"></span><span class="tag">${tag}</span>`;
+  return d;
+}
+function slider(label,key,min,max,step,hint){
+  const d=document.createElement('div');d.className='ctl';
+  const l=document.createElement('div');l.className='lbl';
+  const val=document.createElement('span');val.className='val';val.textContent=CFG[key];
+  l.innerHTML=`<span>${label}</span>`;l.appendChild(val);
+  const r=document.createElement('input');r.type='range';r.min=min;r.max=max;r.step=step;r.value=CFG[key];
+  const setP=()=>r.style.setProperty('--p',((r.value-min)/(max-min)*100)+'%');setP();
+  r.oninput=()=>{CFG[key]=parseFloat(r.value);val.textContent=CFG[key];setP();mark();render();
+    if(key==='doorThreshold')paintMatrix();};
+  d.appendChild(l);d.appendChild(r);
+  const h=document.createElement('div');h.className='hint';h.textContent=hint;d.appendChild(h);
+  return d;
+}
+
+// ── matrix ──
+let MTBL=null;
+function buildMatrix(){
   const types=CFG.scenes[scene].types, adj=CFG.scenes[scene].adj;
   const wrap=document.createElement('div');wrap.className='matrix-wrap';
-  const tbl=document.createElement('table');
-  const head=document.createElement('tr');head.appendChild(th('',''));
-  for(const c of types)head.appendChild(th(short(c),'col'));
+  const tbl=document.createElement('table');MTBL=tbl;
+  const head=document.createElement('tr');
+  const corner=document.createElement('th');corner.className='corner';head.appendChild(corner);
+  for(const c of types){const e=document.createElement('th');e.textContent=short(c);e.title=pretty(c);head.appendChild(e);}
   tbl.appendChild(head);
   for(const a of types){
-    const tr=document.createElement('tr');tr.appendChild(th(short(a),'row'));
+    const tr=document.createElement('tr');
+    const rh=document.createElement('th');rh.className='row';rh.textContent=short(a);rh.title=pretty(a);tr.appendChild(rh);
     for(const b of types){
       const td=document.createElement('td');
       if(a===b){td.className='diag';}
       else{
-        const inp=document.createElement('input');
-        const val=(adj[a]&&adj[a][b])||0;inp.value=val;
-        if(val>=CFG.doorThreshold)td.className='hi';
+        const inp=document.createElement('input');inp.dataset.a=a;inp.dataset.b=b;
+        const val=(adj[a]&&adj[a][b])||0;inp.value=val||'';inp.placeholder='0';
         inp.onchange=()=>{
-          const v=Math.max(0,Math.min(9,parseInt(inp.value)||0));inp.value=v;
+          const v=Math.max(0,Math.min(9,parseInt(inp.value)||0));inp.value=v||'';
           if(!adj[a])adj[a]={};
           if(v)adj[a][b]=v;else delete adj[a][b];
-          td.className=v>=CFG.doorThreshold?'hi':'';
-          mark();preview();
+          mark();paintMatrix();render();
         };
         td.appendChild(inp);
       }
@@ -144,41 +299,79 @@ function buildPanel(){
     }
     tbl.appendChild(tr);
   }
-  wrap.appendChild(tbl);p.appendChild(wrap);
-  const lg=document.createElement('div');lg.className='legend';
-  lg.innerHTML='Row → column weight (the generator uses the larger of the two directions). '+
-    'Cells ≥ threshold are highlighted — those pairs get a door directly; weaker pairs only get one if the net needs it for connectivity.';
-  p.appendChild(lg);
+  wrap.appendChild(tbl);
+  setTimeout(paintMatrix,0);
+  return wrap;
+}
+// heatmap colouring + threshold ring
+function paintMatrix(){
+  if(!MTBL)return;const thr=CFG.doorThreshold;
+  MTBL.querySelectorAll('input').forEach(inp=>{
+    const v=parseInt(inp.value)||0,td=inp.parentElement;
+    if(!v){td.style.background='';td.style.boxShadow='';inp.style.color='';return;}
+    const L=92-v*7; // darker as weight grows
+    td.style.background=`hsl(214,82%,${L}%)`;
+    inp.style.color=v>=4?'#fff':'var(--ink)';
+    td.style.boxShadow=v>=thr?'inset 0 0 0 2px rgba(29,106,245,.55)':'';
+  });
+}
+function short(t){return t.length>7?t.slice(0,6)+'.':pretty(t);}
+
+// ── prediction: replicates the app's type-fit scoring, driven by the matrix ──
+function predict(){
+  const sc=CFG.scenes[scene],adj=sc.adj||{},types=sc.types;
+  const existing=(SAMPLES[scene]||[]).map(r=>r.roomType).filter(Boolean);
+  const cnt={};existing.forEach(t=>cnt[t]=(cnt[t]||0)+1);
+  const scores={};
+  for(const t of types){
+    let s=0;for(const r of existing)s+=(adj[r]||{})[t]||0;
+    const c=cnt[t]||0;
+    if(c>0)s*=Math.max(0.12,1-c*0.35);
+    if(['bathroom','restroom','corridor'].includes(t)&&!c&&existing.length>=3)s*=1.6;
+    scores[t]=Math.max(0,s);
+  }
+  const tot=Object.values(scores).reduce((a,b)=>a+b,0)||1;
+  const ranked=types.map(t=>[t,scores[t]/tot]).filter(([,v])=>v>0.004).sort((a,b)=>b[1]-a[1]);
+  const top=ranked.length?ranked[0][1]:1;
+  return {existing:[...new Set(existing)],ranked:ranked.map(([t,v])=>({type:t,
+    conf:Math.min(96,Math.round((v/top)*100*(0.55+v*0.45)))}))};
+}
+function renderPrediction(){
+  if(!$('pred-list'))return;
+  const {existing,ranked}=predict();
+  const rooms=$('pred-rooms');rooms.innerHTML='';
+  existing.forEach(t=>{
+    const s=document.createElement('span');s.className='pill';
+    s.innerHTML=`<span class="dot" style="background:${colorOf(t)}"></span>${pretty(t)}`;rooms.appendChild(s);
+  });
+  const list=$('pred-list');list.innerHTML='';
+  ranked.slice(0,6).forEach((c,i)=>{
+    const row=document.createElement('div');row.className='pred'+(i===0?' lead':'');
+    row.innerHTML=`<div class="nm"><span class="dot" style="background:${colorOf(c.type)}"></span><span>${pretty(c.type)}</span></div>`+
+      `<div class="track"><i style="width:${c.conf}%;background:${colorOf(c.type)}"></i></div>`+
+      `<div class="pct" style="color:${colorOf(c.type)}">${c.conf}%</div>`;
+    list.appendChild(row);
+  });
+  if(!ranked.length)list.innerHTML='<div style="font-size:11px;color:var(--muted)">No prediction — add some weights to the matrix.</div>';
 }
 
-function sec(t){const d=document.createElement('div');d.className='sec';d.textContent=t;return d;}
-function th(t,cls){const e=document.createElement('th');e.textContent=t;if(cls)e.className=cls;return e;}
-function short(t){return t.length>7?t.slice(0,6)+'.':t;}
-function slider(label,key,min,max,step,hint){
-  const d=document.createElement('div');d.className='ctl';
-  const l=document.createElement('div');l.className='lbl';
-  const b=document.createElement('b');b.textContent=CFG[key];
-  l.innerHTML='<span>'+label+'</span>';l.appendChild(b);
-  const r=document.createElement('input');r.type='range';r.min=min;r.max=max;r.step=step;r.value=CFG[key];
-  r.oninput=()=>{CFG[key]=parseFloat(r.value);b.textContent=CFG[key];mark();preview();
-    if(key==='doorThreshold')buildPanel();}; // re-highlight matrix
-  d.appendChild(l);d.appendChild(r);
-  const h=document.createElement('div');h.className='hint';h.textContent=hint;d.appendChild(h);
-  return d;
-}
-
+// ── apply / save ──
 let applyTimer=null;
-function mark(){dirty=true;$('saved').classList.remove('show');scheduleApply();}
-function scheduleApply(){clearTimeout(applyTimer);applyTimer=setTimeout(applyConfig,350);} // auto-apply live
+function mark(){dirty=true;$('applied').classList.remove('show');scheduleApply();}
+function scheduleApply(){clearTimeout(applyTimer);applyTimer=setTimeout(applyConfig,350);}
 async function applyConfig(){
   try{
     await fetch(API+'/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(CFG)});
-    dirty=false;$('saved').textContent='Applied to app ✓';$('saved').classList.add('show');
-    setTimeout(()=>$('saved').classList.remove('show'),1400);
+    dirty=false;flash('Applied to app');
   }catch(e){}
 }
+function flash(txt){$('applied-tx').textContent=txt;$('applied').classList.add('show');
+  setTimeout(()=>$('applied').classList.remove('show'),1500);}
 
-// ── live preview (sends the unsaved config so changes show before saving) ──
+// ── render = prediction + wall preview (called on every change) ──
+function render(){renderPrediction();preview();}
+
+// ── live preview of walls/doors ──
 let pvTimer=null;
 function preview(){
   clearTimeout(pvTimer);
@@ -187,22 +380,29 @@ function preview(){
       const res=await fetch(API+'/api/arch',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({shapes:SAMPLES[scene],sceneKey:scene,config:CFG})});
       const data=await res.json();drawPlan(data.runs||[]);
-      const doors=(data.runs||[]).filter(r=>r.door).length;
-      $('pvnote').textContent=`${doors} doors · ${(data.runs||[]).length} wall runs · live preview (apply with Save)`;
-    }catch(e){$('pvnote').textContent='preview needs the server running (node server.js)';}
-  },120);
+      const runs=data.runs||[],doors=runs.filter(r=>r.door).length,
+        ext=runs.filter(r=>r.kind==='ext').length,intc=runs.filter(r=>r.kind==='int').length;
+      $('cap').innerHTML=`<span class="stat"><b>${runs.length}</b> wall runs</span><span class="vline"></span>`+
+        `<span class="stat"><b>${ext}</b>/<b>${intc}</b> ext/int</span><span class="vline"></span>`+
+        `<span class="stat"><b>${doors}</b> doors</span>`;
+    }catch(e){$('cap').textContent='preview needs the server running (node server.js)';}
+  },110);
 }
 
 const cv=$('cv'),ctx=cv.getContext('2d');
 function drawPlan(runs){
-  ctx.clearRect(0,0,cv.width,cv.height);
+  const dpr=window.devicePixelRatio||1;
+  if(cv.width!==600*dpr){cv.width=600*dpr;cv.height=520*dpr;}
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const W=600,H=520;
+  ctx.clearRect(0,0,W,H);
   if(!runs.length)return;
   let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
   for(const r of runs){minX=Math.min(minX,r.ax,r.bx);minY=Math.min(minY,r.ay,r.by);maxX=Math.max(maxX,r.ax,r.bx);maxY=Math.max(maxY,r.ay,r.by);}
-  const pad=50,sc=Math.min((cv.width-pad*2)/(maxX-minX||1),(cv.height-pad*2)/(maxY-minY||1));
-  const ox=(cv.width-(maxX-minX)*sc)/2-minX*sc,oy=(cv.height-(maxY-minY)*sc)/2-minY*sc;
+  const pad=56,sc=Math.min((W-pad*2)/(maxX-minX||1),(H-pad*2)/(maxY-minY||1));
+  const ox=(W-(maxX-minX)*sc)/2-minX*sc,oy=(H-(maxY-minY)*sc)/2-minY*sc;
   const X=x=>x*sc+ox,Y=y=>y*sc+oy;
-  ctx.fillStyle='#2B2B2B';ctx.strokeStyle='#2B2B2B';
+  ctx.fillStyle='#23231F';ctx.strokeStyle='#23231F';ctx.lineJoin='round';
   for(const r of runs){
     const len=r.len||1,ux=(r.bx-r.ax)/len,uy=(r.by-r.ay)/len,t=r.t*sc;
     const seg=(t0,t1)=>{
@@ -212,11 +412,11 @@ function drawPlan(runs){
     if(r.door){
       const [c0,c1]=r.door,dw=c1-c0;seg(0,c0);seg(c1,len);
       const hx=r.ax+ux*c0,hy=r.ay+uy*c0,tipx=hx+r.nx*dw,tipy=hy+r.ny*dw;
-      ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(X(hx),Y(hy));ctx.lineTo(X(tipx),Y(tipy));ctx.stroke();
+      ctx.lineWidth=1.4;ctx.strokeStyle='#23231F';ctx.beginPath();ctx.moveTo(X(hx),Y(hy));ctx.lineTo(X(tipx),Y(tipy));ctx.stroke();
       let a0=Math.atan2(r.ny,r.nx),a1=Math.atan2(uy,ux),da=a1-a0;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
-      ctx.lineWidth=1;ctx.beginPath();
-      for(let k=0;k<=14;k++){const ang=a0+da*k/14,px=X(hx+Math.cos(ang)*dw),py=Y(hy+Math.sin(ang)*dw);k?ctx.lineTo(px,py):ctx.moveTo(px,py);}
-      ctx.stroke();
+      ctx.strokeStyle='rgba(35,35,31,.5)';ctx.lineWidth=1;ctx.setLineDash([3,2.5]);ctx.beginPath();
+      for(let k=0;k<=16;k++){const ang=a0+da*k/16,px=X(hx+Math.cos(ang)*dw),py=Y(hy+Math.sin(ang)*dw);k?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+      ctx.stroke();ctx.setLineDash([]);
     }else seg(0,len);
   }
 }
@@ -224,10 +424,10 @@ function drawPlan(runs){
 $('save').onclick=async()=>{
   try{
     await fetch(API+'/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(CFG)});
-    dirty=false;$('save').disabled=true;$('saved').classList.add('show');
-    setTimeout(()=>$('saved').classList.remove('show'),1800);
+    dirty=false;flash('Saved to app');
   }catch(e){alert('Save failed — is the server running?');}
 };
+window.addEventListener('resize',()=>preview());
 </script>
 </body>
 </html>

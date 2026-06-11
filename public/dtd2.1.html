@@ -195,7 +195,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 .dim-hot:hover .dim-lbl{fill:#BF4A1E;text-decoration:underline;
   text-underline-offset:1.5px;text-decoration-color:rgba(191,74,30,.35)}
 
-/* ── EXPLAIN PANEL (讲解层 — 给老板讲解算法) ── */
+/* ── EXPLAIN PANEL (walks through how the algorithm works) ── */
 #explain{position:absolute;top:0;right:0;width:344px;height:100%;background:#fff;
   border-left:1px solid var(--border);box-shadow:-4px 0 24px rgba(0,0,0,.06);z-index:250;
   display:flex;flex-direction:column;transform:translateX(100%);
@@ -252,7 +252,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 <div class="topbar">
   <span class="logo">dtd2</span>
   <div class="tb-sep"></div>
-  <button class="tb-chip" id="btn-explain">讲解</button>
+  <button class="tb-chip" id="btn-explain">Explain</button>
   <button class="tb-chip" id="btn-plan">Plan</button>
   <button class="tb-chip" id="btn-ft">unit</button>
   <button class="tb-chip" id="btn-clear">Clear</button>
@@ -287,14 +287,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 <div id="explain">
   <div class="xp-head">
     <div style="flex:1">
-      <div class="xp-t">讲解 · How it works</div>
-      <div class="xp-s">dtd2 的预测 + 墙体生成算法</div>
+      <div class="xp-t">How it works</div>
+      <div class="xp-s">dtd2 prediction + wall/door generation</div>
     </div>
-    <button class="xp-demo" id="btn-xp-demo">▶ 演示</button>
-    <button class="xp-x" id="btn-xp-close" title="关闭 (X)">×</button>
+    <button class="xp-demo" id="btn-xp-demo">▶ Demo</button>
+    <button class="xp-x" id="btn-xp-close" title="Close (X)">×</button>
   </div>
   <div class="xp-body">
-    <div class="xp-narr" id="xp-narr">点 <b>▶ 演示</b> 看一遍完整流程；或自己画房间、按 <b>E</b> 看预测、按 <b>B</b> 看墙体——这里会实时讲解算法在做什么。</div>
+    <div class="xp-narr" id="xp-narr">Click <b>▶ Demo</b> for a full walkthrough — or draw rooms yourself, press <b>E</b> for predictions and <b>B</b> for walls. This panel explains what the algorithm is doing, live.</div>
     <div id="xp-pred"></div>
     <div id="xp-arch"></div>
   </div>
@@ -312,7 +312,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <div class="right">
     <span><span class="kbd">E</span> rooms</span>
     <span><span class="kbd">B</span> plan</span>
-    <span><span class="kbd">X</span> 讲解</span>
+    <span><span class="kbd">X</span> explain</span>
     <span><span class="kbd">T</span> unit</span>
     <span><span class="kbd">R</span> rect</span>
     <span><span class="kbd">Del</span> delete</span>
@@ -2214,8 +2214,9 @@ document.getElementById('btn-clear').addEventListener('click',()=>{
 window.addEventListener('resize',()=>applyView());
 
 // ─────────────────────────────────────────
-//  EXPLAIN / DEMO LAYER  (给老板讲解 dtd2 的算法 —— 实时拆解预测与墙体生成)
-//  纯前端、零侵入：只读现有 state，自身不改变绘图逻辑。
+//  EXPLAIN / DEMO LAYER  (walks through dtd2's algorithm — live breakdown
+//  of prediction and wall/door generation)
+//  Pure frontend, zero-intrusion: reads existing state only, never alters drawing.
 // ─────────────────────────────────────────
 const EXPLAIN={
   open:false, demoOn:false, cfg:null, _abort:false,
@@ -2237,24 +2238,24 @@ const EXPLAIN={
     const host=document.getElementById('xp-pred'); if(!host)return;
     const sc=getScene();
     if(!sc){
-      host.innerHTML=`<div class="xp-sec"><span class="n">1</span>预测下一个房间</div>`+
-        `<div class="xp-card"><div class="xp-p">还没有选场景。按 <b>E</b>（或鼠标中键）打开 radial 菜单选 Apartment / Office / Mall，算法就会开始预测下一个最可能的房间。</div></div>`;
+      host.innerHTML=`<div class="xp-sec"><span class="n">1</span>Predict the next room</div>`+
+        `<div class="xp-card"><div class="xp-p">No scene yet. Press <b>E</b> (or middle-click) to open the radial menu and pick Apartment / Office / Mall — the algorithm then starts predicting the most likely next room.</div></div>`;
       return;
     }
     const tr=getTypedRooms();
     const cands=(S.candidates&&S.candidates.length)?S.candidates:predictNextRooms();
-    let html=`<div class="xp-sec"><span class="n">1</span>预测下一个房间</div>`;
-    // 现有房间
+    let html=`<div class="xp-sec"><span class="n">1</span>Predict the next room</div>`;
+    // existing rooms
     const cnt={}; tr.forEach(r=>cnt[r.type]=(cnt[r.type]||0)+1);
-    html+=`<div class="xp-card"><div class="xp-p"><b>${sc.name}</b> · 现有房间</div>`;
-    if(!tr.length)html+=`<div class="xp-muted" style="margin-top:5px">（还没有定义类型的房间——给房间改名成类型即可参与预测）</div>`;
+    html+=`<div class="xp-card"><div class="xp-p"><b>${sc.name}</b> · existing rooms</div>`;
+    if(!tr.length)html+=`<div class="xp-muted" style="margin-top:5px">(no typed rooms yet — rename a room to a type so it feeds the prediction)</div>`;
     else{html+=`<div>`;
       for(const[t,c]of Object.entries(cnt)){const d=sc.types[t];
         html+=`<span class="xp-pill"><span class="dot" style="background:${d.stroke}"></span>${d.name}${c>1?' ×'+c:''}</span>`;}
       html+=`</div>`;}
     html+=`</div>`;
-    // 候选
-    if(!cands.length){html+=`<div class="xp-card"><div class="xp-muted">暂无建议（房间已覆盖该场景的主要类型）。</div></div>`;}
+    // candidates
+    if(!cands.length){html+=`<div class="xp-card"><div class="xp-muted">No suggestions (the rooms already cover this scene's main types).</div></div>`;}
     else{
       cands.slice(0,3).forEach((c,i)=>{
         const d=sc.types[c.type],det=c.detail||{},col=CAND_COLORS[i];
@@ -2266,13 +2267,13 @@ const EXPLAIN={
             `<b style="flex:1">${d.name}</b><span class="v" style="color:${col};font-size:13px">${c.confidence}%</span></div>`+
           `<div class="xp-row"><span class="k">type fit</span><span class="bar"><i style="width:${det.typeConf||0}%;background:${col}"></i></span><span class="v">${det.typeConf||0}%</span></div>`+
           `<div class="xp-row"><span class="k">wall fit</span><span class="bar"><i style="width:${det.wallFit||0}%;background:${col}"></i></span><span class="v">${det.wallFit||0}%</span></div>`+
-          (adj?`<div class="xp-mono">adjacency 权重求和 = ${sum}\n${adj.trim()}</div>`:``)+
+          (adj?`<div class="xp-mono">sum of adjacency weights = ${sum}\n${adj.trim()}</div>`:``)+
         `</div>`;
       });
       html+=`<div class="xp-card" style="background:var(--accent-lt);border-color:rgba(29,106,245,.25)">`+
-        `<div class="xp-p" style="color:#1a3a6b"><b>confidence 怎么算的</b></div>`+
-        `<div class="xp-p" style="color:#1a3a6b">① <b>type fit</b>：候选类型与所有现有房间的 adjacency 权重之和，再按最强建议归一化（越像"该来的房间"越高）。</div>`+
-        `<div class="xp-p" style="color:#1a3a6b">② <b>wall fit</b>：候选摆放位置与邻居共享墙的比例（贴得越满越高）。</div>`+
+        `<div class="xp-p" style="color:#1a3a6b"><b>How confidence is computed</b></div>`+
+        `<div class="xp-p" style="color:#1a3a6b">① <b>type fit</b> — sum of adjacency weights between the candidate type and every existing room, normalized against the strongest suggestion (the more it "belongs here", the higher).</div>`+
+        `<div class="xp-p" style="color:#1a3a6b">② <b>wall fit</b> — how fully the candidate's spot shares a wall with its neighbor (a snugger fit scores higher).</div>`+
         `<div class="xp-mono" style="background:#fff">confidence = type fit × (0.6 + 0.4 × wall fit)</div></div>`;
     }
     host.innerHTML=html;
@@ -2280,29 +2281,29 @@ const EXPLAIN={
 
   renderArch(){
     const host=document.getElementById('xp-arch'); if(!host)return;
-    const thr=(this.cfg&&this.cfg.doorThreshold!=null)?this.cfg.doorThreshold:'阈值';
-    let html=`<div class="xp-sec"><span class="n">2</span>生成墙体 + 门（arch.js 后端）</div>`;
+    const thr=(this.cfg&&this.cfg.doorThreshold!=null)?this.cfg.doorThreshold:'threshold';
+    let html=`<div class="xp-sec"><span class="n">2</span>Generate walls + doors (arch.js backend)</div>`;
     if(!S.archOn){
-      html+=`<div class="xp-card"><div class="xp-p">按 <b>B</b> 或点顶栏 <b>Plan</b> 打开平面图模式。前端把房间布局发给后端 <span class="xp-mono" style="display:inline;padding:1px 5px">/api/arch</span>，<b>arch.js</b> 算出墙和门后画回画布——前端只负责渲染。</div></div>`;
+      html+=`<div class="xp-card"><div class="xp-p">Press <b>B</b> or click <b>Plan</b> in the top bar to open plan mode. The frontend sends the room layout to the backend <span class="xp-mono" style="display:inline;padding:1px 5px">/api/arch</span>; <b>arch.js</b> computes the walls and doors and draws them back — the frontend just renders.</div></div>`;
       host.innerHTML=html;return;
     }
     if(S.archErr){
-      html+=`<div class="xp-card"><div class="xp-p" style="color:#C0392B">后端没启动。先运行 <span class="xp-mono" style="display:inline;padding:1px 5px">node server.js</span>，再打开 Plan。</div></div>`;
+      html+=`<div class="xp-card"><div class="xp-p" style="color:#C0392B">Backend isn't running. Start it with <span class="xp-mono" style="display:inline;padding:1px 5px">node server.js</span>, then open Plan.</div></div>`;
       host.innerHTML=html;return;
     }
     const runs=S.archRuns||[];
     const ext=runs.filter(r=>r.kind==='ext').length, intc=runs.filter(r=>r.kind==='int').length, doors=runs.filter(r=>r.door).length;
     html+=`<div class="xp-stat">`+
       `<div class="b"><div class="num">${runs.length}</div><div class="lbl">wall runs</div></div>`+
-      `<div class="b"><div class="num">${ext}/${intc}</div><div class="lbl">外墙/内墙</div></div>`+
-      `<div class="b"><div class="num">${doors}</div><div class="lbl">门</div></div></div>`;
+      `<div class="b"><div class="num">${ext}/${intc}</div><div class="lbl">ext/int</div></div>`+
+      `<div class="b"><div class="num">${doors}</div><div class="lbl">doors</div></div></div>`;
     const steps=[
-      ['切分','把每条房间边在所有交点处切成最小线段。'],
-      ['分类','每段看两侧有没有房间：只一侧有 = 外墙 (ext)；两侧是不同房间 = 内墙 (int)。'],
-      ['合并','同一直线、同类型的小段合并成最长的 wall run。'],
-      ['开门',`每对相邻房间取最长的公共内墙；adjacency ≥ ${thr} 就直接开门（类型未知也开）。`],
-      ['兜底','连通性安全网：从入口做并查集，若有房间到不了，就在分值最高的墙上补一扇门。'],
-      ['入口','在入口房间最长的外墙上开一扇大门。'],
+      ['Split','Cut every room edge at all mutual intersections into minimal segments.'],
+      ['Classify','For each segment, check both sides: one side has a room = exterior (ext); two different rooms = interior partition (int).'],
+      ['Merge','Merge collinear segments of the same line and kind into the longest wall run.'],
+      ['Open doors',`For each adjacent pair take the longest shared interior wall; adjacency ≥ ${thr} opens a door (also opens when types are unknown).`],
+      ['Safety net','Connectivity net: union-find from the entrance; if any room is unreachable, add a door on the highest-scoring wall.'],
+      ['Entrance','Open a main door on the longest exterior wall of the entrance room.'],
     ];
     html+=`<div class="xp-card">`;
     steps.forEach((s,i)=>{html+=`<div class="xp-step on"><span class="si">${i+1}</span><span class="sx"><b>${s[0]}</b> — ${s[1]}</span></div>`;});
@@ -2310,38 +2311,38 @@ const EXPLAIN={
     host.innerHTML=html;
   },
 
-  // ── 一键演示：自动跑完"选场景 → 预测 → 接受 → 生成墙体"全流程 ──
+  // ── One-click demo: auto-runs "pick scene → predict → accept → generate walls" ──
   async demo(){
     if(this.demoOn){this._abort=true;return;}
     this.demoOn=true; this._abort=false;
-    const btn=document.getElementById('btn-xp-demo'); btn.textContent='■ 停止'; btn.classList.add('stop');
+    const btn=document.getElementById('btn-xp-demo'); btn.textContent='■ Stop'; btn.classList.add('stop');
     if(!this.open)this.toggle();
-    // 复位画布
+    // reset the canvas
     if(S.archOn){S.archOn=false;document.getElementById('btn-plan').classList.remove('on');S.archRuns=[];}
     S.shapes=[];S.selIds=new Set();S.candidates=[];S.predHidden=false;S.sceneKey=null;
     saveH();render();
     const step=async(html,ms)=>{this.narrate(html);await this.sleep(ms);return !this._abort;};
     try{
-      if(!await step('<b>第 1 步</b>：选场景。每个场景都有一张 adjacency 权重表，定义哪些房间该挨在一起。',1300))return;
+      if(!await step('<b>Step 1</b> — Pick a scene. Each scene has an adjacency-weight table that defines which rooms belong next to each other.',1300))return;
       startScene('apartment');
-      if(!await step('<b>第 2 步</b>：放下起始房间 <b>Living Room</b>。算法立刻基于权重表预测下一个最可能的房间。',1700))return;
+      if(!await step('<b>Step 2</b> — Drop the starting room <b>Living Room</b>. The algorithm immediately predicts the most likely next room from the weight table.',1700))return;
       for(let i=0;i<4;i++){
         S.candidates=predictNextRooms();render();
         const c=S.candidates[0]; if(!c)break;
         const sc=getScene(),det=c.detail||{};
-        if(!await step(`<b>预测</b>：下一个最可能是 <b>${sc.types[c.type].name}</b> — ${c.confidence}%。<br>type fit ${det.typeConf||0}% × (0.6 + 0.4 × wall fit ${det.wallFit||0}%) ≈ ${c.confidence}%。`,1900))return;
+        if(!await step(`<b>Prediction</b> — most likely next is <b>${sc.types[c.type].name}</b> — ${c.confidence}%.<br>type fit ${det.typeConf||0}% × (0.6 + 0.4 × wall fit ${det.wallFit||0}%) ≈ ${c.confidence}%.`,1900))return;
         acceptCandidate(0);
-        if(!await step(`已放下 <b>${sc.types[c.type].name}</b>，算法重新预测……`,1000))return;
+        if(!await step(`Placed <b>${sc.types[c.type].name}</b> — re-predicting…`,1000))return;
       }
-      if(!await step('<b>第 3 步</b>：打开 <b>Plan</b> 模式。后端 <b>arch.js</b> 把这些房间变成墙和门。',1400))return;
+      if(!await step('<b>Step 3</b> — Turn on <b>Plan</b> mode. The backend <b>arch.js</b> turns these rooms into walls and doors.',1400))return;
       if(!S.archOn)toggleArch();
-      if(!await step('正在生成墙体与门……',1800))return;
-      await step('<b>完成</b>。墙按内/外分类，门开在 adjacency 高的房间之间，连通性兜底保证每个房间都能走到。可以自己继续画，右边一直会跟着讲解。',100);
+      if(!await step('Generating walls and doors…',1800))return;
+      await step('<b>Done.</b> Walls are classified into exterior/interior, doors open between rooms with high adjacency, and the connectivity net guarantees every room is reachable. Keep drawing — this panel keeps explaining alongside you.',100);
     }finally{ this._end(); }
   },
   _end(){
     this.demoOn=false;const btn=document.getElementById('btn-xp-demo');
-    if(btn){btn.textContent='▶ 演示';btn.classList.remove('stop');}
+    if(btn){btn.textContent='▶ Demo';btn.classList.remove('stop');}
     this.refresh();
   },
 };
