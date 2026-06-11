@@ -1,0 +1,10 @@
+{
+  "name": "dtd2",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser floor-plan sketcher with room prediction + backend wall/door generation, plus a built-in algorithm explainer.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  }
+}

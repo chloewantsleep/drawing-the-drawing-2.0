@@ -1,0 +1,214 @@
+{
+  "doorThreshold": 3,
+  "wallExt": 9,
+  "wallInt": 6,
+  "doorWidth": 40,
+  "connectivity": true,
+  "scenes": {
+    "apartment": {
+      "startType": "living",
+      "types": [
+        "living",
+        "bedroom",
+        "bathroom",
+        "kitchen",
+        "dining",
+        "corridor",
+        "study",
+        "balcony"
+      ],
+      "adj": {
+        "living": {
+          "bedroom": 3,
+          "kitchen": 3,
+          "dining": 4,
+          "corridor": 2,
+          "balcony": 3,
+          "study": 2,
+          "bathroom": 1
+        },
+        "bedroom": {
+          "bathroom": 5,
+          "corridor": 3,
+          "living": 2,
+          "study": 3,
+          "bedroom": 2,
+          "balcony": 2
+        },
+        "bathroom": {
+          "bedroom": 4,
+          "corridor": 3,
+          "kitchen": 1,
+          "living": 1
+        },
+        "kitchen": {
+          "dining": 5,
+          "living": 3,
+          "corridor": 2,
+          "bathroom": 1
+        },
+        "dining": {
+          "kitchen": 5,
+          "living": 4,
+          "corridor": 2,
+          "balcony": 2
+        },
+        "corridor": {
+          "bedroom": 3,
+          "bathroom": 3,
+          "living": 2,
+          "kitchen": 2,
+          "study": 2,
+          "dining": 2
+        },
+        "study": {
+          "corridor": 3,
+          "bedroom": 3,
+          "living": 2,
+          "balcony": 2
+        },
+        "balcony": {
+          "living": 4,
+          "bedroom": 3,
+          "dining": 3
+        }
+      }
+    },
+    "office": {
+      "startType": "reception",
+      "types": [
+        "reception",
+        "openoffice",
+        "meeting",
+        "restroom",
+        "breakroom",
+        "corridor",
+        "storage",
+        "exec"
+      ],
+      "adj": {
+        "reception": {
+          "openoffice": 4,
+          "corridor": 4,
+          "meeting": 2,
+          "restroom": 1,
+          "exec": 2
+        },
+        "openoffice": {
+          "meeting": 4,
+          "corridor": 3,
+          "breakroom": 3,
+          "storage": 2,
+          "restroom": 2,
+          "exec": 2
+        },
+        "meeting": {
+          "corridor": 4,
+          "openoffice": 3,
+          "reception": 2,
+          "exec": 2
+        },
+        "restroom": {
+          "corridor": 5,
+          "openoffice": 2,
+          "reception": 1
+        },
+        "breakroom": {
+          "openoffice": 4,
+          "corridor": 3,
+          "restroom": 2
+        },
+        "corridor": {
+          "restroom": 4,
+          "meeting": 3,
+          "openoffice": 2,
+          "breakroom": 2,
+          "storage": 2,
+          "exec": 2
+        },
+        "storage": {
+          "corridor": 4,
+          "openoffice": 2,
+          "breakroom": 2
+        },
+        "exec": {
+          "corridor": 3,
+          "meeting": 3,
+          "openoffice": 2,
+          "reception": 2
+        }
+      }
+    },
+    "mall": {
+      "startType": "entrance",
+      "types": [
+        "entrance",
+        "atrium",
+        "corridor",
+        "retail",
+        "anchor",
+        "foodcourt",
+        "restroom",
+        "cinema",
+        "storage"
+      ],
+      "adj": {
+        "entrance": {
+          "atrium": 5,
+          "corridor": 4,
+          "retail": 2
+        },
+        "atrium": {
+          "corridor": 5,
+          "retail": 4,
+          "foodcourt": 3,
+          "anchor": 2,
+          "cinema": 2,
+          "restroom": 2
+        },
+        "corridor": {
+          "retail": 5,
+          "restroom": 4,
+          "anchor": 3,
+          "foodcourt": 3,
+          "cinema": 2,
+          "storage": 2
+        },
+        "retail": {
+          "corridor": 4,
+          "restroom": 2,
+          "storage": 3,
+          "retail": 2
+        },
+        "anchor": {
+          "corridor": 4,
+          "storage": 3,
+          "restroom": 2
+        },
+        "foodcourt": {
+          "corridor": 4,
+          "restroom": 4,
+          "atrium": 3,
+          "retail": 2
+        },
+        "restroom": {
+          "corridor": 5,
+          "foodcourt": 3,
+          "retail": 2
+        },
+        "cinema": {
+          "corridor": 4,
+          "atrium": 3,
+          "restroom": 3,
+          "retail": 2
+        },
+        "storage": {
+          "retail": 4,
+          "corridor": 3,
+          "anchor": 3,
+          "restroom": 2
+        }
+      }
+    }
+  }
+}

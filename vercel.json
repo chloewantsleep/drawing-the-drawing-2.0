@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/dtd2.1.html" },
+    { "source": "/tuner", "destination": "/tuner.html" }
+  ],
+  "functions": {
+    "api/*.js": { "includeFiles": "arch-config.json" }
+  }
+}
