@@ -58,10 +58,11 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ── static files ──
+  // ── static files (served from public/, matching the Vercel layout) ──
+  const PUB = path.join(DIR, 'public');
   const file = p === '/' ? '/dtd2.1.html' : p === '/tuner' ? '/tuner.html' : p;
-  const fp = path.join(DIR, path.normalize(file).replace(/^(\.\.[/\\])+/, ''));
-  if (fp.startsWith(DIR) && fs.existsSync(fp) && fs.statSync(fp).isFile()) {
+  const fp = path.join(PUB, path.normalize(file).replace(/^(\.\.[/\\])+/, ''));
+  if (fp.startsWith(PUB) && fs.existsSync(fp) && fs.statSync(fp).isFile()) {
     send(res, 200, fs.readFileSync(fp), MIME[path.extname(fp)] || 'application/octet-stream');
   } else send(res, 404, 'Not found');
 });
