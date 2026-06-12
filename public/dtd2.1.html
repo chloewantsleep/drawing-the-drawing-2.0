@@ -220,6 +220,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #type-box .ty-hint b{color:var(--text);font-weight:600}
 #type-box .ty-ex{cursor:pointer;color:var(--accent);font-weight:600}
 #type-box .ty-ex:hover{text-decoration:underline}
+/* ── FACADE generator panel ── */
+#facade-box{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:650;display:none;
+  background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-lg);
+  padding:14px;width:320px;max-width:92%;animation:ctxIn .12s cubic-bezier(.2,.8,.4,1)}
+#facade-box.show{display:block}
+#facade-box .fc-title{font-size:12px;font-weight:700;margin-bottom:11px}
+#facade-box .fc-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;font-size:12px}
+#facade-box .fc-row>label{color:var(--muted);font-weight:500}
+.fc-step{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:7px;overflow:hidden}
+.fc-step button{width:26px;height:24px;border:none;background:#fff;cursor:pointer;color:var(--muted);font-size:14px}
+.fc-step button:hover{background:#F2F2EF;color:var(--text)}
+.fc-step span{min-width:26px;text-align:center;font-family:'SF Mono','Menlo',monospace;font-size:12px;font-weight:600}
+.fc-seg{display:flex;gap:2px;background:#F2F2EF;border-radius:7px;padding:2px}
+.fc-seg button{border:none;background:none;border-radius:5px;padding:4px 8px;font-size:10.5px;font-weight:600;
+  cursor:pointer;color:var(--muted);transition:.12s}
+.fc-seg button.on{background:#fff;color:var(--accent);box-shadow:var(--sh-sm)}
+.fc-checks{display:flex;gap:12px}
+.fc-chk{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text);cursor:pointer}
+.fc-chk input{accent-color:var(--accent);cursor:pointer}
+.fc-actions{display:flex;align-items:center;gap:10px;margin-top:13px;padding-top:11px;border-top:1px solid var(--border)}
+.fc-gen{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;
+  font-weight:600;cursor:pointer;white-space:nowrap}
+.fc-gen:hover{filter:brightness(1.06)}
+.fc-hint{font-size:10px;color:var(--muted)}
+.fc-hint b{color:var(--text)}
 .dim-hot{cursor:text}
 .dim-hot:hover .dim-bg{fill:#FFF3E0}
 .dim-hot:hover .dim-lbl{fill:#BF4A1E;text-decoration:underline;
@@ -283,6 +308,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <span class="logo">dtd2</span>
   <div class="tb-sep"></div>
   <button class="tb-chip" id="btn-type">Type</button>
+  <button class="tb-chip" id="btn-facade">Facade</button>
   <button class="tb-chip" id="btn-explain">Demo</button>
   <button class="tb-chip" id="btn-gen">Generate</button>
   <button class="tb-chip" id="btn-plan">Plan</button>
@@ -317,6 +343,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
       placeholder="Type a program — e.g. living, kitchen, 2 bedroom, bathroom, corridor"/>
     <div class="ty-hint"><span id="ty-status"><b>Enter</b> to generate · <b>Esc</b> to close</span>
       <span class="ty-ex" id="ty-ex">try an example</span></div>
+  </div>
+  <div id="facade-box">
+    <div class="fc-title">Generate a facade elevation</div>
+    <div class="fc-row"><label>Storeys</label><div class="fc-step" data-k="storeys"><button data-d="-1">−</button><span id="fc-storeys">4</span><button data-d="1">+</button></div></div>
+    <div class="fc-row"><label>Bays</label><div class="fc-step" data-k="bays"><button data-d="-1">−</button><span id="fc-bays">5</span><button data-d="1">+</button></div></div>
+    <div class="fc-row"><label>Ground floor</label>
+      <div class="fc-seg" id="fc-ground">
+        <button data-v="shopfront" class="on">Shopfront</button>
+        <button data-v="entrance">Entrance</button>
+        <button data-v="windows">Windows</button>
+      </div></div>
+    <div class="fc-row"><label>Details</label>
+      <div class="fc-checks">
+        <label class="fc-chk"><input type="checkbox" id="fc-cornice" checked>Cornice</label>
+        <label class="fc-chk"><input type="checkbox" id="fc-balcony">Balconies</label>
+      </div></div>
+    <div class="fc-actions"><button class="fc-gen" id="fc-gen">Generate ↵</button>
+      <span class="fc-hint">aligned bays × storeys · <b>Esc</b> closes</span></div>
   </div>
   <div id="op-hint"></div>
   <div id="pred-detail"></div>
@@ -2645,6 +2689,62 @@ document.getElementById('ty-ex').addEventListener('click',()=>{
   const inp=document.getElementById('type-inp');
   inp.value='living, kitchen, dining, 2 bedroom, bathroom, corridor';inp.focus();
 });
+
+// ─────────────────────────────────────────
+//  FACADE GENERATOR — a split-grammar elevation: bays × storeys, windows
+//  aligned in columns, a different ground floor, and a cornice on top.
+// ─────────────────────────────────────────
+const FC={storeys:4,bays:5,ground:'shopfront'};
+function facadeRects(opt){
+  const storeys=Math.max(1,Math.min(10,opt.storeys||4)),bays=Math.max(1,Math.min(10,opt.bays||5));
+  const ground=opt.ground||'shopfront';
+  const bayW=110,floorH=150,winW=64,winH=98,corniceH=30,totalW=bays*bayW;
+  const rects=[];
+  const bandTop=s=>(storeys-1-s)*floorH;          // y of storey band top; ground (s=0) sits at the bottom
+  const put=(bay,s,w,h,type,dy)=>{const cx=bay*bayW+bayW/2,cy=bandTop(s)+floorH/2+(dy||0);rects.push({x:cx-w/2,y:cy-h/2,w,h,type});};
+  const entryBay=Math.floor((bays-1)/2);
+  for(let s=0;s<storeys;s++){
+    if(s===0){                                     // ground floor
+      for(let b=0;b<bays;b++){
+        if(ground==='shopfront')      b===entryBay?put(b,s,64,124,'entrance'):put(b,s,bayW-26,124,'shopfront');
+        else if(ground==='entrance')  b===entryBay?put(b,s,64,124,'entrance'):put(b,s,winW,winH,'window');
+        else                          put(b,s,winW,winH,'window');
+      }
+    }else{                                         // upper floors — a window per bay
+      for(let b=0;b<bays;b++){
+        put(b,s,winW,winH,'window');
+        if(opt.balcony)put(b,s,bayW-22,16,'balcony',floorH/2-9);   // rail at the floor line
+      }
+    }
+  }
+  if(opt.cornice!==false){const topY=bandTop(storeys-1);rects.push({x:-12,y:topY-corniceH,w:totalW+24,h:corniceH,type:'cornice'});}
+  const cxAll=totalW/2;rects.forEach(r=>r.x-=cxAll);              // centre on origin
+  return rects;
+}
+function buildFacade(){
+  const opt={storeys:FC.storeys,bays:FC.bays,ground:FC.ground,
+    cornice:document.getElementById('fc-cornice').checked,
+    balcony:document.getElementById('fc-balcony').checked};
+  const sc=SCENES.facade,rects=facadeRects(opt);
+  S.sceneKey='facade';S.shapes=[];S.selIds=new Set();S.predHidden=true;S.candidates=[];
+  for(const r of rects){const def=sc.types[r.type];S.shapes.push(mkRect(r.x,r.y,r.w,r.h,{fill:def.fill,stroke:def.stroke,roomType:r.type}));}
+  saveH();fitScreen();render();if(S.archOn)fetchArch();
+  document.getElementById('s-tool').textContent=`Facade — ${opt.storeys} storeys × ${opt.bays} bays`;
+}
+function openFacadeBox(){closeTypeBox();document.getElementById('facade-box').classList.add('show');document.getElementById('btn-facade').classList.add('on');}
+function closeFacadeBox(){document.getElementById('facade-box').classList.remove('show');document.getElementById('btn-facade').classList.remove('on');}
+document.getElementById('btn-facade').addEventListener('click',()=>{
+  document.getElementById('facade-box').classList.contains('show')?closeFacadeBox():openFacadeBox();
+});
+document.getElementById('facade-box').addEventListener('mousedown',e=>e.stopPropagation());
+document.querySelectorAll('#facade-box .fc-step button').forEach(b=>b.addEventListener('click',()=>{
+  const k=b.parentElement.dataset.k,d=+b.dataset.d;
+  FC[k]=Math.max(1,Math.min(10,FC[k]+d));document.getElementById('fc-'+k).textContent=FC[k];
+}));
+document.getElementById('fc-ground').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  FC.ground=b.dataset.v;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));});
+document.getElementById('fc-gen').addEventListener('click',()=>{buildFacade();closeFacadeBox();});
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('facade-box').classList.contains('show'))closeFacadeBox();});
 
 // ─────────────────────────────────────────
 //  GENERATE (diffusion) — run the trained DDPM, drop a refined apartment
