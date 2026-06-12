@@ -131,22 +131,3 @@ python diffusion/diffuse.py                     # rules → data → train → m
 | `diffusion/diffuse.py` | Trains the DDPM on rule-generated data; exports `model.json`. |
 | `public/diffusion/` | `model.json` (browser weights), `samples.json`, viewer → redirects to `/tuner`. |
 | `vercel.json` | Routing + no-cache HTML headers. |
-
-## Deploy
-
-Vercel-ready and wired to this repo — **every `git push` to `main` auto-deploys.** Static
-HTML is served from `public/`; the API runs as serverless functions in `api/`.
-
-> Caveat: the tuner's **Save / live-sync** needs a writable filesystem + SSE, which serverless
-> functions don't provide. On Vercel the config is read-only (falls back to `arch.js`'s
-> `DEFAULT_CONFIG`); prediction, wall generation, and diffusion all work fully. For live
-> parameter tuning, run `server.js` locally.
-
-## A note on "is this ML?"
-
-Yes — the diffusion model is genuine deep learning (a DDPM). The *prediction* and *wall
-generation* are deterministic procedural algorithms (rules + geometry), with no learning. The
-project's point is the **handshake** between the two: explainable rules bootstrapping and
-cleaning up a small generative model. The diffusion model is intentionally tiny (~23k
-parameters, trained on CPU in ~1 minute) — enough to demonstrate the loop, not to design
-production plans.
