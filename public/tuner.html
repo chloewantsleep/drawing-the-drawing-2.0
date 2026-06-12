@@ -48,10 +48,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   overflow-y:auto;padding:20px 18px 40px}
 .panel::-webkit-scrollbar{width:9px}
 .panel::-webkit-scrollbar-thumb{background:#E2E1DC;border-radius:8px;border:2px solid var(--panel)}
-.stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative;
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;position:relative;
   background:
     radial-gradient(circle at 1px 1px,rgba(20,20,19,.05) 1px,transparent 0) 0 0/22px 22px,
     linear-gradient(180deg,#FCFCFB,#F4F4F2)}
+.approach-seg{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:3px;
+  gap:2px;box-shadow:var(--sh-sm)}
+.approach-seg button{border:none;background:none;border-radius:7px;padding:7px 18px;font-size:12.5px;font-weight:600;
+  cursor:pointer;color:var(--muted);transition:.15s;display:flex;align-items:center;gap:7px;letter-spacing:-.1px}
+.approach-seg button:hover{color:var(--text)}
+.approach-seg button.on{background:var(--accent-soft);color:var(--accent)}
+.approach-seg .d{width:8px;height:8px;border-radius:50%}
+.approach-seg .d.proc{background:#16A34A}.approach-seg .d.diff{background:#7C3AED}
+.diff-ctrl{display:flex;align-items:center;gap:12px;width:600px;max-width:90%}
+/* left-panel approach banner */
+.approach-banner{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:-.2px;
+  padding:9px 12px;border-radius:10px;margin-bottom:18px}
+.approach-banner .sub{font-size:10.5px;font-weight:500;color:var(--muted);letter-spacing:0}
+.approach-banner .dot{width:9px;height:9px;border-radius:50%}
+.approach-banner.proc{background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2)}
+.approach-banner.proc .dot{background:#16A34A}
 
 /* ── sections ── */
 .sec{display:flex;align-items:center;gap:8px;margin:24px 0 12px}
@@ -166,10 +182,18 @@ td input::placeholder{color:var(--muted-2);font-weight:400}
 <div class="main">
   <aside class="panel" id="panel"></aside>
   <section class="stage">
-    <div class="title-cap" id="stage-title">Sample plan</div>
+    <div class="approach-seg" id="mode-sel">
+      <button data-m="procedural" class="on"><span class="d proc"></span>Procedural</button>
+      <button data-m="diffusional"><span class="d diff"></span>Diffusional</button>
+    </div>
     <div class="canvas-card">
       <canvas id="cv" width="600" height="520"></canvas>
       <div class="cap" id="cap">live preview · applies to the app on Save</div>
+    </div>
+    <div class="diff-ctrl" id="diff-ctrl" style="display:none">
+      <button class="diff-btn" id="diff-go" disabled>loading model…</button>
+      <div class="diff-noise"><i id="diff-noise" style="width:100%"></i></div>
+      <div class="diff-read" id="diff-read">noise <b>100%</b></div>
     </div>
   </section>
 </div>
@@ -177,7 +201,7 @@ td input::placeholder{color:var(--muted-2);font-weight:400}
 <script>
 'use strict';
 const API='';                 // same origin as the server
-let CFG=null, scene='apartment', dirty=false;
+let CFG=null, scene='apartment', dirty=false, MODE='procedural';
 const $=id=>document.getElementById(id);
 
 // ── baked sample layouts so the preview + prediction show something real ──
@@ -223,6 +247,11 @@ function buildScenes(){
 function buildPanel(){
   const p=$('panel');p.innerHTML='';
 
+  // ── procedural banner ──
+  const ban=document.createElement('div');ban.className='approach-banner proc';
+  ban.innerHTML='<span class="dot"></span>Procedural <span class="sub">rules + adjacency — deterministic</span>';
+  p.appendChild(ban);
+
   // ── numeric params ──
   p.appendChild(sec('Door & wall parameters'));
   p.appendChild(slider('Door threshold','doorThreshold',0,5,1,'Adjacency weight needed to auto-open a door. Higher = fewer doors, more reliance on the connectivity net.'));
@@ -259,9 +288,6 @@ function buildPanel(){
     'normalized against the strongest. The app then multiplies it by a geometric <b>wall fit</b> for the on-canvas %.'+
     '<code>confidence = type fit × (0.6 + 0.4 × wall fit)</code>';
   p.appendChild(note);
-
-  // ── diffusion: behind-the-scenes, runs the real model in the browser ──
-  buildDiffusion(p);
 }
 
 function sec(title){
@@ -284,8 +310,7 @@ function slider(label,key,min,max,step,hint){
   r.oninput=()=>{CFG[key]=parseFloat(r.value);val.textContent=CFG[key];setP();mark();render();
     if(key==='doorThreshold')paintMatrix();};
   d.appendChild(l);d.appendChild(r);
-  const h=document.createElement('div');h.className='hint';h.textContent=hint;d.appendChild(h);
-  return d;
+  return d;   // (descriptive hint line removed)
 }
 
 // ── matrix ──
@@ -394,6 +419,7 @@ function render(){renderPrediction();preview();}
 // ── live preview of walls/doors ──
 let pvTimer=null;
 function preview(){
+  if(MODE!=='procedural')return;   // the canvas is showing diffusion — don't overwrite it
   clearTimeout(pvTimer);
   pvTimer=setTimeout(async()=>{
     try{
@@ -424,20 +450,20 @@ function drawPlan(runs){
   const X=x=>x*sc+ox,Y=y=>y*sc+oy;
   ctx.fillStyle='#23231F';ctx.strokeStyle='#23231F';ctx.lineJoin='round';
   for(const r of runs){
-    const len=r.len||1,ux=(r.bx-r.ax)/len,uy=(r.by-r.ay)/len,t=r.t*sc;
+    const len=r.len||1,ux=(r.bx-r.ax)/len,uy=(r.by-r.ay)/len,t=r.t*sc,ex=r.t/2;
     const seg=(t0,t1)=>{
       const ax=X(r.ax+ux*t0),ay=Y(r.ay+uy*t0),bx=X(r.ax+ux*t1),by=Y(r.ay+uy*t1),nx=-uy*t/2,ny=ux*t/2;
       ctx.beginPath();ctx.moveTo(ax+nx,ay+ny);ctx.lineTo(bx+nx,by+ny);ctx.lineTo(bx-nx,by-ny);ctx.lineTo(ax-nx,ay-ny);ctx.closePath();ctx.fill();
     };
     if(r.door){
-      const [c0,c1]=r.door,dw=c1-c0;seg(0,c0);seg(c1,len);
+      const [c0,c1]=r.door,dw=c1-c0;seg(-ex,c0);seg(c1,len+ex);
       const hx=r.ax+ux*c0,hy=r.ay+uy*c0,tipx=hx+r.nx*dw,tipy=hy+r.ny*dw;
       ctx.lineWidth=1.4;ctx.strokeStyle='#23231F';ctx.beginPath();ctx.moveTo(X(hx),Y(hy));ctx.lineTo(X(tipx),Y(tipy));ctx.stroke();
       let a0=Math.atan2(r.ny,r.nx),a1=Math.atan2(uy,ux),da=a1-a0;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
       ctx.strokeStyle='rgba(35,35,31,.5)';ctx.lineWidth=1;ctx.setLineDash([3,2.5]);ctx.beginPath();
       for(let k=0;k<=16;k++){const ang=a0+da*k/16,px=X(hx+Math.cos(ang)*dw),py=Y(hy+Math.sin(ang)*dw);k?ctx.lineTo(px,py):ctx.moveTo(px,py);}
       ctx.stroke();ctx.setLineDash([]);
-    }else seg(0,len);
+    }else seg(-ex,len+ex);
   }
 }
 
@@ -483,9 +509,9 @@ function diffRefine(rooms){
   return [0,1,2,3].map(q=>({type:R(q).type,x:cx[qcol[q]]-tW/2,y:cy[qrow[q]]-tH/2,w:colW[qcol[q]],h:rowH[qrow[q]]}));
 }
 function diffMap(cv){const W=cv.width,H=cv.height,pad=24,R=2.7,s=Math.min((W-2*pad)/(2*R),(H-2*pad)/(2*R));return{X:x=>W/2+x*s,Y:y=>H/2+y*s,s};}
-function diffIdle(cv){const c=cv.getContext('2d');c.clearRect(0,0,cv.width,cv.height);c.fillStyle='#B6B6B0';c.font='12px -apple-system,system-ui';c.textAlign='center';c.fillText('press Sample to run the diffusion model',cv.width/2,cv.height/2);}
+function diffIdle(cv){const c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,cv.width,cv.height);c.fillStyle='#B6B6B0';c.font='13px -apple-system,system-ui';c.textAlign='center';c.fillText('press Sample to run the diffusion model →',cv.width/2,cv.height/2);}
 function diffDraw(cv,centers,plan){
-  const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+  const ctx=cv.getContext('2d');ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);
   const {X,Y,s}=diffMap(cv);
   if(plan)for(const r of plan){ctx.globalAlpha=.85;ctx.fillStyle=D_FILL[r.type]||'#eee';ctx.strokeStyle=D_COL[r.type]||'#999';ctx.lineWidth=2;
     ctx.fillRect(X(r.x),Y(r.y),r.w*s,r.h*s);ctx.strokeRect(X(r.x),Y(r.y),r.w*s,r.h*s);ctx.globalAlpha=1;
@@ -511,27 +537,24 @@ async function diffSample(cv){
   const rd=$('diff-read');if(rd)rd.innerHTML='<b>done</b> · rules refined it into a plan';
   go.disabled=false;go.textContent='▶ Sample again';DIFF.playing=false;
 }
-function buildDiffusion(p){
-  p.appendChild(secTag('Diffusion · generative','runs in your browser'));
-  const card=document.createElement('div');card.className='diff-card';
-  card.innerHTML=
-    '<div class="diff-expl">A real diffusion model (DDPM) runs right here — no server. '+
-      '<b>Forward:</b> training corrupts a clean apartment into pure noise, step by step. '+
-      '<b>Reverse:</b> a 22,792-param network learns to undo it, predicting the noise to subtract '+
-      '<code>x = (x − β·ε̂) / √α</code> — turning 4 random dots back into 4 room centres. '+
-      'The rules then snap those centres into a wall-sharing plan.</div>'+
-    '<canvas class="diff-cv" id="diff-cv" width="330" height="198"></canvas>'+
-    '<div class="diff-row">'+
-      '<button class="diff-btn" id="diff-go" disabled>loading model…</button>'+
-      '<div class="diff-noise"><i id="diff-noise" style="width:100%"></i></div>'+
-      '<div class="diff-read" id="diff-read">noise <b>100%</b></div>'+
-    '</div>';
-  p.appendChild(card);
-  const cv=card.querySelector('#diff-cv');diffIdle(cv);
-  diffLoadModel().then(()=>{const go=$('diff-go');if(go){go.disabled=false;go.textContent='▶ Sample';}})
-    .catch(()=>{const go=$('diff-go');if(go)go.textContent='model.json missing — run diffuse.py';});
-  card.querySelector('#diff-go').onclick=()=>diffSample(cv);
+// ── Procedural / Diffusional mode switching (shares the main canvas) ──
+function setMode(m){
+  MODE=m;
+  [...document.querySelectorAll('#mode-sel button')].forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  const cv=$('cv');
+  if(m==='diffusional'){
+    $('cap').style.display='none';$('diff-ctrl').style.display='flex';
+    cv.width=600;cv.height=520;            // drop any DPR scaling left by the wall preview
+    diffIdle(cv);
+  }else{
+    $('diff-ctrl').style.display='none';$('cap').style.display='';
+    preview();                              // redraw the wall plan
+  }
 }
+$('mode-sel').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.m);});
+$('diff-go').onclick=()=>diffSample($('cv'));
+diffLoadModel().then(()=>{const go=$('diff-go');if(go){go.disabled=false;go.textContent='▶ Sample';}})
+  .catch(()=>{const go=$('diff-go');if(go)go.textContent='model.json missing — run diffuse.py';});
 
 $('save').onclick=async()=>{
   try{

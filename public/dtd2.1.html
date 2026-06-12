@@ -190,6 +190,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #pred-detail .pd-fill{height:100%;border-radius:2px}
 #pred-detail .pd-note{margin-top:8px;padding-top:7px;border-top:1px solid var(--border);
   color:var(--muted);font-size:10px;line-height:1.35}
+/* ── FLOATING EDIT BAR (below a selected rect; icons only) ── */
+#floatbar{position:absolute;z-index:550;display:none;transform:translateX(-50%);
+  background:#fff;border:1px solid var(--border);border-radius:9px;box-shadow:var(--sh-lg);
+  padding:3px;align-items:center;gap:1px;animation:ctxIn .1s cubic-bezier(.2,.8,.4,1)}
+#floatbar.show{display:flex}
+.fb-btn{width:28px;height:28px;border:none;background:none;border-radius:6px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;color:#444;transition:background .1s,color .1s}
+.fb-btn:hover{background:#F2F2EF;color:#000}
+.fb-btn.danger:hover{background:#FDF2F2;color:#C0392B}
+.fb-btn svg{width:15px;height:15px;pointer-events:none}
+.fb-sep{width:1px;height:16px;background:var(--border);margin:0 2px}
+#floatpal{position:absolute;z-index:560;display:none;transform:translateX(-50%);
+  background:#fff;border:1px solid var(--border);border-radius:9px;box-shadow:var(--sh-lg);
+  padding:7px;gap:5px;flex-wrap:wrap;max-width:184px}
+#floatpal.show{display:flex}
+.fp-chip{width:22px;height:22px;border-radius:6px;cursor:pointer;transition:transform .1s;padding:0}
+.fp-chip:hover{transform:scale(1.14)}
 .dim-hot{cursor:text}
 .dim-hot:hover .dim-bg{fill:#FFF3E0}
 .dim-hot:hover .dim-lbl{fill:#BF4A1E;text-decoration:underline;
@@ -253,6 +270,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <span class="logo">dtd2</span>
   <div class="tb-sep"></div>
   <button class="tb-chip" id="btn-explain">Demo</button>
+  <button class="tb-chip" id="btn-gen">Generate</button>
   <button class="tb-chip" id="btn-plan">Plan</button>
   <button class="tb-chip" id="btn-ft">unit</button>
   <button class="tb-chip" id="btn-clear">Clear</button>
@@ -279,6 +297,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <div id="radial-disc"><div class="rd-center" id="rd-center">+</div></div>
   <div id="wall-menu"></div>
   <div id="ctx"></div>
+  <div id="floatbar"></div>
+  <div id="floatpal"></div>
   <div id="op-hint"></div>
   <div id="pred-detail"></div>
   <div id="dim-overlay"><input id="dim-inp" type="text" autocomplete="off" spellcheck="false"/></div>
@@ -779,6 +799,7 @@ function applyView(){
   lWorld.setAttribute('transform',`translate(${S.vx+RW},${S.vy+RW}) scale(${S.zoom})`);
   drawGrid();drawRulers();
   document.getElementById('s-zoom').textContent=Math.round(S.zoom*100)+'%';
+  if(typeof updateFloatBar!=='undefined')updateFloatBar();
 }
 function doZoom(f,csx,csy){
   csx??=(cW()+RW)/2;csy??=(cH()+RW)/2;
@@ -1052,10 +1073,10 @@ function renderDims(s){
 // ─────────────────────────────────────────
 //  HANDLES
 // ─────────────────────────────────────────
-// a rotation handle: a stem rising from the bbox top-centre to a grab circle
+// a rotation handle: sits ABOVE the top-centre "+" duplicate button so they don't overlap
 function rotHandleEl(sid,minX,minY,maxX,maxY,inv){
-  const g=ns('g'),cx=(minX+maxX)/2,stem=26*inv,r=6*inv,hy=minY-stem;
-  g.appendChild(ns('line',{x1:cx,y1:minY,x2:cx,y2:hy,stroke:C_SEL,'stroke-width':1.2*inv,'pointer-events':'none'}));
+  const g=ns('g'),cx=(minX+maxX)/2,r=6*inv,hy=minY-46*inv;     // clear the "+" (at −22, top ≈ −34)
+  g.appendChild(ns('line',{x1:cx,y1:minY-34*inv,x2:cx,y2:hy,stroke:C_SEL,'stroke-width':1.2*inv,'pointer-events':'none'}));
   const h=ns('circle',{cx:cx,cy:hy,r:r,fill:'white',stroke:C_SEL,'stroke-width':1.5*inv,
     class:'rot-handle','data-sid':sid,style:'cursor:grab'});
   attachHint(h,'Rotate','⇧ snap 15°');
@@ -1524,14 +1545,14 @@ function renderArch(){
   lArch.innerHTML='';if(!S.archOn)return;
   const inv=1/S.zoom,COL='#2B2B2B';
   for(const r of S.archRuns){
-    const len=r.len||1,ux=(r.bx-r.ax)/len,uy=(r.by-r.ay)/len,t=r.t||6;
+    const len=r.len||1,ux=(r.bx-r.ax)/len,uy=(r.by-r.ay)/len,t=r.t||6,ex=t/2;
     const seg=(t0,t1)=>{
       const ax=r.ax+ux*t0,ay=r.ay+uy*t0,bx=r.ax+ux*t1,by=r.ay+uy*t1,nx=-uy*t/2,ny=ux*t/2;
       lArch.appendChild(ns('polygon',{points:`${ax+nx},${ay+ny} ${bx+nx},${by+ny} ${bx-nx},${by-ny} ${ax-nx},${ay-ny}`,fill:COL}));
     };
     if(r.door){
       const[c0,c1]=r.door,dw=c1-c0;
-      seg(0,c0);seg(c1,len);
+      seg(-ex,c0);seg(c1,len+ex); // extend the corner ends (not the door jambs) so right-angle joins fill
       const hx=r.ax+ux*c0,hy=r.ay+uy*c0;                 // hinge
       const tipx=hx+r.nx*dw,tipy=hy+r.ny*dw;
       lArch.appendChild(ns('line',{x1:hx,y1:hy,x2:tipx,y2:tipy,stroke:COL,'stroke-width':1.4*inv})); // door leaf
@@ -1539,7 +1560,7 @@ function renderArch(){
       while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
       const pts=[];for(let k=0;k<=10;k++){const ang=a0+da*k/10;pts.push((hx+Math.cos(ang)*dw)+','+(hy+Math.sin(ang)*dw));}
       lArch.appendChild(ns('polyline',{points:pts.join(' '),fill:'none',stroke:COL,'stroke-width':inv,'stroke-dasharray':`${3*inv} ${2.5*inv}`,opacity:.6}));
-    }else seg(0,len);
+    }else seg(-ex,len+ex);
   }
 }
 
@@ -1629,6 +1650,57 @@ function showCtx(e,sid){
 function hideCtx(){ctxEl.style.display='none';}
 // Keep clicks inside the menu from reaching the canvas mousedown handler (which would close it first)
 ctxEl.addEventListener('mousedown',e=>e.stopPropagation());
+
+// ─────────────────────────────────────────
+//  FLOATING EDIT BAR — icon-only toolbar under a single selected rect
+// ─────────────────────────────────────────
+const fbEl=document.getElementById('floatbar'),fpEl=document.getElementById('floatpal');
+fbEl.addEventListener('mousedown',e=>e.stopPropagation());
+fpEl.addEventListener('mousedown',e=>e.stopPropagation());
+const _fbIco=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+function buildFloatBar(){
+  const btn=(ico,title,fn,danger)=>{const b=document.createElement('button');b.className='fb-btn'+(danger?' danger':'');
+    b.title=title;b.innerHTML=_fbIco(ico);b.onclick=e=>{e.stopPropagation();fn();};return b;};
+  const sep=()=>{const d=document.createElement('div');d.className='fb-sep';return d;};
+  fbEl.innerHTML='';
+  fbEl.appendChild(btn('<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/>','Rename',()=>{const id=[...S.selIds][0];if(id!=null)startNameEdit(id);}));
+  fbEl.appendChild(btn('<rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16H3a1 1 0 01-1-1V3a1 1 0 011-1h12a1 1 0 011 1v1"/>','Duplicate',()=>{copySel();pasteSel();}));
+  fbEl.appendChild(sep());
+  fbEl.appendChild(btn('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>','Rotate 90°',()=>rotateSel(1)));
+  fbEl.appendChild(btn('<path d="M12 3v18"/><path d="M5 8l-3 4 3 4"/><path d="M19 8l3 4-3 4"/>','Mirror H',()=>mirrorSel('h')));
+  fbEl.appendChild(btn('<path d="M3 12h18"/><path d="M8 5l4-3 4 3"/><path d="M8 19l4 3 4-3"/>','Mirror V',()=>mirrorSel('v')));
+  fbEl.appendChild(sep());
+  fbEl.appendChild(btn('<path d="M12 2.6S5.5 9 5.5 14a6.5 6.5 0 0013 0c0-5-6.5-11.4-6.5-11.4z"/>','Color',()=>toggleFloatPal()));
+  fbEl.appendChild(sep());
+  fbEl.appendChild(btn('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>','Delete',()=>{for(const id of S.selIds)delS(id);S.selIds=new Set();hideFloatBar();saveH();render();},true));
+}
+function toggleFloatPal(){
+  if(fpEl.classList.contains('show')){fpEl.classList.remove('show');return;}
+  const selRects=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect');if(!selRects.length)return;
+  fpEl.innerHTML='';
+  const apply=opts=>{for(const s of selRects)updS(s.id,opts);fpEl.classList.remove('show');saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();};
+  const chip=(fill,stroke,title,fn)=>{const c=document.createElement('button');c.className='fp-chip';if(title)c.title=title;
+    c.style.background=fill;c.style.border='1.5px solid '+stroke;c.onclick=e=>{e.stopPropagation();fn();};fpEl.appendChild(c);};
+  const sc=getScene();
+  if(sc)for(const[,def]of Object.entries(sc.types))chip(def.fill,def.stroke,def.name,()=>apply({fill:def.fill,stroke:def.stroke}));
+  else for(const c of GEN_COLORS)chip(c.fill,c.stroke,'',()=>apply({fill:c.fill,stroke:c.stroke}));
+  fpEl.style.left=fbEl.style.left;fpEl.style.top=(parseFloat(fbEl.style.top)+34)+'px';
+  fpEl.classList.add('show');
+}
+function hideFloatBar(){fbEl.classList.remove('show');fpEl.classList.remove('show');}
+function updateFloatBar(){
+  if(S.selIds.size!==1||S.dragging||S.resizing||S.rotating||S.drawing||S.lineDrawing||(typeof discOpen!=='undefined'&&discOpen)){hideFloatBar();return;}
+  const s=getS([...S.selIds][0]);
+  if(!s||s.type!=='rect'){hideFloatBar();return;}
+  let cxw,byw;
+  if(s.poly){let mnX=Infinity,mxX=-Infinity,mxY=-Infinity;for(const p of s.poly){mnX=Math.min(mnX,p.x);mxX=Math.max(mxX,p.x);mxY=Math.max(mxY,p.y);}cxw=(mnX+mxX)/2;byw=mxY;}
+  else{cxw=s.x+s.w/2;byw=s.y+s.h;}
+  const sp=w2s(cxw,byw);
+  fbEl.style.left=sp.x+'px';fbEl.style.top=(sp.y+44)+'px';
+  fbEl.classList.add('show');
+  if(fpEl.classList.contains('show')){fpEl.style.left=fbEl.style.left;fpEl.style.top=(sp.y+44+34)+'px';}
+}
+buildFloatBar();
 
 // ─────────────────────────────────────────
 //  COPY / PASTE / Z-ORDER
@@ -2420,6 +2492,44 @@ const EXPLAIN={
 document.getElementById('btn-explain').addEventListener('click',()=>EXPLAIN.toggle());
 document.getElementById('btn-xp-close').addEventListener('click',()=>EXPLAIN.toggle());
 document.getElementById('btn-xp-demo').addEventListener('click',()=>EXPLAIN.demo());
+
+// ─────────────────────────────────────────
+//  GENERATE (diffusion) — run the trained DDPM, drop a refined apartment
+//  onto the canvas. Self-contained; safe to remove with the top-bar button.
+// ─────────────────────────────────────────
+const GEN={model:null,busy:false};
+const _gsilu=x=>x/(1+Math.exp(-x));
+function _glin(x,W,b){const o=new Array(W.length);for(let r=0;r<W.length;r++){let s=b[r];const Wr=W[r];for(let i=0;i<x.length;i++)s+=Wr[i]*x[i];o[r]=s;}return o;}
+function _gtemb(t,n){const half=n/2,o=new Array(n);for(let k=0;k<half;k++){const f=Math.exp(-Math.log(10000)*k/half),a=t*f;o[k]=Math.sin(a);o[half+k]=Math.cos(a);}return o;}
+function _gden(x,t,M){let h=_glin(x.concat(_gtemb(t,M.temb)),M.w0,M.b0).map(_gsilu);h=_glin(h,M.w2,M.b2).map(_gsilu);return _glin(h,M.w4,M.b4);}
+function _grandn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function _gRefine(rooms){
+  const quad=r=>(r.cx>=0?1:0)+(r.cy>=0?2:0),qcol=[0,1,0,1],qrow=[0,0,1,1],slot=[null,null,null,null];
+  const order=[...rooms.keys()].sort((a,b)=>Math.hypot(rooms[a].cx,rooms[a].cy)-Math.hypot(rooms[b].cx,rooms[b].cy));
+  for(const i of order){let q=quad(rooms[i]);if(slot[q]!=null){const free=[0,1,2,3].filter(k=>slot[k]==null);free.sort((a,b)=>(Math.abs(qcol[a]-qcol[q])+Math.abs(qrow[a]-qrow[q]))-(Math.abs(qcol[b]-qcol[q])+Math.abs(qrow[b]-qrow[q])));q=free[0];}slot[q]=i;}
+  const R=q=>rooms[slot[q]];
+  const colW=[Math.max(R(0).w,R(2).w),Math.max(R(1).w,R(3).w)],rowH=[Math.max(R(0).h,R(1).h),Math.max(R(2).h,R(3).h)];
+  const cx=[0,colW[0]],cy=[0,rowH[0]],tW=colW[0]+colW[1],tH=rowH[0]+rowH[1];
+  return [0,1,2,3].map(q=>({type:R(q).type,x:cx[qcol[q]]-tW/2,y:cy[qrow[q]]-tH/2,w:colW[qcol[q]],h:rowH[qrow[q]]}));
+}
+async function generateDiffusion(){
+  if(GEN.busy)return;GEN.busy=true;
+  const btn=document.getElementById('btn-gen');btn.textContent='…';btn.classList.add('on');
+  try{
+    if(!GEN.model){const r=await fetch('/diffusion/model.json');GEN.model=await r.json();}
+    const M=GEN.model,T=M.T,b=M.betas,al=b.map(x=>1-x),abar=[];let acc=1;for(let i=0;i<T;i++){acc*=al[i];abar.push(acc);}
+    let x=Array.from({length:M.dim},()=>_grandn());
+    for(let t=T-1;t>=0;t--){const e=_gden(x,t,M);x=x.map((xi,i)=>(xi-b[t]/Math.sqrt(1-abar[t])*e[i])/Math.sqrt(al[t])+(t>0?Math.sqrt(b[t])*_grandn():0));}
+    const rooms=[];for(let i=0;i<M.dim;i+=2){const ty=M.types[i/2];rooms.push({type:ty,cx:x[i],cy:x[i+1],w:M.size[ty][0],h:M.size[ty][1]});}
+    const plan=_gRefine(rooms),SCALE=150,sc=SCENES.apartment;
+    S.shapes=[];S.selIds=new Set();S.sceneKey='apartment';S.predHidden=true;
+    for(const r of plan){const def=sc.types[r.type];S.shapes.push(mkRect(r.x*SCALE,r.y*SCALE,r.w*SCALE,r.h*SCALE,{fill:def.fill,stroke:def.stroke,roomType:r.type}));}
+    saveH();S.candidates=predictNextRooms();fitScreen();render();if(S.archOn)fetchArch();
+    document.getElementById('s-tool').textContent='Generated (diffusion → refined)';
+  }catch(e){alert('Generate needs /diffusion/model.json — run: python diffusion/diffuse.py');}
+  finally{btn.textContent='Generate';btn.classList.remove('on');GEN.busy=false;}
+}
+document.getElementById('btn-gen').addEventListener('click',generateDiffusion);
 
 // ─────────────────────────────────────────
 //  INIT
