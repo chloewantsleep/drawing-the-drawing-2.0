@@ -12,8 +12,60 @@ next room to add based on the scene type (Apartment / Office / Mall).
 | `dtd2.1.html` | Same sketcher **plus** Plan mode (walls + doors from the backend) **plus** a built-in **讲解 / Explain** layer that narrates the algorithm live. |
 | `arch.js` | The wall/door **generation algorithm** (pure geometry, no DOM). |
 | `server.js` | Zero-dependency Node backend: serves the app + `/api/arch`, `/api/config`, SSE live-sync. |
-| `tuner.html` | Parameter dashboard — sliders + adjacency matrix that live-tune `arch.js`. |
+| `tuner.html` | Parameter dashboard — sliders + adjacency matrix that live-tune `arch.js`, plus a Procedural/Diffusional view of both algorithms. |
 | `api/arch.js`, `api/config.js` | Vercel serverless versions of the API (so it deploys without `server.js`). |
+| `diffusion/diffuse.py` | Trains a tiny diffusion model (DDPM) on rule-generated layouts; exports weights to `model.json`. |
+| `public/diffusion/viewer.html` | Gallery of generated layouts with a Raw / Refined toggle. |
+
+## How diffusion and procedural cooperate
+
+Two engines, one loop. **Procedural** is the deterministic, explainable side
+(hand-tuned adjacency rules → prediction + wall/door geometry). **Diffusion** is the
+generative ML side (a tiny DDPM that samples new layouts from noise). They don't
+compete — the rules **teach, judge, and clean up** the model, and the model gives the
+rules something they lack: sampling from a learned distribution.
+
+```
+            ┌──────────────────────── PROCEDURAL (rules) ────────────────────────┐
+            │  adjacency table + arch.js geometry — deterministic, explainable    │
+            └─────────────────────────────────────────────────────────────────────┘
+                 │ ①  teacher: rules score & generate                ▲
+                 │     thousands of plausible layouts                │ ③  rules clean up:
+                 │     (diffuse.py · gen_data)                       │     snap floating centres
+                 ▼                                                   │     into a wall-sharing plan,
+            ┌──────────────────── DIFFUSION (learned) ──────────┐    │     add missing rooms,
+            │  tiny DDPM learns the *distribution* the rules     │    │     then arch.js draws walls
+            │  imply, then samples NEW layouts from pure noise   │────┘     (_gRefine / viewer refine)
+            └────────────────────────────────────────────────────┘
+                 │ ②  student: denoise noise → room centres
+                 ▼
+            a brand-new arrangement the rules never enumerated
+```
+
+**The three hand-offs**
+
+1. **Rules → data (teacher).** `diffusion/diffuse.py` has no external dataset. `gen_data()`
+   scores every room arrangement against the project's adjacency table and samples ~8000
+   plausible apartments. The model trains on those — so it learns the distribution the
+   rules define.
+2. **Diffusion generates (student).** The DDPM denoises random noise into 4 room *centres*
+   (an 8-D vector). This is real sampling, not enumeration — it produces arrangements that
+   were never in a lookup table.
+3. **Rules render & complete (clean-up).** The model's centres float and don't share walls,
+   so the rules snap them into a gap-free, wall-sharing plan (`_gRefine` in `dtd2.1.html`,
+   `refine` in the viewer). In the main app's **Generate** button the rules then add the
+   rooms the 4-room model doesn't know (a dining beside the kitchen, a corridor), and
+   `arch.js` draws the walls and doors.
+
+**Why pair them:** the rules solve diffusion's two weak spots (no training data → rules make
+it; messy output → rules tidy it), while diffusion gives the rules sampling/novelty they
+can't do alone. Evidence it works: in ~19/24 generated samples the model keeps the kitchen
+next to the living room and the bathroom next to the bedroom — the two strongest adjacencies
+in the table — even though it was never shown the rules directly.
+
+**See it three ways:** `/diffusion/viewer.html` (Raw vs Refined toggle), `/tuner`
+(Procedural / Diffusional tabs over one canvas), and the main app's **Generate** button
+(the full pipeline on the drawing canvas).
 
 ## Run locally
 
@@ -47,7 +99,7 @@ fully. For live tuning, run `server.js` locally.
 
 ## Core concepts
 
-- **Scenes** — pick Apartment, Office, or Mall. Each scene defines room types
+- **Scenes** — pick Apartment, Healthcare, or Mall. Each scene defines room types
   (with colors and typical sizes) and an adjacency model used for prediction.
 - **Rooms** — rectangles (axis-aligned, or irregular polygons after merging).
   Color and room type are **independent**: the right-click palette only recolors,
