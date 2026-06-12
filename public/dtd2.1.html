@@ -420,7 +420,7 @@ const S={
   panning:false,panSP:null,panView0:null,spaceDown:false,
   selBoxing:false,sbSP0:null,sbSP1:null,
   vx:0,vy:0,zoom:1,
-  snapOn:true,gridOn:true,sqft:false,
+  snapOn:false,gridOn:true,sqft:false,   // snapping removed — free placement
   clip:[],curWP:{x:0,y:0},
   hist:[],histIdx:-1,
   sceneKey:null,candidates:[],hovCand:null,
@@ -430,6 +430,7 @@ const S={
   deformDrag:false, // true while alt-dragging a corner (free vertex move)
   shiftScale:false, // true while shift-dragging a scale handle (proportional)
   edgeClick:null,   // pending edge interaction: drag→resize side, click→wall menu
+  rotating:false,rotSid:null,rotPoly0:null,rotCenter:null,rotStart:0, // free rotation
 };
 
 // ─────────────────────────────────────────
@@ -514,6 +515,7 @@ function snapCandidates(excl){
   return pts;
 }
 function smartSnap(wx,wy,excl=null){
+  if(!S.snapOn)return{x:wx,y:wy,t:'grid'};   // snap removed → free, un-snapped placement
   const th=SNAP_THRESH/S.zoom;
   let best=null,bd=th;
   for(const p of snapCandidates(excl)){const d=Math.hypot(p.x-wx,p.y-wy);if(d<bd){bd=d;best=p;}}
@@ -667,15 +669,19 @@ function sharedFit(ax,ay,aw,ah,bx,by,bw,bh){
 // Every plain rectangle can anchor a suggestion (typed or not), so suggestions still
 // appear when the user has drawn untyped rects around the scene's seed room.
 function getAnchorRects(){return S.shapes.filter(s=>s.type==='rect').map(s=>({type:s.roomType,...rectBox(s),id:s.id}));}
-function findPlacements(w,h){
+function findPlacements(w,h,type){
   const anchors=getAnchorRects();if(!anchors.length)return[];
   const tr=getTypedRooms(),ref=tr.length?tr:anchors;
+  const sc=type?getScene():null; // when a type is given, prefer attaching to its best-adjacency neighbour
   let mx=Infinity,my=Infinity,MX=-Infinity,MY=-Infinity;
   ref.forEach(r=>{mx=Math.min(mx,r.x);my=Math.min(my,r.y);MX=Math.max(MX,r.x+r.w);MY=Math.max(MY,r.y+r.h);});
   const cx=(mx+MX)/2,cy=(my+MY)/2;
   const scan=minShare=>{
     const out=[];
     for(const room of anchors){
+      // architectural bias: a room gravitates to the existing room it most wants to be beside
+      const aw=(sc&&room.type)?((sc.adj[room.type]||{})[type]||0):0;
+      const adjBonus=aw*0.22; // weight 5 → +1.1, easily out-ranks distance/alignment
       const cfgs=[
         {x:gSnapX(room.x+room.w),y:gSnapY(room.y)},{x:gSnapX(room.x+room.w),y:gSnapY(room.y+room.h-h)},
         {x:gSnapX(room.x-w),y:gSnapY(room.y)},{x:gSnapX(room.x-w),y:gSnapY(room.y+room.h-h)},
@@ -689,7 +695,7 @@ function findPlacements(w,h){
         const align=(c.x===room.x||c.x+w===room.x+room.w||c.y===room.y||c.y+h===room.y+room.h)?0.12:0;
         const selBoost=S.selIds.has(room.id)?0.6:0; // prefer placing next to the selected room (UI only — NOT in confidence)
         const placeQ=sharedFit(room.x,room.y,room.w,room.h,c.x,c.y,w,h); // 0..1 wall-fit, feeds confidence
-        out.push({x:c.x,y:c.y,posScore:1/(1+dist/400)+align+selBoost,placeQ,attachedTo:room.id});
+        out.push({x:c.x,y:c.y,posScore:1/(1+dist/400)+align+selBoost+adjBonus,placeQ,attachedTo:room.id});
       }
     }
     return out;
@@ -718,8 +724,8 @@ function predictNextRooms(){
   for(const[type,ts]of top){
     if(res.length>=3)break;
     const{w,h}=typeRangeMid(type);
-    let pl=findPlacements(w,h),fw=w,fh=h;
-    if(!pl.length){pl=findPlacements(h,w);fw=h;fh=w;}
+    let pl=findPlacements(w,h,type),fw=w,fh=h;
+    if(!pl.length){pl=findPlacements(h,w,type);fw=h;fh=w;}
     if(!pl.length)continue;
     const best=pl[0];
     // Confidence = room-type fit (dominant) attenuated by how well this spot's wall fits.
@@ -1046,6 +1052,16 @@ function renderDims(s){
 // ─────────────────────────────────────────
 //  HANDLES
 // ─────────────────────────────────────────
+// a rotation handle: a stem rising from the bbox top-centre to a grab circle
+function rotHandleEl(sid,minX,minY,maxX,maxY,inv){
+  const g=ns('g'),cx=(minX+maxX)/2,stem=26*inv,r=6*inv,hy=minY-stem;
+  g.appendChild(ns('line',{x1:cx,y1:minY,x2:cx,y2:hy,stroke:C_SEL,'stroke-width':1.2*inv,'pointer-events':'none'}));
+  const h=ns('circle',{cx:cx,cy:hy,r:r,fill:'white',stroke:C_SEL,'stroke-width':1.5*inv,
+    class:'rot-handle','data-sid':sid,style:'cursor:grab'});
+  attachHint(h,'Rotate','⇧ snap 15°');
+  g.appendChild(h);
+  return g;
+}
 function renderHandles(s){
   if(s.type==='line'){
     const g=ns('g'),inv=1/S.zoom,hs=5.5*inv;
@@ -1123,6 +1139,7 @@ function renderHandles(s){
         S.shapes.push(nc);S.selIds=new Set([nc.id]);saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();});
       g.appendChild(pg);
     }
+    g.appendChild(rotHandleEl(s.id,minX,minY,maxX,maxY,inv));
     return g;
   }
 
@@ -1194,6 +1211,7 @@ function renderHandles(s){
     g.appendChild(pg);
   }
 
+  g.appendChild(rotHandleEl(s.id,s.x,s.y,s.x+s.w,s.y+s.h,inv));
   return g;
 }
 function renderMultiBounds(){
@@ -1920,6 +1938,19 @@ function onDown(e){
     e.preventDefault();return;
   }
   if(S.tool==='rect'){
+    // Rotation handle → free-rotate the shape about its centre
+    const rEl=e.target.closest('.rot-handle');
+    if(rEl){
+      const rsid=parseInt(rEl.dataset.sid),rs=getS(rsid);if(!rs)return;
+      if(!S.selIds.has(rsid)){S.selIds=new Set([rsid]);render();}
+      const poly0=rs.poly?rs.poly.map(p=>({x:p.x,y:p.y})):rectToPoly(rs);
+      let mnx=Infinity,mny=Infinity,mxx=-Infinity,mxy=-Infinity;
+      for(const p of poly0){mnx=Math.min(mnx,p.x);mny=Math.min(mny,p.y);mxx=Math.max(mxx,p.x);mxy=Math.max(mxy,p.y);}
+      S.rotating=true;S.rotSid=rsid;S.rotPoly0=poly0;
+      S.rotCenter={x:(mnx+mxx)/2,y:(mny+mxy)/2};
+      S.rotStart=Math.atan2(wp.y-S.rotCenter.y,wp.x-S.rotCenter.x);
+      e.preventDefault();return;
+    }
     // Resize / vertex handle (checked before edges so corners win when overlapping)
     const hEl=e.target.closest('.handle');
     if(hEl){
@@ -1968,6 +1999,16 @@ function onMove(e){
   const sp=evtSP(e),wp=s2w(sp.x,sp.y);S.curWP=wp;
   document.getElementById('s-coords').textContent=(S.sqft?pxToFt(wp.x)+', '+pxToFt(wp.y)+' ft':Math.round(wp.x)+', '+Math.round(wp.y));
   if(S.panning){S.vx=S.panView0.x+(sp.x-S.panSP.x);S.vy=S.panView0.y+(sp.y-S.panSP.y);applyView();return;}
+  if(S.rotating){
+    const c=S.rotCenter;let ang=Math.atan2(wp.y-c.y,wp.x-c.x)-S.rotStart;
+    if(e.shiftKey)ang=Math.round(ang/(Math.PI/12))*(Math.PI/12); // ⇧ → 15° steps
+    const cos=Math.cos(ang),sin=Math.sin(ang);
+    const poly=S.rotPoly0.map(p=>{const dx=p.x-c.x,dy=p.y-c.y;return{x:c.x+dx*cos-dy*sin,y:c.y+dx*sin+dy*cos};});
+    updS(S.rotSid,{poly});
+    let deg=Math.round(ang*180/Math.PI)%360;if(deg<0)deg+=360;
+    document.getElementById('s-tool').textContent='Rotate '+deg+'°';
+    render();return;
+  }
   if(S.drawing&&S.tool==='rect'){const sn=smartSnap(wp.x,wp.y);showSnap(sn);renderPreview(S.drawP0,sn);drawRulers();return;}
   if(S.lineDrawing){const sn=smartSnap(wp.x,wp.y);showSnap(sn);renderLinePreview(S.linePts,sn);drawRulers();return;}
   if(S.dragging){
@@ -2006,6 +2047,11 @@ function onMove(e){
 }
 function onUp(e){
   if(S.panning){S.panning=false;updateCursor();return;}
+  if(S.rotating){
+    S.rotating=false;S.rotSid=null;S.rotPoly0=null;S.rotCenter=null;
+    document.getElementById('s-tool').textContent='Rectangle';
+    saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();return;
+  }
   if(S.drawing&&S.tool==='rect'){
     const wp=evtWP(e),sn=smartSnap(wp.x,wp.y);
     const rx=Math.min(S.drawP0.x,sn.x),ry=Math.min(S.drawP0.y,sn.y);
@@ -2318,8 +2364,8 @@ const EXPLAIN={
   _genRoom(type){
     const sc=getScene(); if(!sc||!sc.types[type])return null;
     const {w,h}=typeRangeMid(type);
-    let pl=findPlacements(w,h),fw=w,fh=h;
-    if(!pl.length){pl=findPlacements(h,w);fw=h;fh=w;}
+    let pl=findPlacements(w,h,type),fw=w,fh=h;
+    if(!pl.length){pl=findPlacements(h,w,type);fw=h;fh=w;}
     if(!pl.length)return null;
     const best=pl[0],def=sc.types[type];
     S.shapes.push(mkRect(best.x,best.y,fw,fh,{fill:def.fill,stroke:def.stroke,roomType:type}));
