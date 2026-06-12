@@ -252,7 +252,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 <div class="topbar">
   <span class="logo">dtd2</span>
   <div class="tb-sep"></div>
-  <button class="tb-chip" id="btn-explain">Explain</button>
+  <button class="tb-chip" id="btn-explain">Demo</button>
   <button class="tb-chip" id="btn-plan">Plan</button>
   <button class="tb-chip" id="btn-ft">unit</button>
   <button class="tb-chip" id="btn-clear">Clear</button>
@@ -312,7 +312,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <div class="right">
     <span><span class="kbd">E</span> rooms</span>
     <span><span class="kbd">B</span> plan</span>
-    <span><span class="kbd">X</span> explain</span>
+    <span><span class="kbd">X</span> demo</span>
     <span><span class="kbd">T</span> unit</span>
     <span><span class="kbd">R</span> rect</span>
     <span><span class="kbd">Del</span> delete</span>
@@ -2313,6 +2313,16 @@ const EXPLAIN={
     host.innerHTML=html;
   },
 
+  // place one extra room of a given type, flush to the right of the seed room
+  _seedRoom(type){
+    const sc=getScene(); if(!sc||!sc.types[type])return;
+    const base=S.shapes.find(s=>s.type==='rect'&&s.roomType&&!s.poly);
+    const sz=typeRangeMid(type),def=sc.types[type];
+    const x=base?base.x+base.w:-sz.w/2, y=base?base.y:-sz.h/2;
+    S.shapes.push(mkRect(x,y,sz.w,sz.h,{fill:def.fill,stroke:def.stroke,roomType:type}));
+    saveH(); S.candidates=predictNextRooms(); fitScreen(); render();
+  },
+
   // ── One-click demo: auto-runs "pick scene → predict → accept → generate walls" ──
   async demo(){
     if(this.demoOn){this._abort=true;return;}
@@ -2327,7 +2337,8 @@ const EXPLAIN={
     try{
       if(!await step('<b>Step 1</b> — Pick a scene. Each scene has an adjacency-weight table that defines which rooms belong next to each other.',1300))return;
       startScene('apartment');
-      if(!await step('<b>Step 2</b> — Drop the starting room <b>Living Room</b>. The algorithm immediately predicts the most likely next room from the weight table.',1700))return;
+      this._seedRoom('bedroom');   // start the sample with a Living Room + a Bedroom
+      if(!await step('<b>Step 2</b> — Start with a <b>Living Room</b> and a <b>Bedroom</b>. The algorithm immediately predicts the most likely next room from the weight table.',1700))return;
       for(let i=0;i<4;i++){
         S.candidates=predictNextRooms();render();
         const c=S.candidates[0]; if(!c)break;
