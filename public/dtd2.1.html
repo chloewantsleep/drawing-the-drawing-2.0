@@ -1074,10 +1074,11 @@ function renderDims(s){
 // ─────────────────────────────────────────
 //  HANDLES
 // ─────────────────────────────────────────
-// a rotation handle: sits ABOVE the top-centre "+" duplicate button so they don't overlap
+// a rotation handle: sits ABOVE the orange width dimension (at minY−48, ~18px tall)
+// and the top-centre "+" button, so it overlaps neither.
 function rotHandleEl(sid,minX,minY,maxX,maxY,inv){
-  const g=ns('g'),cx=(minX+maxX)/2,r=6*inv,hy=minY-46*inv;     // clear the "+" (at −22, top ≈ −34)
-  g.appendChild(ns('line',{x1:cx,y1:minY-34*inv,x2:cx,y2:hy,stroke:C_SEL,'stroke-width':1.2*inv,'pointer-events':'none'}));
+  const g=ns('g'),cx=(minX+maxX)/2,r=6*inv,hy=minY-74*inv;     // clear the dimension (top ≈ −57)
+  g.appendChild(ns('line',{x1:cx,y1:minY-62*inv,x2:cx,y2:hy,stroke:C_SEL,'stroke-width':1.2*inv,'pointer-events':'none'})); // short stem above the dimension only
   const h=ns('circle',{cx:cx,cy:hy,r:r,fill:'white',stroke:C_SEL,'stroke-width':1.5*inv,
     class:'rot-handle','data-sid':sid,style:'cursor:grab'});
   attachHint(h,'Rotate','⇧ snap 15°');
