@@ -60,7 +60,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 .tsep{width:20px;height:1px;background:var(--border);margin:3px 0}
 
 /* ── CANVAS ── */
-.canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg)}
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg);
+  transition:margin-right .26s cubic-bezier(.3,.8,.4,1)}
 #svg{position:absolute;inset:0;width:100%;height:100%}
 
 /* ── STATUS BAR ── */
@@ -2345,7 +2346,9 @@ const EXPLAIN={
     this.open=!this.open;
     document.getElementById('explain').classList.toggle('open',this.open);
     document.getElementById('btn-explain').classList.toggle('on',this.open);
-    if(this.open){this.fetchCfg();this.refresh();}
+    cwrap.style.marginRight=this.open?'344px':''; // shrink the canvas so the panel never covers your drawing
+    if(this.open)this.fetchCfg();
+    render(); // recompute the view for the new canvas width (also refreshes this panel)
   },
   narrate(html){const n=document.getElementById('xp-narr');if(n)n.innerHTML=html;},
   async fetchCfg(){
