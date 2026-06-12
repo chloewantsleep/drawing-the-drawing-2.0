@@ -133,6 +133,23 @@ td input::placeholder{color:var(--muted-2);font-weight:400}
 .cap .vline{width:1px;height:12px;background:var(--border)}
 .title-cap{position:absolute;top:18px;left:24px;font-size:11px;color:var(--muted);font-weight:600;
   letter-spacing:.04em;text-transform:uppercase}
+
+/* ── diffusion (behind-the-scenes, runs in browser) ── */
+.diff-card{border:1px solid var(--border);border-radius:10px;padding:12px;background:#FBFBFA}
+.diff-expl{font-size:11px;color:#555;line-height:1.6;margin-bottom:11px}
+.diff-expl b{color:var(--text)}
+.diff-expl code{font-family:var(--mono);font-size:10px;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+.diff-cv{width:330px;max-width:100%;height:198px;border:1px solid var(--border);border-radius:8px;display:block;
+  background:radial-gradient(circle at 1px 1px,rgba(20,20,19,.05) 1px,transparent 0) 0 0/16px 16px,#fff}
+.diff-row{display:flex;align-items:center;gap:10px;margin-top:11px}
+.diff-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 15px;font-size:12px;
+  font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+.diff-btn:hover{filter:brightness(1.06)}
+.diff-btn:disabled{opacity:.5;cursor:default}
+.diff-noise{flex:1;height:6px;border-radius:4px;background:#EDEDEA;overflow:hidden}
+.diff-noise i{display:block;height:100%;background:linear-gradient(90deg,#1D6AF5,#7C3AED);border-radius:4px;transition:width .04s linear}
+.diff-read{font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap;min-width:108px;text-align:right}
+.diff-read b{color:var(--text)}
 </style>
 </head>
 <body>
@@ -242,6 +259,9 @@ function buildPanel(){
     'normalized against the strongest. The app then multiplies it by a geometric <b>wall fit</b> for the on-canvas %.'+
     '<code>confidence = type fit × (0.6 + 0.4 × wall fit)</code>';
   p.appendChild(note);
+
+  // ── diffusion: behind-the-scenes, runs the real model in the browser ──
+  buildDiffusion(p);
 }
 
 function sec(title){
@@ -419,6 +439,98 @@ function drawPlan(runs){
       ctx.stroke();ctx.setLineDash([]);
     }else seg(0,len);
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  DIFFUSION (behind the scenes) — the real trained DDPM, in JS
+//  Loads model.json (exported from diffusion/diffuse.py) and runs the
+//  reverse denoising process live, so you watch noise become a layout.
+// ─────────────────────────────────────────────────────────────
+const DIFF={model:null,playing:false};
+const D_COL={living:'#2563EB',bedroom:'#16A34A',bathroom:'#DC2626',kitchen:'#CA8A04'};
+const D_FILL={living:'#DBEAFE',bedroom:'#DCFCE7',bathroom:'#FEE2E2',kitchen:'#FEF9C3'};
+const D_AB={living:'Liv',bedroom:'Bed',bathroom:'Bath',kitchen:'Kit'};
+
+const _silu=x=>x/(1+Math.exp(-x));
+function _lin(x,W,b){const o=new Array(W.length);for(let r=0;r<W.length;r++){let s=b[r];const Wr=W[r];for(let i=0;i<x.length;i++)s+=Wr[i]*x[i];o[r]=s;}return o;}
+function _temb(t,n){const half=n/2,o=new Array(n);for(let k=0;k<half;k++){const f=Math.exp(-Math.log(10000)*k/half),a=t*f;o[k]=Math.sin(a);o[half+k]=Math.cos(a);}return o;}
+function _denoise(x,t,M){let h=_lin(x.concat(_temb(t,M.temb)),M.w0,M.b0).map(_silu);h=_lin(h,M.w2,M.b2).map(_silu);return _lin(h,M.w4,M.b4);}
+function _randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+async function diffLoadModel(){if(DIFF.model)return DIFF.model;const r=await fetch('/diffusion/model.json');DIFF.model=await r.json();return DIFF.model;}
+// ancestral DDPM sampling — returns the trajectory so we can animate it
+function diffTrajectory(M){
+  const T=M.T,b=M.betas,al=b.map(x=>1-x),abar=[];let acc=1;
+  for(let i=0;i<T;i++){acc*=al[i];abar.push(acc);}
+  let x=Array.from({length:M.dim},()=>_randn());
+  const traj=[{x:x.slice(),t:T}];
+  for(let t=T-1;t>=0;t--){
+    const eps=_denoise(x,t,M);
+    const mean=x.map((xi,i)=>(xi-b[t]/Math.sqrt(1-abar[t])*eps[i])/Math.sqrt(al[t]));
+    x=mean.map(mi=>mi+(t>0?Math.sqrt(b[t])*_randn():0));
+    traj.push({x:x.slice(),t});
+  }
+  return traj;
+}
+// snap final centres into a clean wall-sharing 2x2 plan (same rule as the viewer)
+function diffRefine(rooms){
+  const quad=r=>(r.cx>=0?1:0)+(r.cy>=0?2:0),qcol=[0,1,0,1],qrow=[0,0,1,1],slot=[null,null,null,null];
+  const order=[...rooms.keys()].sort((a,b)=>Math.hypot(rooms[a].cx,rooms[a].cy)-Math.hypot(rooms[b].cx,rooms[b].cy));
+  for(const i of order){let q=quad(rooms[i]);if(slot[q]!=null){const free=[0,1,2,3].filter(k=>slot[k]==null);free.sort((a,b)=>(Math.abs(qcol[a]-qcol[q])+Math.abs(qrow[a]-qrow[q]))-(Math.abs(qcol[b]-qcol[q])+Math.abs(qrow[b]-qrow[q])));q=free[0];}slot[q]=i;}
+  const R=q=>rooms[slot[q]];
+  const colW=[Math.max(R(0).w,R(2).w),Math.max(R(1).w,R(3).w)],rowH=[Math.max(R(0).h,R(1).h),Math.max(R(2).h,R(3).h)];
+  const cx=[0,colW[0]],cy=[0,rowH[0]],tW=colW[0]+colW[1],tH=rowH[0]+rowH[1];
+  return [0,1,2,3].map(q=>({type:R(q).type,x:cx[qcol[q]]-tW/2,y:cy[qrow[q]]-tH/2,w:colW[qcol[q]],h:rowH[qrow[q]]}));
+}
+function diffMap(cv){const W=cv.width,H=cv.height,pad=24,R=2.7,s=Math.min((W-2*pad)/(2*R),(H-2*pad)/(2*R));return{X:x=>W/2+x*s,Y:y=>H/2+y*s,s};}
+function diffIdle(cv){const c=cv.getContext('2d');c.clearRect(0,0,cv.width,cv.height);c.fillStyle='#B6B6B0';c.font='12px -apple-system,system-ui';c.textAlign='center';c.fillText('press Sample to run the diffusion model',cv.width/2,cv.height/2);}
+function diffDraw(cv,centers,plan){
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+  const {X,Y,s}=diffMap(cv);
+  if(plan)for(const r of plan){ctx.globalAlpha=.85;ctx.fillStyle=D_FILL[r.type]||'#eee';ctx.strokeStyle=D_COL[r.type]||'#999';ctx.lineWidth=2;
+    ctx.fillRect(X(r.x),Y(r.y),r.w*s,r.h*s);ctx.strokeRect(X(r.x),Y(r.y),r.w*s,r.h*s);ctx.globalAlpha=1;
+    ctx.fillStyle=D_COL[r.type];ctx.font='bold 9px -apple-system';ctx.textAlign='center';ctx.fillText(D_AB[r.type],X(r.x+r.w/2),Y(r.y+r.h/2)+3);}
+  for(const c of centers){ctx.beginPath();ctx.arc(X(c.cx),Y(c.cy),5.5,0,2*Math.PI);ctx.fillStyle=D_COL[c.type]||'#999';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();}
+}
+async function diffSample(cv){
+  const M=DIFF.model;if(!M||DIFF.playing)return;
+  DIFF.playing=true;const go=$('diff-go');go.disabled=true;go.textContent='sampling…';
+  const traj=diffTrajectory(M),T=M.T;
+  const centersOf=x=>{const c=[];for(let i=0;i<M.dim;i+=2)c.push({type:M.types[i/2],cx:x[i],cy:x[i+1]});return c;};
+  for(let k=0;k<traj.length;k++){
+    const {x,t}=traj[k];diffDraw(cv,centersOf(x),null);
+    const noise=Math.max(0,t/T),nb=$('diff-noise'),rd=$('diff-read');
+    if(nb)nb.style.width=(noise*100)+'%';
+    if(rd)rd.innerHTML='step <b>'+(T-t)+'/'+T+'</b> · noise <b>'+Math.round(noise*100)+'%</b>';
+    await new Promise(r=>setTimeout(r,36));
+  }
+  // refine the denoised centres into a clean plan
+  const last=traj[traj.length-1].x,rooms=[];
+  for(let i=0;i<M.dim;i+=2){const ty=M.types[i/2];rooms.push({type:ty,cx:last[i],cy:last[i+1],w:M.size[ty][0],h:M.size[ty][1]});}
+  diffDraw(cv,centersOf(last),diffRefine(rooms));
+  const rd=$('diff-read');if(rd)rd.innerHTML='<b>done</b> · rules refined it into a plan';
+  go.disabled=false;go.textContent='▶ Sample again';DIFF.playing=false;
+}
+function buildDiffusion(p){
+  p.appendChild(secTag('Diffusion · generative','runs in your browser'));
+  const card=document.createElement('div');card.className='diff-card';
+  card.innerHTML=
+    '<div class="diff-expl">A real diffusion model (DDPM) runs right here — no server. '+
+      '<b>Forward:</b> training corrupts a clean apartment into pure noise, step by step. '+
+      '<b>Reverse:</b> a 22,792-param network learns to undo it, predicting the noise to subtract '+
+      '<code>x = (x − β·ε̂) / √α</code> — turning 4 random dots back into 4 room centres. '+
+      'The rules then snap those centres into a wall-sharing plan.</div>'+
+    '<canvas class="diff-cv" id="diff-cv" width="330" height="198"></canvas>'+
+    '<div class="diff-row">'+
+      '<button class="diff-btn" id="diff-go" disabled>loading model…</button>'+
+      '<div class="diff-noise"><i id="diff-noise" style="width:100%"></i></div>'+
+      '<div class="diff-read" id="diff-read">noise <b>100%</b></div>'+
+    '</div>';
+  p.appendChild(card);
+  const cv=card.querySelector('#diff-cv');diffIdle(cv);
+  diffLoadModel().then(()=>{const go=$('diff-go');if(go){go.disabled=false;go.textContent='▶ Sample';}})
+    .catch(()=>{const go=$('diff-go');if(go)go.textContent='model.json missing — run diffuse.py';});
+  card.querySelector('#diff-go').onclick=()=>diffSample(cv);
 }
 
 $('save').onclick=async()=>{
