@@ -483,10 +483,8 @@ const spawnedIds=new Set(); // shape ids whose spawn animation has already playe
 // ─────────────────────────────────────────
 //  OPERATION HINT  (the little pill that explains what you're doing)
 // ─────────────────────────────────────────
-function showHint(text,sx,sy,sub){
-  opHint.innerHTML=text+(sub?`<span class="oh-sub">${sub}</span>`:'');
-  opHint.style.left=sx+'px';opHint.style.top=(sy+16)+'px';opHint.style.display='block';
-}
+// Hover/operation hint pill disabled — kept as no-ops so call sites stay intact.
+function showHint(text,sx,sy,sub){}
 function hideHint(){opHint.style.display='none';}
 function attachHint(el,text,sub){
   el.addEventListener('mouseenter',ev=>{if(!S.resizing&&!S.dragging){const r=cwrap.getBoundingClientRect();showHint(text,ev.clientX-r.left,ev.clientY-r.top,sub);}});
