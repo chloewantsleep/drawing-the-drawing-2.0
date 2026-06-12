@@ -182,10 +182,28 @@ td input::placeholder{color:var(--muted-2);font-weight:400}
 .diff-noise i{display:block;height:100%;background:linear-gradient(90deg,#1D6AF5,#7C3AED);border-radius:4px;transition:width .04s linear}
 .diff-read{font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap;min-width:108px;text-align:right}
 .diff-read b{color:var(--text)}
+.icon-btn{border:1px solid var(--border);background:var(--panel);border-radius:7px;width:28px;height:28px;
+  font-size:15px;line-height:1;color:var(--muted);cursor:pointer;transition:.15s;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center}
+.icon-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+/* collapsed panel */
+body.panel-hidden .panel,body.panel-hidden .panel-resizer{display:none}
+#panel-toggle{margin-right:4px}
+/* diffusion explanatory header + legend (from the old viewer) */
+.diff-head p{font-size:12px;color:#555;line-height:1.6;max-width:660px}
+.diff-head p b{color:var(--text)}
+.diff-legend{display:flex;gap:13px;flex-wrap:wrap;margin-top:9px}
+.diff-legend span{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:550}
+.diff-legend .sw{width:12px;height:12px;border-radius:3px;border:1.5px solid}
+/* fullscreen overlay for the gallery */
+.diff-wrap.fs{position:fixed;inset:0;z-index:1000;width:100%;max-width:100%;background:#FBFBFA;
+  padding:22px 26px;overflow:auto;margin:0;gap:16px}
+.diff-wrap.fs .diff-gallery{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
 </style>
 </head>
 <body>
 <header class="top">
+  <button class="icon-btn" id="panel-toggle" title="Hide / show panel">‹</button>
   <div class="brand">
     <div class="logo">d<b>td</b>2</div>
     <div class="sub">plan tuner</div>
@@ -208,6 +226,14 @@ td input::placeholder{color:var(--muted-2);font-weight:400}
       <div class="cap" id="cap">live preview · applies to the app on Save</div>
     </div>
     <div class="diff-wrap" id="diff-wrap" style="display:none">
+      <div class="diff-head">
+        <p>A tiny <b>diffusion model</b> (DDPM) was trained on layouts the project's adjacency rules
+           produced, then asked to dream up new ones from pure noise. It learns only <b>where each room
+           wants to sit</b> — on its own it outputs floating room centres (<b>Raw</b>). Feeding those into
+           the rule-based placement snaps them into a clean, wall-sharing plan (<b>Refined</b>).
+           <b>The model proposes the arrangement; the rules render it.</b></p>
+        <div class="diff-legend" id="diff-legend"></div>
+      </div>
       <div class="diff-ctrl" id="diff-ctrl">
         <button class="diff-btn" id="diff-go" disabled>loading model…</button>
         <div class="seg sm" id="rawref">
@@ -216,6 +242,7 @@ td input::placeholder{color:var(--muted-2);font-weight:400}
         </div>
         <div class="diff-noise"><i id="diff-noise" style="width:100%"></i></div>
         <div class="diff-read" id="diff-read">12 samples</div>
+        <button class="icon-btn" id="diff-fs" title="Fullscreen">⤢</button>
       </div>
       <div class="diff-gallery" id="diff-gallery"></div>
     </div>
@@ -546,7 +573,7 @@ function buildGallery(){
   const g=$('diff-gallery');g.innerHTML='';GAL.tiles=[];
   for(let i=0;i<GAL.N;i++){
     const d=document.createElement('div');d.className='diff-tile';d.innerHTML='<div class="nn">#'+(i+1)+'</div>';
-    const cv=document.createElement('canvas');cv.width=150;cv.height=128;
+    const cv=document.createElement('canvas');cv.width=240;cv.height=200;
     d.appendChild(cv);g.appendChild(d);GAL.tiles.push(cv);
   }
 }
@@ -592,6 +619,30 @@ $('diff-go').onclick=()=>diffSampleAll();
 diffLoadModel().then(()=>{const go=$('diff-go');if(go){go.disabled=false;go.textContent='▶ Sample all';}
   if(MODE==='diffusional'&&!GAL.finals.length&&!GAL.playing)diffSampleAll();})
   .catch(()=>{const go=$('diff-go');if(go)go.textContent='model.json missing — run diffuse.py';});
+
+// legend (room colours) — brought back from the old viewer
+(function buildLegend(){
+  const NAME={living:'Living',bedroom:'Bedroom',bathroom:'Bathroom',kitchen:'Kitchen'};
+  const lg=$('diff-legend');if(!lg)return;
+  for(const t of ['living','bedroom','bathroom','kitchen'])
+    lg.insertAdjacentHTML('beforeend',`<span><span class="sw" style="background:${D_FILL[t]};border-color:${D_COL[t]}"></span>${NAME[t]}</span>`);
+})();
+
+// fullscreen toggle for the diffusion gallery
+$('diff-fs').onclick=()=>{
+  const w=$('diff-wrap'),fs=w.classList.toggle('fs');
+  $('diff-fs').textContent=fs?'⤡':'⤢';$('diff-fs').title=fs?'Exit fullscreen':'Fullscreen';
+};
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('diff-wrap').classList.contains('fs')){
+  $('diff-wrap').classList.remove('fs');$('diff-fs').textContent='⤢';}});
+
+// collapse / expand the left panel
+$('panel-toggle').onclick=()=>{
+  const hidden=document.body.classList.toggle('panel-hidden');
+  $('panel-toggle').textContent=hidden?'›':'‹';
+  $('panel-toggle').title=hidden?'Show panel':'Hide panel';
+  if(MODE==='procedural')preview();   // canvas got wider/narrower
+};
 
 // ── draggable left-panel width ──
 (function(){
