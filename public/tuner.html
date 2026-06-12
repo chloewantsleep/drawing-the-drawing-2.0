@@ -54,17 +54,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 .panel-resizer:hover::after,.panel-resizer.drag::after{background:var(--accent)}
 .panel::-webkit-scrollbar{width:9px}
 .panel::-webkit-scrollbar-thumb{background:#E2E1DC;border-radius:8px;border:2px solid var(--panel)}
-.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;position:relative;
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;position:relative;
+  padding:50px 16px 24px;overflow-y:auto;
   background:
     radial-gradient(circle at 1px 1px,rgba(20,20,19,.05) 1px,transparent 0) 0 0/22px 22px,
     linear-gradient(180deg,#FCFCFB,#F4F4F2)}
-.approach-seg{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:3px;
-  gap:2px;box-shadow:var(--sh-sm)}
-.approach-seg button{border:none;background:none;border-radius:7px;padding:7px 18px;font-size:12.5px;font-weight:600;
-  cursor:pointer;color:var(--muted);transition:.15s;display:flex;align-items:center;gap:7px;letter-spacing:-.1px}
+.canvas-card,.diff-wrap{margin:auto 0}   /* centre vertically when they fit, scroll from top when tall */
+/* compact, floats top-left so it doesn't steal vertical space from the display */
+.approach-seg{position:absolute;top:10px;left:12px;z-index:5;display:flex;background:var(--panel);
+  border:1px solid var(--border);border-radius:8px;padding:2px;gap:2px;box-shadow:var(--sh-sm)}
+.approach-seg button{border:none;background:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;
+  cursor:pointer;color:var(--muted);transition:.15s;display:flex;align-items:center;gap:5px;letter-spacing:-.1px}
 .approach-seg button:hover{color:var(--text)}
 .approach-seg button.on{background:var(--accent-soft);color:var(--accent)}
-.approach-seg .d{width:8px;height:8px;border-radius:50%}
+.approach-seg .d{width:7px;height:7px;border-radius:50%}
 .approach-seg .d.proc{background:#16A34A}.approach-seg .d.diff{background:#7C3AED}
 .diff-wrap{display:flex;flex-direction:column;gap:14px;width:660px;max-width:92%}
 .diff-ctrl{display:flex;align-items:center;gap:12px}
@@ -186,9 +189,15 @@ td input::placeholder{color:var(--muted-2);font-weight:400}
   font-size:15px;line-height:1;color:var(--muted);cursor:pointer;transition:.15s;flex-shrink:0;
   display:flex;align-items:center;justify-content:center}
 .icon-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
-/* collapsed panel */
-body.panel-hidden .panel,body.panel-hidden .panel-resizer{display:none}
-#panel-toggle{margin-right:4px}
+/* collapse toggle — a small tab on the panel divider */
+.panel-toggle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:7;
+  width:18px;height:42px;border:1px solid var(--border);background:var(--panel);border-radius:6px;
+  font-size:12px;line-height:1;color:var(--muted);cursor:pointer;box-shadow:var(--sh-sm);
+  display:flex;align-items:center;justify-content:center;transition:.15s;padding:0}
+.panel-toggle:hover{color:var(--accent);border-color:var(--accent)}
+/* collapsed panel — hide the panel, keep the thin resizer as the expand tab */
+body.panel-hidden .panel{display:none}
+body.panel-hidden .panel-resizer{cursor:pointer}
 /* diffusion explanatory header + legend (from the old viewer) */
 .diff-head p{font-size:12px;color:#555;line-height:1.6;max-width:660px}
 .diff-head p b{color:var(--text)}
@@ -203,7 +212,6 @@ body.panel-hidden .panel,body.panel-hidden .panel-resizer{display:none}
 </head>
 <body>
 <header class="top">
-  <button class="icon-btn" id="panel-toggle" title="Hide / show panel">‹</button>
   <div class="brand">
     <div class="logo">d<b>td</b>2</div>
     <div class="sub">plan tuner</div>
@@ -215,7 +223,9 @@ body.panel-hidden .panel,body.panel-hidden .panel-resizer{display:none}
 </header>
 <div class="main">
   <aside class="panel" id="panel"></aside>
-  <div class="panel-resizer" id="panel-resizer" title="Drag to resize"></div>
+  <div class="panel-resizer" id="panel-resizer" title="Drag to resize">
+    <button class="panel-toggle" id="panel-toggle" title="Hide / show panel">‹</button>
+  </div>
   <section class="stage">
     <div class="approach-seg" id="mode-sel">
       <button data-m="procedural" class="on"><span class="d proc"></span>Procedural</button>
@@ -241,7 +251,7 @@ body.panel-hidden .panel,body.panel-hidden .panel-resizer{display:none}
           <button data-v="raw">Raw centres</button>
         </div>
         <div class="diff-noise"><i id="diff-noise" style="width:100%"></i></div>
-        <div class="diff-read" id="diff-read">12 samples</div>
+        <div class="diff-read" id="diff-read">24 samples</div>
         <button class="icon-btn" id="diff-fs" title="Fullscreen">⤢</button>
       </div>
       <div class="diff-gallery" id="diff-gallery"></div>
@@ -568,7 +578,7 @@ const _roomsOf=(x,M)=>{const r=[];for(let i=0;i<M.dim;i+=2){const ty=M.types[i/2
 const _rawPlan=rooms=>rooms.map(r=>({type:r.type,x:r.cx-r.w/2,y:r.cy-r.h/2,w:r.w,h:r.h}));
 
 // ── gallery: N samples, all animating their own diffusion at the same time ──
-const GAL={tiles:[],N:12,finals:[],playing:false};
+const GAL={tiles:[],N:24,finals:[],playing:false};
 function buildGallery(){
   const g=$('diff-gallery');g.innerHTML='';GAL.tiles=[];
   for(let i=0;i<GAL.N;i++){
@@ -636,23 +646,21 @@ $('diff-fs').onclick=()=>{
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('diff-wrap').classList.contains('fs')){
   $('diff-wrap').classList.remove('fs');$('diff-fs').textContent='⤢';}});
 
-// collapse / expand the left panel
-$('panel-toggle').onclick=()=>{
-  const hidden=document.body.classList.toggle('panel-hidden');
-  $('panel-toggle').textContent=hidden?'›':'‹';
-  $('panel-toggle').title=hidden?'Show panel':'Hide panel';
-  if(MODE==='procedural')preview();   // canvas got wider/narrower
-};
-
-// ── draggable left-panel width ──
+// ── draggable left-panel width + collapse toggle ──
 (function(){
-  const rz=$('panel-resizer'),pn=$('panel');let drag=false;
-  rz.addEventListener('mousedown',e=>{drag=true;rz.classList.add('drag');
+  const rz=$('panel-resizer'),pn=$('panel'),tg=$('panel-toggle');let drag=false;
+  rz.addEventListener('mousedown',e=>{
+    if(e.target===tg||document.body.classList.contains('panel-hidden'))return; // not on the button / when collapsed
+    drag=true;rz.classList.add('drag');
     document.body.style.cursor='col-resize';document.body.style.userSelect='none';e.preventDefault();});
   window.addEventListener('mousemove',e=>{if(!drag)return;
     const w=Math.max(280,Math.min(680,e.clientX-pn.getBoundingClientRect().left));pn.style.width=w+'px';});
   window.addEventListener('mouseup',()=>{if(!drag)return;drag=false;rz.classList.remove('drag');
     document.body.style.cursor='';document.body.style.userSelect='';});
+  tg.onclick=e=>{e.stopPropagation();
+    const hidden=document.body.classList.toggle('panel-hidden');
+    tg.textContent=hidden?'›':'‹';tg.title=hidden?'Show panel':'Hide panel';
+    if(MODE==='procedural')preview();};
 })();
 
 $('save').onclick=async()=>{
