@@ -208,6 +208,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #floatpal.show{display:flex}
 .fp-chip{width:22px;height:22px;border-radius:6px;cursor:pointer;transition:transform .1s;padding:0}
 .fp-chip:hover{transform:scale(1.14)}
+/* ── TYPE-TO-GENERATE box ── */
+#type-box{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:650;display:none;
+  background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-lg);
+  padding:11px 13px;width:480px;max-width:92%;animation:ctxIn .12s cubic-bezier(.2,.8,.4,1)}
+#type-box.show{display:block}
+#type-inp{width:100%;border:none;outline:none;font-size:14px;padding:3px 2px;background:none;color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif}
+#type-box .ty-hint{display:flex;justify-content:space-between;align-items:center;
+  font-size:10.5px;color:var(--muted);margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
+#type-box .ty-hint b{color:var(--text);font-weight:600}
+#type-box .ty-ex{cursor:pointer;color:var(--accent);font-weight:600}
+#type-box .ty-ex:hover{text-decoration:underline}
 .dim-hot{cursor:text}
 .dim-hot:hover .dim-bg{fill:#FFF3E0}
 .dim-hot:hover .dim-lbl{fill:#BF4A1E;text-decoration:underline;
@@ -270,6 +282,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 <div class="topbar">
   <span class="logo">dtd2</span>
   <div class="tb-sep"></div>
+  <button class="tb-chip" id="btn-type">Type</button>
   <button class="tb-chip" id="btn-explain">Demo</button>
   <button class="tb-chip" id="btn-gen">Generate</button>
   <button class="tb-chip" id="btn-plan">Plan</button>
@@ -300,6 +313,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <div id="ctx"></div>
   <div id="floatbar"></div>
   <div id="floatpal"></div>
+  <div id="type-box">
+    <input id="type-inp" type="text" autocomplete="off" spellcheck="false"
+      placeholder="Type a program — e.g. living, kitchen, 2 bedroom, bathroom, corridor"/>
+    <div class="ty-hint"><span id="ty-status"><b>Enter</b> to generate · <b>Esc</b> to close</span>
+      <span class="ty-ex" id="ty-ex">try an example</span></div>
+  </div>
   <div id="op-hint"></div>
   <div id="pred-detail"></div>
   <div id="dim-overlay"><input id="dim-inp" type="text" autocomplete="off" spellcheck="false"/></div>
@@ -2494,6 +2513,98 @@ const EXPLAIN={
 document.getElementById('btn-explain').addEventListener('click',()=>EXPLAIN.toggle());
 document.getElementById('btn-xp-close').addEventListener('click',()=>EXPLAIN.toggle());
 document.getElementById('btn-xp-demo').addEventListener('click',()=>EXPLAIN.demo());
+
+// ─────────────────────────────────────────
+//  TYPE TO GENERATE — type a program ("living, kitchen, 2 bedroom") and the
+//  adjacency-aware placement engine lays the rooms out. No API, fully offline.
+// ─────────────────────────────────────────
+const TY_SYN={bed:'bedroom',bedroom:'bedroom',br:'bedroom',master:'bedroom',
+  bath:'bathroom',bathroom:'bathroom',toilet:'bathroom',wc:'bathroom',washroom:'restroom',restroom:'restroom',
+  living:'living',livingroom:'living',lounge:'living',family:'living',
+  kitchen:'kitchen',dining:'dining',diningroom:'dining',diner:'dining',
+  hall:'corridor',hallway:'corridor',corridor:'corridor',study:'study',office:'study',balcony:'balcony',
+  reception:'reception',lobby:'reception',waiting:'waiting',exam:'exam',consult:'consult',
+  nurse:'nurse',lab:'lab',laboratory:'lab',imaging:'imaging',xray:'imaging',
+  entrance:'entrance',atrium:'atrium',retail:'retail',shop:'retail',store:'retail',anchor:'anchor',
+  foodcourt:'foodcourt',food:'foodcourt',cinema:'cinema',theater:'cinema',storage:'storage'};
+const W2N={one:1,two:2,three:3,four:4,five:5,six:6};
+function tyMatch(tk,sc){
+  if(!tk)return null;
+  if(sc.types[tk])return tk;
+  for(const k of Object.keys(sc.types)){
+    if(k.startsWith(tk)||tk.startsWith(k))return k;
+    const nm=sc.types[k].name.toLowerCase();
+    if(nm===tk||nm.split(/\s+/).includes(tk))return k;
+  }
+  const s=TY_SYN[tk];if(s&&sc.types[s])return s;
+  return null;
+}
+function tyParse(text,sc){
+  const toks=text.toLowerCase().replace(/[,/]+/g,' ').split(/\s+/).filter(Boolean);
+  const out=[];let pending=1;
+  for(let tk of toks){
+    let m=tk.match(/^(\d+)x?$/)||tk.match(/^x(\d+)$/);
+    if(m){pending=Math.min(+m[1],16);continue;}
+    if(W2N[tk]){pending=W2N[tk];continue;}
+    let cnt=pending,m2=tk.match(/^(.+?)x(\d+)$/);if(m2){tk=m2[1];cnt=Math.min(+m2[2],16);}
+    const type=tyMatch(tk,sc);
+    if(type)for(let k=0;k<cnt;k++)out.push(type);
+    pending=1;
+  }
+  return out;
+}
+function tyInferScene(text){
+  const toks=text.toLowerCase().replace(/[,/]+/g,' ').split(/\s+/).filter(Boolean);
+  let best='apartment',bestN=-1;
+  for(const key of Object.keys(SCENES)){const sc=SCENES[key];let n=0;
+    for(const t of toks)if(tyMatch(t,sc))n++;
+    if(n>bestN){bestN=n;best=key;}}
+  return best;
+}
+function tyPlace(type,sc){
+  const def=sc.types[type],m=typeRangeMid(type);
+  if(!S.shapes.some(s=>s.type==='rect')){
+    S.shapes.push(mkRect(-m.w/2,-m.h/2,m.w,m.h,{fill:def.fill,stroke:def.stroke,roomType:type}));return;
+  }
+  let pl=findPlacements(m.w,m.h,type),fw=m.w,fh=m.h;
+  if(!pl.length){pl=findPlacements(m.h,m.w,type);fw=m.h;fh=m.w;}
+  if(pl.length){const b=pl[0];S.shapes.push(mkRect(b.x,b.y,fw,fh,{fill:def.fill,stroke:def.stroke,roomType:type}));return;}
+  // no shared-edge spot — drop it flush-right of the last room
+  const last=S.shapes.filter(s=>s.type==='rect').pop();
+  S.shapes.push(mkRect(last.x+(last.w||100)+GRID,last.y,m.w,m.h,{fill:def.fill,stroke:def.stroke,roomType:type}));
+}
+function typeGenerate(text){
+  const key=S.sceneKey||tyInferScene(text)||'apartment',sc=SCENES[key];
+  const program=tyParse(text,sc);
+  const st=document.getElementById('ty-status');
+  if(!program.length){st.innerHTML='No rooms recognized — try names like <b>living, kitchen, bedroom</b>';return;}
+  S.sceneKey=key;S.shapes=[];S.selIds=new Set();S.predHidden=true;
+  for(const type of program)tyPlace(type,sc);
+  saveH();S.candidates=predictNextRooms();fitScreen();render();if(S.archOn)fetchArch();
+  const names=[...new Set(program)].map(t=>sc.types[t].name).join(', ');
+  st.innerHTML=`Generated <b>${program.length}</b> rooms (${SCENES[key].name}) · ${names}`;
+}
+function openTypeBox(){
+  const box=document.getElementById('type-box');box.classList.add('show');
+  document.getElementById('btn-type').classList.add('on');
+  const inp=document.getElementById('type-inp');inp.focus();inp.select();
+}
+function closeTypeBox(){
+  document.getElementById('type-box').classList.remove('show');
+  document.getElementById('btn-type').classList.remove('on');
+}
+document.getElementById('btn-type').addEventListener('click',()=>{
+  document.getElementById('type-box').classList.contains('show')?closeTypeBox():openTypeBox();
+});
+document.getElementById('type-inp').addEventListener('keydown',e=>{
+  e.stopPropagation();
+  if(e.key==='Enter'){typeGenerate(e.target.value);}
+  else if(e.key==='Escape'){closeTypeBox();}
+});
+document.getElementById('ty-ex').addEventListener('click',()=>{
+  const inp=document.getElementById('type-inp');
+  inp.value='living, kitchen, dining, 2 bedroom, bathroom, corridor';inp.focus();
+});
 
 // ─────────────────────────────────────────
 //  GENERATE (diffusion) — run the trained DDPM, drop a refined apartment
