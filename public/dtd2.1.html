@@ -286,7 +286,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <button class="tb-chip" id="btn-explain">Demo</button>
   <button class="tb-chip" id="btn-gen">Generate</button>
   <button class="tb-chip" id="btn-plan">Plan</button>
-  <button class="tb-chip" id="btn-ft">unit</button>
   <button class="tb-chip" id="btn-clear">Clear</button>
 </div>
 
@@ -426,6 +425,23 @@ const SCENES={
     cinema:{corridor:4,atrium:3,restroom:3,retail:2},
     storage:{retail:4,corridor:3,anchor:3,restroom:2},
   },maxCount:{entrance:1,atrium:2,cinema:2,foodcourt:2,anchor:3,corridor:null,retail:null,restroom:null,storage:null}},
+  facade:{name:'Facade',startType:'entrance',types:{
+    entrance: {name:'Entrance',  fill:'#E5E7EB',stroke:'#374151',wRange:[60,90],  hRange:[120,150]},
+    window:   {name:'Window',    fill:'#DBEAFE',stroke:'#2563EB',wRange:[60,90],  hRange:[100,140]},
+    shopfront:{name:'Shopfront', fill:'#CCFBF1',stroke:'#0D9488',wRange:[160,260],hRange:[120,150]},
+    balcony:  {name:'Balcony',   fill:'#FCE7F3',stroke:'#DB2777',wRange:[120,200],hRange:[40,60]},
+    spandrel: {name:'Spandrel',  fill:'#FEF9C3',stroke:'#CA8A04',wRange:[60,90],  hRange:[40,70]},
+    cornice:  {name:'Cornice',   fill:'#FDE68A',stroke:'#92400E',wRange:[280,440],hRange:[26,40]},
+    pier:     {name:'Pier',      fill:'#F3F4F6',stroke:'#6B7280',wRange:[40,60],  hRange:[160,280]},
+  },adj:{
+    entrance:{shopfront:4,window:2,pier:2},
+    window:{window:5,spandrel:4,balcony:3,cornice:3,pier:2,shopfront:1},
+    shopfront:{entrance:4,window:2,pier:2},
+    balcony:{window:4,balcony:2,spandrel:2},
+    spandrel:{window:4,spandrel:2,pier:2},
+    cornice:{window:3,pier:2},
+    pier:{window:2,shopfront:2,entrance:2,cornice:2},
+  },maxCount:{entrance:1,shopfront:2,cornice:2,window:null,balcony:null,spandrel:null,pier:null}},
 };
 const CAND_COLORS=['#E05C2B','#0EA5E9','#7C3AED'];
 // Generic color palette (used to recolor rects when no scene is active)
@@ -460,7 +476,7 @@ const S={
   panning:false,panSP:null,panView0:null,spaceDown:false,
   selBoxing:false,sbSP0:null,sbSP1:null,
   vx:0,vy:0,zoom:1,
-  snapOn:false,gridOn:true,sqft:false,   // snapping removed — free placement
+  snapOn:false,gridOn:true,sqft:true,    // default unit = ft; room-to-room snap on drag
   clip:[],curWP:{x:0,y:0},
   hist:[],histIdx:-1,
   sceneKey:null,candidates:[],hovCand:null,
@@ -1412,6 +1428,7 @@ function openRadialDisc(sx,sy){
       {label:'Apartment',color:'#2563EB',fill:'#DBEAFE',conf:null,action:()=>startScene('apartment')},
       {label:'Healthcare',color:'#16A34A',fill:'#DCFCE7',conf:null,action:()=>startScene('healthcare')},
       {label:'Mall',     color:'#CA8A04',fill:'#FEF9C3',conf:null,action:()=>startScene('mall')},
+      {label:'Facade',   color:'#374151',fill:'#E5E7EB',conf:null,action:()=>startScene('facade')},
     ];
     document.getElementById('rd-center').textContent='Scene';
     document.getElementById('rd-center').style.fontSize='9px';
@@ -2086,6 +2103,26 @@ function onDown(e){
     e.preventDefault();return;
   }
 }
+// While dragging a room, snap its edges flush/aligned to nearby rooms (returns adjusted dx,dy)
+function dragSnap(dx,dy){
+  const th=11/S.zoom,NEAR=90;
+  let L=Infinity,T=Infinity,R=-Infinity,B=-Infinity,has=false;
+  for(const[,o]of S.dragShapes0){if(o.type!=='rect')continue;has=true;const b=rectBox(o);
+    L=Math.min(L,b.x);T=Math.min(T,b.y);R=Math.max(R,b.x+b.w);B=Math.max(B,b.y+b.h);}
+  if(!has)return{dx,dy};
+  const others=S.shapes.filter(s=>s.type==='rect'&&!S.selIds.has(s.id));
+  if(!others.length)return{dx,dy};
+  const mL=L+dx,mR=R+dx,mT=T+dy,mB=B+dy;
+  let bx=null,bdx=th,by=null,bdy=th;
+  for(const s of others){const b=rectBox(s),sL=b.x,sR=b.x+b.w,sT=b.y,sB=b.y+b.h;
+    const yNear=mB>sT-NEAR&&mT<sB+NEAR, xNear=mR>sL-NEAR&&mL<sR+NEAR;
+    if(yNear)for(const[m,t,adj]of[[mL,sL,sL-L],[mL,sR,sR-L],[mR,sL,sL-R],[mR,sR,sR-R]]){
+      const d=Math.abs(m-t);if(d<bdx){bdx=d;bx=adj;}}
+    if(xNear)for(const[m,t,adj]of[[mT,sT,sT-T],[mT,sB,sB-T],[mB,sT,sT-B],[mB,sB,sB-B]]){
+      const d=Math.abs(m-t);if(d<bdy){bdy=d;by=adj;}}
+  }
+  return{dx:bx!=null?bx:dx,dy:by!=null?by:dy};
+}
 function onMove(e){
   const sp=evtSP(e),wp=s2w(sp.x,sp.y);S.curWP=wp;
   document.getElementById('s-coords').textContent=(S.sqft?pxToFt(wp.x)+', '+pxToFt(wp.y)+' ft':Math.round(wp.x)+', '+Math.round(wp.y));
@@ -2103,7 +2140,8 @@ function onMove(e){
   if(S.drawing&&S.tool==='rect'){const sn=smartSnap(wp.x,wp.y);showSnap(sn);renderPreview(S.drawP0,sn);drawRulers();return;}
   if(S.lineDrawing){const sn=smartSnap(wp.x,wp.y);showSnap(sn);renderLinePreview(S.linePts,sn);drawRulers();return;}
   if(S.dragging){
-    const dx=wp.x-S.dragWP.x,dy=wp.y-S.dragWP.y;
+    let dx=wp.x-S.dragWP.x,dy=wp.y-S.dragWP.y;
+    const sn=dragSnap(dx,dy);dx=sn.dx;dy=sn.dy;   // snap edges flush/aligned to nearby rooms
     for(const[id,o]of S.dragShapes0){
       if(o.type==='rect'){
         if(o.poly)updS(id,{poly:o.poly.map(p=>({x:gSnapX(p.x+dx),y:gSnapY(p.y+dy)}))});
@@ -2332,9 +2370,9 @@ nameInp.addEventListener('blur',commitName);
 // ─────────────────────────────────────────
 // Grid still toggles via the G key; the button was removed, so guard the DOM ref.
 function toggleGrid(){S.gridOn=!S.gridOn;document.getElementById('btn-grid')?.classList.toggle('on',S.gridOn);drawGrid();}
-function toggleSqft(){
+function toggleSqft(){   // unit button removed; T key still toggles px/ft
   S.sqft=!S.sqft;
-  document.getElementById('btn-ft').classList.toggle('on',S.sqft);
+  document.getElementById('btn-ft')?.classList.toggle('on',S.sqft);
   render();
 }
 function toggleArch(){
@@ -2345,7 +2383,7 @@ function toggleArch(){
   render();
 }
 document.getElementById('btn-plan').addEventListener('click',toggleArch);
-document.getElementById('btn-ft').addEventListener('click',toggleSqft);
+document.getElementById('btn-ft')?.addEventListener('click',toggleSqft);
 document.getElementById('btn-clear').addEventListener('click',()=>{
   if(!S.shapes.length)return;
   if(confirm('Clear all?')){S.shapes=[];S.selIds=new Set();S.candidates=[];saveH();render();}
@@ -2380,7 +2418,7 @@ const EXPLAIN={
     const sc=getScene();
     if(!sc){
       host.innerHTML=`<div class="xp-sec"><span class="n">1</span>Predict the next room</div>`+
-        `<div class="xp-card"><div class="xp-p">No scene yet. Press <b>E</b> (or middle-click) to open the radial menu and pick Apartment / Healthcare / Mall — the algorithm then starts predicting the most likely next room.</div></div>`;
+        `<div class="xp-card"><div class="xp-p">No scene yet. Press <b>E</b> (or middle-click) to open the radial menu and pick Apartment / Healthcare / Mall / Facade — the algorithm then starts predicting the most likely next room.</div></div>`;
       return;
     }
     const tr=getTypedRooms();
@@ -2526,7 +2564,9 @@ const TY_SYN={bed:'bedroom',bedroom:'bedroom',br:'bedroom',master:'bedroom',
   reception:'reception',lobby:'reception',waiting:'waiting',exam:'exam',consult:'consult',
   nurse:'nurse',lab:'lab',laboratory:'lab',imaging:'imaging',xray:'imaging',
   entrance:'entrance',atrium:'atrium',retail:'retail',shop:'retail',store:'retail',anchor:'anchor',
-  foodcourt:'foodcourt',food:'foodcourt',cinema:'cinema',theater:'cinema',storage:'storage'};
+  foodcourt:'foodcourt',food:'foodcourt',cinema:'cinema',theater:'cinema',storage:'storage',
+  window:'window',win:'window',shopfront:'shopfront',shop:'shopfront',storefront:'shopfront',
+  balcony:'balcony',spandrel:'spandrel',panel:'spandrel',cornice:'cornice',pier:'pier',column:'pier'};
 const W2N={one:1,two:2,three:3,four:4,five:5,six:6};
 function tyMatch(tk,sc){
   if(!tk)return null;

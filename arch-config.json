@@ -218,6 +218,19 @@
           "restroom": 2
         }
       }
+    },
+    "facade": {
+      "startType": "entrance",
+      "types": ["entrance", "window", "shopfront", "balcony", "spandrel", "cornice", "pier"],
+      "adj": {
+        "entrance": { "shopfront": 4, "window": 2, "pier": 2 },
+        "window": { "window": 5, "spandrel": 4, "balcony": 3, "cornice": 3, "pier": 2, "shopfront": 1 },
+        "shopfront": { "entrance": 4, "window": 2, "pier": 2 },
+        "balcony": { "window": 4, "balcony": 2, "spandrel": 2 },
+        "spandrel": { "window": 4, "spandrel": 2, "pier": 2 },
+        "cornice": { "window": 3, "pier": 2 },
+        "pier": { "window": 2, "shopfront": 2, "entrance": 2, "cornice": 2 }
+      }
     }
   }
 }
