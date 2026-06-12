@@ -2313,17 +2313,21 @@ const EXPLAIN={
     host.innerHTML=html;
   },
 
-  // place one extra room of a given type, flush to the right of the seed room
-  _seedRoom(type){
-    const sc=getScene(); if(!sc||!sc.types[type])return;
-    const base=S.shapes.find(s=>s.type==='rect'&&s.roomType&&!s.poly);
-    const sz=typeRangeMid(type),def=sc.types[type];
-    const x=base?base.x+base.w:-sz.w/2, y=base?base.y:-sz.h/2;
-    S.shapes.push(mkRect(x,y,sz.w,sz.h,{fill:def.fill,stroke:def.stroke,roomType:type}));
-    saveH(); S.candidates=predictNextRooms(); fitScreen(); render();
+  // generate one room of a given type via the predictor's placement engine
+  // (same findPlacements + scoring as a real suggestion); returns its wall fit
+  _genRoom(type){
+    const sc=getScene(); if(!sc||!sc.types[type])return null;
+    const {w,h}=typeRangeMid(type);
+    let pl=findPlacements(w,h),fw=w,fh=h;
+    if(!pl.length){pl=findPlacements(h,w);fw=h;fh=w;}
+    if(!pl.length)return null;
+    const best=pl[0],def=sc.types[type];
+    S.shapes.push(mkRect(best.x,best.y,fw,fh,{fill:def.fill,stroke:def.stroke,roomType:type}));
+    saveH(); S.predHidden=false; S.candidates=predictNextRooms(); fitScreen(); render();
+    return {wallFit:Math.round(Math.min(1,best.placeQ||0)*100)};
   },
 
-  // ── One-click demo: auto-runs "pick scene → predict → accept → generate walls" ──
+  // ── One-click demo: pick scene → GENERATE a program of rooms → walls ──
   async demo(){
     if(this.demoOn){this._abort=true;return;}
     this.demoOn=true; this._abort=false;
@@ -2337,15 +2341,23 @@ const EXPLAIN={
     try{
       if(!await step('<b>Step 1</b> — Pick a scene. Each scene has an adjacency-weight table that defines which rooms belong next to each other.',1300))return;
       startScene('apartment');
-      this._seedRoom('bedroom');   // start the sample with a Living Room + a Bedroom
-      if(!await step('<b>Step 2</b> — Start with a <b>Living Room</b> and a <b>Bedroom</b>. The algorithm immediately predicts the most likely next room from the weight table.',1700))return;
-      for(let i=0;i<4;i++){
+      const sc=getScene();
+      if(!await step('<b>Step 2</b> — Start from a <b>Living Room</b>. Every other room is <i>generated</i> by the predictor — it chooses where to place each one and how confident it is.',1700))return;
+      // target program — every room here is generated, none pre-placed
+      const program=['dining','kitchen','bedroom','bathroom','corridor'];
+      for(const type of program){
         S.candidates=predictNextRooms();render();
-        const c=S.candidates[0]; if(!c)break;
-        const sc=getScene(),det=c.detail||{};
-        if(!await step(`<b>Prediction</b> — most likely next is <b>${sc.types[c.type].name}</b> — ${c.confidence}%.<br>type fit ${det.typeConf||0}% × (0.6 + 0.4 × wall fit ${det.wallFit||0}%) ≈ ${c.confidence}%.`,1900))return;
-        acceptCandidate(0);
-        if(!await step(`Placed <b>${sc.types[c.type].name}</b> — re-predicting…`,1000))return;
+        const name=sc.types[type].name;
+        const cand=S.candidates.find(c=>c.type===type);
+        if(cand){
+          const det=cand.detail||{};
+          if(!await step(`<b>Generating ${name}</b> — the predictor ranks it <b>${cand.confidence}%</b> (type fit ${det.typeConf||0}% × wall fit ${det.wallFit||0}%) and drops it on the best-fit wall.`,1800))return;
+          acceptCandidate(S.candidates.indexOf(cand));
+        }else{
+          const d=this._genRoom(type);
+          if(!await step(`<b>Generating ${name}</b> — not the top suggestion this round, but the model still places it on its best-fit wall${d?` (wall fit <b>${d.wallFit}%</b>)`:''}.`,1800))return;
+        }
+        if(!await step(`Placed <b>${name}</b> — re-predicting…`,900))return;
       }
       if(!await step('<b>Step 3</b> — Turn on <b>Plan</b> mode. The backend <b>arch.js</b> turns these rooms into walls and doors.',1400))return;
       if(!S.archOn)toggleArch();
