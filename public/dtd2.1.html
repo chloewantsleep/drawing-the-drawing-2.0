@@ -2524,8 +2524,17 @@ async function generateDiffusion(){
     const plan=_gRefine(rooms),SCALE=150,sc=SCENES.apartment;
     S.shapes=[];S.selIds=new Set();S.sceneKey='apartment';S.predHidden=true;
     for(const r of plan){const def=sc.types[r.type];S.shapes.push(mkRect(r.x*SCALE,r.y*SCALE,r.w*SCALE,r.h*SCALE,{fill:def.fill,stroke:def.stroke,roomType:r.type}));}
+    // the model only knows 4 rooms — let the adjacency rules add a dining + corridor
+    // so a full apartment (with kitchen AND dining next to each other) comes out.
+    for(const t of ['dining','corridor']){
+      const m=typeRangeMid(t);let pl=findPlacements(m.w,m.h,t),fw=m.w,fh=m.h;
+      if(!pl.length){pl=findPlacements(m.h,m.w,t);fw=m.h;fh=m.w;}
+      if(!pl.length)continue;
+      const best=pl[0],def=sc.types[t];
+      S.shapes.push(mkRect(best.x,best.y,fw,fh,{fill:def.fill,stroke:def.stroke,roomType:t}));
+    }
     saveH();S.candidates=predictNextRooms();fitScreen();render();if(S.archOn)fetchArch();
-    document.getElementById('s-tool').textContent='Generated (diffusion → refined)';
+    document.getElementById('s-tool').textContent='Generated (diffusion core + rule-placed dining/corridor)';
   }catch(e){alert('Generate needs /diffusion/model.json — run: python diffusion/diffuse.py');}
   finally{btn.textContent='Generate';btn.classList.remove('on');GEN.busy=false;}
 }
