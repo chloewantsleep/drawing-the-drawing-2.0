@@ -220,6 +220,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #type-box .ty-hint b{color:var(--text);font-weight:600}
 #type-box .ty-ex{cursor:pointer;color:var(--accent);font-weight:600}
 #type-box .ty-ex:hover{text-decoration:underline}
+/* ── SCENE generator (LLM brief → scene) ── */
+#scene-box{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:650;display:none;
+  background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-lg);
+  padding:11px 13px;width:520px;max-width:92%;animation:ctxIn .12s cubic-bezier(.2,.8,.4,1)}
+#scene-box.show{display:block}
+#scene-box .sc-title{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px}
+#scene-inp{width:100%;border:none;outline:none;font-size:14px;padding:3px 2px;background:none;color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif}
+#scene-box .ty-hint{display:flex;justify-content:space-between;align-items:center;
+  font-size:10.5px;color:var(--muted);margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
+#scene-box .ty-hint b{color:var(--text);font-weight:600}
+#scene-box .ty-ex{cursor:pointer;color:var(--accent);font-weight:600}
+#scene-box .ty-ex:hover{text-decoration:underline}
 /* ── FACADE generator panel ── */
 #facade-box{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:650;display:none;
   background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-lg);
@@ -349,6 +362,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 <div class="topbar">
   <span class="logo">dtd2</span>
   <div class="tb-sep"></div>
+  <button class="tb-chip" id="btn-scene">✦ Scene</button>
   <button class="tb-chip" id="btn-type">Type</button>
   <button class="tb-chip" id="btn-facade">Facade</button>
   <button class="tb-chip" id="btn-fam">Types</button>
@@ -386,6 +400,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
       placeholder="Type a program — e.g. living, kitchen, 2 bedroom, bathroom, corridor"/>
     <div class="ty-hint"><span id="ty-status"><b>Enter</b> to generate · <b>Esc</b> to close</span>
       <span class="ty-ex" id="ty-ex">try an example</span></div>
+  </div>
+  <div id="scene-box">
+    <div class="sc-title">✦ Describe a building — an LLM writes the scene</div>
+    <input id="scene-inp" type="text" autocomplete="off" spellcheck="false"
+      placeholder="e.g. a small dental clinic with 3 operatories, an x-ray room, sterilization, a lab, waiting & reception"/>
+    <div class="ty-hint"><span id="sc-status"><b>Enter</b> to generate · <b>Esc</b> to close</span>
+      <span class="ty-ex" id="sc-ex">try a healthcare example</span></div>
   </div>
   <div id="panel-edit-bar">
     <span class="peb-dot"></span>
@@ -1667,7 +1688,9 @@ async function fetchArch(){
   if(!S.archOn)return;
   try{
     const res=await fetch('/api/arch',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({shapes:S.shapes,sceneKey:S.sceneKey})});
+      // LLM-generated scenes aren't in arch-config.json, so pass their adjacency
+      // table along as a live config override (same channel the tuner uses).
+      body:JSON.stringify({shapes:S.shapes,sceneKey:S.sceneKey,config:GEN_CONFIGS[S.sceneKey]||undefined})});
     const data=await res.json();S.archRuns=data.runs||[];S.archErr=false;
   }catch(e){S.archRuns=[];S.archErr=true;}
   if(S.archOn)document.getElementById('s-tool').textContent=S.archErr?'Plan — start the server: node server.js':'Plan (walls + doors)';
@@ -2766,6 +2789,70 @@ document.getElementById('type-inp').addEventListener('keydown',e=>{
 document.getElementById('ty-ex').addEventListener('click',()=>{
   const inp=document.getElementById('type-inp');
   inp.value='living, kitchen, dining, 2 bedroom, bathroom, corridor';inp.focus();
+});
+
+// ─────────────────────────────────────────
+//  SCENE GENERATOR (LLM) — a natural-language brief becomes a scene:
+//  an adjacency table + room palette, authored by claude-haiku-4-5 and
+//  dropped straight into SCENES. The procedural engine then predicts,
+//  places and walls it like any built-in scene. Self-contained; remove
+//  the #btn-scene button + this block to take it out.
+// ─────────────────────────────────────────
+const GEN_CONFIGS={};        // sceneKey → {scenes:{key:{startType,adj}}} for /api/arch
+const SCN={busy:false};
+const HC_EXAMPLES=[
+  'a small dental clinic with 3 operatories, an x-ray room, sterilization, a lab, waiting & reception',
+  'an outpatient dialysis center: reception, waiting, 6 dialysis bays, a nurse station, water treatment, restroom',
+  'an urgent-care clinic with triage, 4 exam rooms, a trauma bay, x-ray, a pharmacy, reception and a corridor',
+  'a physical-therapy clinic: reception, waiting, an open gym, 3 treatment rooms, a hydrotherapy room, staff office',
+];
+function openSceneBox(){
+  document.getElementById('scene-box').classList.add('show');
+  document.getElementById('btn-scene').classList.add('on');
+  const inp=document.getElementById('scene-inp');inp.focus();inp.select();
+}
+function closeSceneBox(){
+  document.getElementById('scene-box').classList.remove('show');
+  document.getElementById('btn-scene').classList.remove('on');
+}
+async function sceneGenerate(brief){
+  brief=(brief||'').trim();
+  const st=document.getElementById('sc-status');
+  if(!brief){st.innerHTML='Describe a building first — e.g. <b>a vet clinic with exam rooms and a surgery suite</b>';return;}
+  if(SCN.busy)return;SCN.busy=true;
+  st.innerHTML='✦ Authoring scene with <b>claude-haiku-4-5</b>…';
+  try{
+    const res=await fetch('/api/scene',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({brief})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||('HTTP '+res.status));
+    const sc=data.scene;
+    let key=sc.key||'custom';while(SCENES[key]&&JSON.stringify(SCENES[key].adj)!==JSON.stringify(sc.adj))key+='_2';
+    // register the generated scene so the whole app (predict / place / radial / plan) can use it
+    SCENES[key]={name:sc.name,startType:sc.startType,types:sc.types,adj:sc.adj,maxCount:sc.maxCount};
+    GEN_CONFIGS[key]={scenes:{[key]:{startType:sc.startType,adj:sc.adj}}};
+    const names=Object.values(sc.types).map(t=>t.name).join(', ');
+    st.innerHTML=`Created <b>${sc.name}</b> · ${Object.keys(sc.types).length} rooms: ${names}`;
+    closeSceneBox();
+    S.shapes=[];S.selIds=new Set();S.predHidden=false;
+    startScene(key);                  // seeds the start room + begins prediction
+    if(S.archOn)fetchArch();
+    document.getElementById('s-tool').textContent=`Scene "${sc.name}" generated by claude-haiku-4-5`;
+  }catch(e){
+    st.innerHTML=`<span style="color:#DC2626">Couldn’t generate: ${String(e.message||e)}</span>`;
+  }finally{SCN.busy=false;}
+}
+document.getElementById('btn-scene').addEventListener('click',()=>{
+  document.getElementById('scene-box').classList.contains('show')?closeSceneBox():openSceneBox();
+});
+document.getElementById('scene-inp').addEventListener('keydown',e=>{
+  e.stopPropagation();
+  if(e.key==='Enter'){sceneGenerate(e.target.value);}
+  else if(e.key==='Escape'){closeSceneBox();}
+});
+document.getElementById('sc-ex').addEventListener('click',()=>{
+  const inp=document.getElementById('scene-inp');
+  inp.value=HC_EXAMPLES[Math.floor(Math.random()*HC_EXAMPLES.length)];inp.focus();
 });
 
 // ─────────────────────────────────────────

@@ -53,6 +53,33 @@ never shown the rules directly.
 
 ---
 
+## LLM scene authoring (`scene.js` · `api/scene.js`)
+
+The rules are powerful but **hand-written** — every scene's adjacency table had to be authored
+by a human, which is what stopped the tool generalizing to arbitrary building types. The LLM
+closes that gap by acting as the **author of the rules**:
+
+```
+   plain-English brief ──▶  LLM (claude-haiku-4-5)  ──▶  scene = rooms + adjacency table
+   "a small dental clinic…"                              │
+                                                         ▼
+                                  the existing engine: predict → place → walls → (diffusion)
+```
+
+It extends — doesn't replace — the existing **teacher → student** pipeline by adding a stage in
+front of it: **`LLM (writes the table) → rules (make data / place rooms) → diffusion (learns)`**.
+The geometry core is untouched; the LLM only does what it's good at (language → structure), and
+the deterministic engine does the spatial work. The model returns a structured object
+(`scene.js` validates/normalizes it: clamps weights to 0–5, fixes colors/sizes, makes adjacencies
+symmetric, and links any orphan room to circulation), so a one-sentence brief becomes a fully
+working scene — same schema the built-in Apartment / Healthcare / Mall scenes use.
+
+Zero-dependency on purpose (matches the rest of the backend): it calls the Anthropic Messages
+API with the built-in `fetch`, preferring structured outputs and falling back to plain JSON.
+Set `ANTHROPIC_API_KEY` to enable it (see **Run locally** below).
+
+---
+
 ## The app (`dtd2.1.html`)
 
 Pick a **scene** (Apartment / Healthcare / Mall); each defines room types (colors, typical
@@ -62,6 +89,7 @@ sizes) and an adjacency table. Then:
 |---|---|
 | **Prediction** | With a scene active, dashed "ghost" rooms suggest the next room, each with a **confidence %**. Press `E` / middle-click for a radial picker. |
 | **Type** | Type a program — *"living, kitchen, 2 bedroom, bathroom, corridor"* — and the placement engine lays it out (adjacency-aware, parses counts & synonyms, infers the scene). No API. |
+| **✦ Scene** | Describe a building in plain English — *"a small dental clinic with 3 operatories, x-ray, sterilization, waiting & reception"* — and an LLM (`claude-haiku-4-5`) **writes a whole new scene**: room palette + adjacency table, dropped straight into the engine, which then predicts/places/walls it like any built-in. Needs `ANTHROPIC_API_KEY`. |
 | **Demo** | A side panel that narrates the algorithm live + a ▶ Demo that auto-plays scene → predict → place → walls. |
 | **Generate** | Runs the trained diffusion model in-browser, refines the output into a wall-sharing apartment, and drops it on the canvas. |
 | **Plan** (`B`) | Sends the layout to the backend; `arch.js` returns walls + doors and the app draws them. |
@@ -110,6 +138,16 @@ confidence = type fit × (0.6 + 0.4 × wall fit)
 node server.js          # → http://localhost:5178  (app)  ·  /tuner  (console)
 ```
 
+To enable **✦ Scene** (LLM scene authoring), set your Anthropic API key first:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # local
+node server.js
+```
+
+On Vercel, add `ANTHROPIC_API_KEY` under **Project → Settings → Environment Variables** and
+redeploy. Everything else works without a key — only **✦ Scene** needs it.
+
 Re-train the diffusion model (optional; weights are committed):
 
 ```bash
@@ -126,8 +164,9 @@ python diffusion/diffuse.py                     # rules → data → train → m
 | `public/tuner.html` | Procedural / Diffusional console. |
 | `arch.js` | Wall + door **generation** (pure geometry, no DOM). |
 | `arch-config.json` | Tunable params + per-scene adjacency tables. |
-| `server.js` | Zero-dependency Node backend (`/api/arch`, `/api/config`, SSE live-sync). |
-| `api/arch.js`, `api/config.js` | Vercel serverless versions of the API. |
+| `server.js` | Zero-dependency Node backend (`/api/arch`, `/api/config`, `/api/scene`, SSE live-sync). |
+| `scene.js` | LLM scene authoring — brief → validated scene (`claude-haiku-4-5`, zero-dep `fetch`). |
+| `api/arch.js`, `api/config.js`, `api/scene.js` | Vercel serverless versions of the API. |
 | `diffusion/diffuse.py` | Trains the DDPM on rule-generated data; exports `model.json`. |
 | `public/diffusion/` | `model.json` (browser weights), `samples.json`, viewer → redirects to `/tuner`. |
 | `vercel.json` | Routing + no-cache HTML headers. |
