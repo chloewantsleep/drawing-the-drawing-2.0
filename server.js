@@ -6,10 +6,12 @@
 //    GET  /api/config      → current tunable config (JSON)
 //    POST /api/config      → persist a new config to arch-config.json
 //    POST /api/arch        → { shapes, sceneKey, config? } → { runs }
+//    POST /api/scene       → { brief } → { scene }  (needs ANTHROPIC_API_KEY)
 //  Run:  node server.js     (then open http://localhost:5178)
 // ─────────────────────────────────────────────────────────────
 const http = require('http'), fs = require('fs'), path = require('path');
 const { genArch, DEFAULT_CONFIG } = require('./arch.js');
+const { generateScene } = require('./scene.js');
 
 const DIR = __dirname, CFG_PATH = path.join(DIR, 'arch-config.json');
 function loadConfig() {
@@ -55,6 +57,15 @@ const server = http.createServer(async (req, res) => {
       const cfg = body.config || config; // live preview may pass an unsaved config
       send(res, 200, JSON.stringify(genArch(body.shapes || [], body.sceneKey || null, cfg)), 'application/json');
     } catch (e) { send(res, 400, JSON.stringify({ error: String(e) }), 'application/json'); }
+    return;
+  }
+  // ── LLM scene generation: brief → scene (claude-haiku-4-5) ──
+  if (p === '/api/scene' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req) || '{}');
+      const scene = await generateScene(body.brief, process.env.ANTHROPIC_API_KEY);
+      send(res, 200, JSON.stringify({ scene }), 'application/json');
+    } catch (e) { send(res, e.status || 500, JSON.stringify({ error: String(e.message || e) }), 'application/json'); }
     return;
   }
 
