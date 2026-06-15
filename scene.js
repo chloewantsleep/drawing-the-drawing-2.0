@@ -220,4 +220,65 @@ async function generateScene(brief, apiKey) {
   }
 }
 
-module.exports = { generateScene, normalizeScene, MODEL };
+// ─────────────────────────────────────────────────────────────
+//  EXPLAIN — the "why" behind an adjacency table. Given a scene's rooms
+//  and weighted edges, ask the LLM for a one-line architectural reason
+//  per pair. Surfaces the *logic* of the rules (used by the tuner's
+//  bubble diagram on hover). Same model, same zero-dep fetch.
+// ─────────────────────────────────────────────────────────────
+const EXPLAIN_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    reasons: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          from: { type: 'string' }, to: { type: 'string' }, reason: { type: 'string' },
+        },
+        required: ['from', 'to', 'reason'],
+      },
+    },
+  },
+  required: ['reasons'],
+};
+
+const EXPLAIN_SYSTEM = `You are an architect explaining a floor-plan adjacency table.
+For each room pair given, write ONE short reason (≤ 14 words) for why those two spaces sit next to each other in this building type — concrete and functional (workflow, privacy, acoustics, code, circulation), not generic. If the weight is low (1–2), explain why the link is weak/optional. Use the exact room keys you were given in "from"/"to".`;
+
+async function explainAdjacencies(payload, apiKey) {
+  const buildingType = String((payload && payload.buildingType) || 'building').slice(0, 60);
+  const rooms = Array.isArray(payload && payload.rooms) ? payload.rooms : [];
+  const edges = Array.isArray(payload && payload.edges) ? payload.edges : [];
+  if (!apiKey) { const e = new Error('ANTHROPIC_API_KEY is not set on the server.'); e.status = 503; throw e; }
+  if (!edges.length) return { reasons: [] };
+
+  const roomLines = rooms.map(r => `${r.key} = ${r.name}`).join('; ');
+  const edgeLines = edges.map(e => `${e.from} ↔ ${e.to} (weight ${e.weight})`).join('\n');
+  const user = `Building type: ${buildingType}\nRooms: ${roomLines}\n\nExplain each adjacency:\n${edgeLines}`;
+  const base = { model: MODEL, max_tokens: 1200, system: EXPLAIN_SYSTEM, messages: [{ role: 'user', content: user }] };
+
+  try {
+    let res = await post(apiKey, { ...base, output_config: { format: { type: 'json_schema', schema: EXPLAIN_SCHEMA } } });
+    if (res.status === 400) {
+      res = await post(apiKey, { ...base, messages: [{ role: 'user', content: user + '\n\nRespond with ONLY minified JSON: {"reasons":[{"from","to","reason"}]}. No prose.' }] });
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data && data.error && data.error.message) || `HTTP ${res.status}`);
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    let parsed;
+    try { parsed = JSON.parse(text); }
+    catch (e) { const m = text.match(/\{[\s\S]*\}/); if (!m) throw new Error('model did not return JSON'); parsed = JSON.parse(m[0]); }
+    const reasons = Array.isArray(parsed.reasons) ? parsed.reasons
+      .filter(r => r && r.from && r.to && r.reason)
+      .map(r => ({ from: String(r.from), to: String(r.to), reason: String(r.reason).slice(0, 160) })) : [];
+    return { reasons };
+  } catch (err) {
+    if (!err.status) err.status = 502;
+    throw err;
+  }
+}
+
+module.exports = { generateScene, normalizeScene, explainAdjacencies, MODEL };

@@ -7,11 +7,13 @@
 //    POST /api/config      → persist a new config to arch-config.json
 //    POST /api/arch        → { shapes, sceneKey, config? } → { runs }
 //    POST /api/scene       → { brief } → { scene }  (needs ANTHROPIC_API_KEY)
+//    POST /api/explain     → { rooms, edges } → { reasons }  (needs ANTHROPIC_API_KEY)
+//    GET/POST /api/active  → which scene the app shows; the tuner follows it (SSE)
 //  Run:  node server.js     (then open http://localhost:5178)
 // ─────────────────────────────────────────────────────────────
 const http = require('http'), fs = require('fs'), path = require('path');
 const { genArch, DEFAULT_CONFIG } = require('./arch.js');
-const { generateScene } = require('./scene.js');
+const { generateScene, explainAdjacencies } = require('./scene.js');
 
 const DIR = __dirname, CFG_PATH = path.join(DIR, 'arch-config.json');
 function loadConfig() {
@@ -19,6 +21,7 @@ function loadConfig() {
   catch (e) { fs.writeFileSync(CFG_PATH, JSON.stringify(DEFAULT_CONFIG, null, 2)); return JSON.parse(JSON.stringify(DEFAULT_CONFIG)); }
 }
 let config = loadConfig();
+let activeScene = null;   // {key} the app is currently showing — lets the tuner follow along (local dev only)
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml' };
 function send(res, code, body, type) {
@@ -66,6 +69,28 @@ const server = http.createServer(async (req, res) => {
       const scene = await generateScene(body.brief, process.env.ANTHROPIC_API_KEY);
       send(res, 200, JSON.stringify({ scene }), 'application/json');
     } catch (e) { send(res, e.status || 500, JSON.stringify({ error: String(e.message || e) }), 'application/json'); }
+    return;
+  }
+  // ── LLM adjacency rationale: scene edges → per-edge "why" ──
+  if (p === '/api/explain' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req) || '{}');
+      const out = await explainAdjacencies(body, process.env.ANTHROPIC_API_KEY);
+      send(res, 200, JSON.stringify(out), 'application/json');
+    } catch (e) { send(res, e.status || 500, JSON.stringify({ error: String(e.message || e) }), 'application/json'); }
+    return;
+  }
+  // ── active scene sync: the app publishes which scene it's showing; the tuner follows ──
+  if (p === '/api/active' && req.method === 'GET') return send(res, 200, JSON.stringify(activeScene || { key: null, rooms: [] }), 'application/json');
+  if (p === '/api/active' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req) || '{}');
+      activeScene = { key: body.key || null, rooms: Array.isArray(body.rooms) ? body.rooms : [], shapes: Array.isArray(body.shapes) ? body.shapes : [] };
+      // generated scenes aren't in arch-config.json — inject so the tuner (which reads /api/config) can render them
+      if (body.key && body.arch && !config.scenes[body.key]) config.scenes[body.key] = body.arch;
+      broadcast({ type: 'active', key: activeScene.key, rooms: activeScene.rooms, shapes: activeScene.shapes });
+      send(res, 200, JSON.stringify({ ok: true }), 'application/json');
+    } catch (e) { send(res, 400, JSON.stringify({ error: String(e) }), 'application/json'); }
     return;
   }
 

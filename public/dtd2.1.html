@@ -362,14 +362,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 <div class="topbar">
   <span class="logo">dtd2</span>
   <div class="tb-sep"></div>
-  <button class="tb-chip" id="btn-scene">✦ Scene</button>
-  <button class="tb-chip" id="btn-type">Type</button>
+  <button class="tb-chip" id="btn-scene">✦ LLM</button>
   <button class="tb-chip" id="btn-facade">Facade</button>
-  <button class="tb-chip" id="btn-fam">Types</button>
-  <button class="tb-chip" id="btn-explain">Demo</button>
-  <button class="tb-chip" id="btn-gen">Generate</button>
-  <button class="tb-chip" id="btn-plan">Plan</button>
+  <button class="tb-chip" id="btn-gen">Diffusion</button>
+  <button class="tb-chip" id="btn-plan">Procedural</button>
   <button class="tb-chip" id="btn-clear">Clear</button>
+  <button class="tb-chip" id="btn-explain">Demo</button>
 </div>
 
 <div class="workspace">
@@ -395,12 +393,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <div id="ctx"></div>
   <div id="floatbar"></div>
   <div id="floatpal"></div>
-  <div id="type-box">
-    <input id="type-inp" type="text" autocomplete="off" spellcheck="false"
-      placeholder="Type a program — e.g. living, kitchen, 2 bedroom, bathroom, corridor"/>
-    <div class="ty-hint"><span id="ty-status"><b>Enter</b> to generate · <b>Esc</b> to close</span>
-      <span class="ty-ex" id="ty-ex">try an example</span></div>
-  </div>
   <div id="scene-box">
     <div class="sc-title">✦ Describe a building — an LLM writes the scene</div>
     <input id="scene-inp" type="text" autocomplete="off" spellcheck="false"
@@ -429,7 +421,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
       <span><i style="background:#FFE4D5;border-color:#EA580C"></i>custom (outlier)</span>
     </div>
     <div class="fc-actions"><button class="fc-gen" id="fc-gen">Generate ↵</button>
-      <span class="fc-hint">fills the <b>selected outline</b> (rectangle or irregular) with a glazing grid; edge/cut panels are flagged custom · <b>Esc</b> closes</span></div>
+      <button class="fc-gen" id="fc-types" style="background:#fff;color:var(--accent);border:1px solid var(--accent)">Panel types</button>
+      <span class="fc-hint">fills the <b>selected outline</b> with a glazing grid; <b>Panel types</b> opens the linked-panel editor · <b>Esc</b> closes</span></div>
   </div>
   <div id="op-hint"></div>
   <div id="pred-detail"></div>
@@ -715,6 +708,7 @@ function saveH(){
   S.histIdx=S.hist.length-1;
   if(S.hist.length>80){S.hist.shift();S.histIdx--;}
   scheduleArch(); // layout changed → refresh the generated plan
+  schedulePublish(); // drawing changed → let the tuner mirror the rooms on canvas
 }
 function undo(){
   if(S.histIdx<=0)return;
@@ -1673,7 +1667,22 @@ function openWallMenu(sid,side,sx,sy){
 function closeWallMenuOutside(e){if(!document.getElementById('wall-menu').contains(e.target))document.getElementById('wall-menu').style.display='none';}
 
 // Scene is picked via the radial menu (E key / middle-click); no on-canvas badge.
-function updateSceneBadge(){}
+function updateSceneBadge(){publishActive();}
+// Tell the backend which scene the app is showing AND which room types are on the
+// canvas, so the tuner mirrors the actual drawing (not just the scene's full table).
+// Generated scenes (absent from arch-config.json) are sent along so the tuner can render them.
+function publishActive(){
+  const key=S.sceneKey;
+  const sc=key&&SCENES[key];
+  const arch=sc?{startType:sc.startType,types:Object.keys(sc.types),adj:sc.adj}:null;
+  const rects=S.shapes.filter(s=>s.type==='rect');
+  const rooms=[...new Set(rects.filter(s=>s.roomType).map(s=>s.roomType))];
+  const shapes=rects.map(s=>({type:'rect',x:s.x,y:s.y,w:s.w,h:s.h,roomType:s.roomType||null,poly:s.poly||null}));
+  fetch('/api/active',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:key||null,arch,rooms,shapes})}).catch(()=>{});
+}
+let _pubT=null;
+function schedulePublish(){clearTimeout(_pubT);_pubT=setTimeout(publishActive,250);}
 
 // ─────────────────────────────────────────
 //  ARCHITECTURAL MODE — walls + doors come from the backend (/api/arch).
@@ -2244,7 +2253,7 @@ function onDown(e){
 }
 // While dragging a room, snap its edges flush/aligned to nearby rooms (returns adjusted dx,dy)
 function dragSnap(dx,dy){
-  const th=11/S.zoom,NEAR=90;
+  const th=16/S.zoom,NEAR=120;
   let L=Infinity,T=Infinity,R=-Infinity,B=-Infinity,has=false;
   for(const[,o]of S.dragShapes0){if(o.type!=='rect')continue;has=true;const b=rectBox(o);
     L=Math.min(L,b.x);T=Math.min(T,b.y);R=Math.max(R,b.x+b.w);B=Math.max(B,b.y+b.h);}
@@ -2260,7 +2269,7 @@ function dragSnap(dx,dy){
     if(xNear)for(const[m,t,adj]of[[mT,sT,sT-T],[mT,sB,sB-T],[mB,sT,sT-B],[mB,sB,sB-B]]){
       const d=Math.abs(m-t);if(d<bdy){bdy=d;by=adj;}}
   }
-  return{dx:bx!=null?bx:dx,dy:by!=null?by:dy};
+  return{dx:bx!=null?bx:dx,dy:by!=null?by:dy,sx:bx!=null,sy:by!=null};
 }
 function onMove(e){
   const sp=evtSP(e),wp=s2w(sp.x,sp.y);S.curWP=wp;
@@ -2280,12 +2289,14 @@ function onMove(e){
   if(S.lineDrawing){const sn=smartSnap(wp.x,wp.y);showSnap(sn);renderLinePreview(S.linePts,sn);drawRulers();return;}
   if(S.dragging){
     let dx=wp.x-S.dragWP.x,dy=wp.y-S.dragWP.y;
-    const sn=dragSnap(dx,dy);dx=sn.dx;dy=sn.dy;   // snap edges flush/aligned to nearby rooms
+    const sn=dragSnap(dx,dy);dx=sn.dx;dy=sn.dy;   // magnetic snap: edges flush/aligned to nearby rooms
+    // when an axis snapped to a neighbour, keep that exact position (don't re-round to grid)
+    const SX=v=>sn.sx?v:gSnapX(v), SY=v=>sn.sy?v:gSnapY(v);
     for(const[id,o]of S.dragShapes0){
       if(o.type==='rect'){
-        if(o.poly)updS(id,{poly:o.poly.map(p=>({x:gSnapX(p.x+dx),y:gSnapY(p.y+dy)}))});
-        else updS(id,{x:gSnapX(o.x+dx),y:gSnapY(o.y+dy)});
-      }else if(o.type==='line')updS(id,{pts:o.pts.map(p=>({x:gSnapX(p.x+dx),y:gSnapY(p.y+dy)}))});
+        if(o.poly)updS(id,{poly:o.poly.map(p=>({x:SX(p.x+dx),y:SY(p.y+dy)}))});
+        else updS(id,{x:SX(o.x+dx),y:SY(o.y+dy)});
+      }else if(o.type==='line')updS(id,{pts:o.pts.map(p=>({x:SX(p.x+dx),y:SY(p.y+dy)}))});
     }
     render();return;
   }
@@ -2765,31 +2776,11 @@ function typeGenerate(text){
   if(!program.length){st.innerHTML='No rooms recognized — try names like <b>living, kitchen, bedroom</b>';return;}
   S.sceneKey=key;S.shapes=[];S.selIds=new Set();S.predHidden=true;
   for(const type of program)tyPlace(type,sc);
-  saveH();S.candidates=predictNextRooms();fitScreen();render();if(S.archOn)fetchArch();
+  saveH();S.candidates=predictNextRooms();fitScreen();render();publishActive();if(S.archOn)fetchArch();
   const names=[...new Set(program)].map(t=>sc.types[t].name).join(', ');
   st.innerHTML=`Generated <b>${program.length}</b> rooms (${SCENES[key].name}) · ${names}`;
 }
-function openTypeBox(){
-  const box=document.getElementById('type-box');box.classList.add('show');
-  document.getElementById('btn-type').classList.add('on');
-  const inp=document.getElementById('type-inp');inp.focus();inp.select();
-}
-function closeTypeBox(){
-  document.getElementById('type-box').classList.remove('show');
-  document.getElementById('btn-type').classList.remove('on');
-}
-document.getElementById('btn-type').addEventListener('click',()=>{
-  document.getElementById('type-box').classList.contains('show')?closeTypeBox():openTypeBox();
-});
-document.getElementById('type-inp').addEventListener('keydown',e=>{
-  e.stopPropagation();
-  if(e.key==='Enter'){typeGenerate(e.target.value);}
-  else if(e.key==='Escape'){closeTypeBox();}
-});
-document.getElementById('ty-ex').addEventListener('click',()=>{
-  const inp=document.getElementById('type-inp');
-  inp.value='living, kitchen, dining, 2 bedroom, bathroom, corridor';inp.focus();
-});
+// (The "Type" program box was removed from the UI; ✦ Scene covers natural-language input.)
 
 // ─────────────────────────────────────────
 //  SCENE GENERATOR (LLM) — a natural-language brief becomes a scene:
@@ -2917,7 +2908,7 @@ function buildFacade(){
     // default families: all standard panels are one linked type, customs another
     const nc=mkRect(p.x,p.y,p.w,p.h,{fill:col.fill,stroke:col.stroke,roomType:'window'});
     nc.fam=p.custom?'fac-custom':'fac-std';S.shapes.push(nc);}
-  S.selIds=new Set();saveH();fitScreen();render();if(S.archOn)fetchArch();refreshFam();
+  S.selIds=new Set();saveH();fitScreen();render();publishActive();if(S.archOn)fetchArch();refreshFam();
   document.getElementById('s-tool').textContent=`Curtain wall — ${panels.length} panels (${custom} custom)`;
 }
 // ── Panel families: link selected panels into one "type" (shared size + color);
@@ -3015,9 +3006,11 @@ function buildFamPanel(){
 function refreshFam(){const p=document.getElementById('fam-panel');
   if(p&&p.classList.contains('show')&&!p.contains(document.activeElement))buildFamPanel();}
 function toggleFamPanel(){const p=document.getElementById('fam-panel');
-  const open=p.classList.toggle('show');document.getElementById('btn-fam').classList.toggle('on',open);
+  const open=p.classList.toggle('show');
+  const ft=document.getElementById('fc-types');if(ft)ft.classList.toggle('on',open);
   if(open)buildFamPanel();}
-document.getElementById('btn-fam').addEventListener('click',toggleFamPanel);
+// "Panel types" now lives inside the Facade panel (click Facade → Panel types)
+document.getElementById('fc-types').addEventListener('click',toggleFamPanel);
 document.getElementById('fam-close').addEventListener('click',toggleFamPanel);
 document.getElementById('fam-panel').addEventListener('mousedown',e=>e.stopPropagation());
 
@@ -3075,7 +3068,7 @@ function renderPanelDetails(){
   }
 }
 document.getElementById('peb-done').addEventListener('click',exitPanelEdit);
-function openFacadeBox(){closeTypeBox();document.getElementById('facade-box').classList.add('show');document.getElementById('btn-facade').classList.add('on');}
+function openFacadeBox(){document.getElementById('facade-box').classList.add('show');document.getElementById('btn-facade').classList.add('on');}
 function closeFacadeBox(){document.getElementById('facade-box').classList.remove('show');document.getElementById('btn-facade').classList.remove('on');}
 document.getElementById('btn-facade').addEventListener('click',()=>{
   document.getElementById('facade-box').classList.contains('show')?closeFacadeBox():openFacadeBox();
@@ -3129,7 +3122,7 @@ async function generateDiffusion(){
       const best=pl[0],def=sc.types[t];
       S.shapes.push(mkRect(best.x,best.y,fw,fh,{fill:def.fill,stroke:def.stroke,roomType:t}));
     }
-    saveH();S.candidates=predictNextRooms();fitScreen();render();if(S.archOn)fetchArch();
+    saveH();S.candidates=predictNextRooms();fitScreen();render();publishActive();if(S.archOn)fetchArch();
     document.getElementById('s-tool').textContent='Generated (diffusion core + rule-placed dining/corridor)';
   }catch(e){alert('Generate needs /diffusion/model.json — run: python diffusion/diffuse.py');}
   finally{btn.textContent='Generate';btn.classList.remove('on');GEN.busy=false;}

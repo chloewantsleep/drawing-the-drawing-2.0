@@ -95,6 +95,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 .sec .ln{flex:1;height:1px;background:var(--border-2)}
 .sec .tag{font-size:9.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);
   padding:2px 7px;border-radius:20px;letter-spacing:.02em}
+.sec.sec-toggle{cursor:pointer;user-select:none}
+.sec.sec-toggle .caret{font-size:10px;color:var(--muted);transition:transform .15s}
+.sec.sec-toggle.collapsed .caret{transform:rotate(-90deg)}
+.sec-body.collapsed{display:none}
 
 /* ── sliders ── */
 .ctl{margin-bottom:15px}
@@ -208,6 +212,41 @@ body.panel-hidden .panel-resizer{cursor:pointer}
 .diff-wrap.fs{position:fixed;inset:0;z-index:1000;width:100%;max-width:100%;background:#FBFBFA;
   padding:22px 26px;overflow:auto;margin:0;gap:16px}
 .diff-wrap.fs .diff-gallery{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+/* ── bubble diagram (adjacency relationships) ── */
+/* no card chrome — the merged plan+graph floats on the stage */
+.bubble-card{background:none;border:none;box-shadow:none;padding:0;position:relative;
+  width:780px;max-width:96%;display:flex;flex-direction:column;gap:10px}
+.bb-stage{position:relative;width:100%;height:540px;overflow:hidden;cursor:grab}
+.bb-stage.panning{cursor:grabbing}
+.bb-zoom{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
+.bb-stage canvas,.bb-stage svg{position:absolute;left:0;top:0;width:100%;height:100%}
+.bb-stage canvas{background:transparent}
+.bb-zoom-ctrl{position:absolute;right:10px;bottom:10px;z-index:15;display:flex;flex-direction:column;
+  background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--sh-sm);overflow:hidden}
+.bb-zoom-ctrl button{border:none;background:none;width:30px;height:28px;font-size:15px;line-height:1;
+  color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.bb-zoom-ctrl button:hover{background:var(--accent-soft);color:var(--accent)}
+.bb-zoom-ctrl button+button{border-top:1px solid var(--border-2)}
+.bb-zoom-ctrl #bb-zoom-reset{font-size:12px}
+.bubble-ctrl{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.diff-btn.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+.diff-btn.ghost:hover{background:var(--accent-soft);filter:none}
+.bb-read{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.bb-edge{transition:stroke .15s,opacity .15s,stroke-width .15s}
+.bb-edge.faded{opacity:.07}
+.bb-edge.hl{stroke:#1D6AF5!important;opacity:1!important}
+.bb-node{cursor:pointer;transition:opacity .15s}
+.bb-node.faded{opacity:.16}
+.bb-node text{pointer-events:none;user-select:none}
+.bubble-tip{position:absolute;pointer-events:none;z-index:20;background:#23231F;color:#fff;font-size:11px;
+  line-height:1.45;padding:7px 10px;border-radius:8px;max-width:240px;box-shadow:var(--sh-md);
+  opacity:0;transition:opacity .12s;transform:translate(-50%,-118%)}
+.bubble-tip.show{opacity:1}
+.bubble-tip .w{color:#9DB8FF;font-family:var(--mono)}
+.bubble-tip .why{color:#E8E8E6;display:block;margin-top:3px}
+.bubble-tip .muted{color:#A7A7A2}
+.bb-hint{font-size:10.5px;color:var(--muted);margin-top:11px;line-height:1.55}
+.bb-hint b{color:var(--text)}
 </style>
 </head>
 <body>
@@ -228,10 +267,10 @@ body.panel-hidden .panel-resizer{cursor:pointer}
   </div>
   <section class="stage">
     <div class="approach-seg" id="mode-sel">
-      <button data-m="procedural" class="on"><span class="d proc"></span>Procedural</button>
+      <button data-m="bubble" class="on"><span class="d" style="background:#1D6AF5"></span>Procedural</button>
       <button data-m="diffusional"><span class="d diff"></span>Diffusional</button>
     </div>
-    <div class="canvas-card" id="proc-card">
+    <div class="canvas-card" id="proc-card" style="display:none">
       <canvas id="cv" width="600" height="520"></canvas>
       <div class="cap" id="cap">live preview · applies to the app on Save</div>
     </div>
@@ -256,13 +295,37 @@ body.panel-hidden .panel-resizer{cursor:pointer}
       </div>
       <div class="diff-gallery" id="diff-gallery"></div>
     </div>
+    <div class="bubble-card" id="bubble-card">
+      <div class="bubble-ctrl">
+        <button class="diff-btn ghost" id="bb-view-btn">Rooms: your plan</button>
+        <button class="diff-btn" id="bb-explain">✦ Explain logic</button>
+        <button class="diff-btn ghost" id="bb-circ-btn">Circulation</button>
+        <span class="bb-read" id="bb-read"></span>
+      </div>
+      <div class="bb-stage" id="bb-stage">
+        <div class="bb-zoom" id="bb-zoom">
+          <canvas id="bb-cv" width="760" height="540"></canvas>
+          <svg id="bb-svg"></svg>
+        </div>
+        <div class="bb-zoom-ctrl" id="bb-zoom-ctrl">
+          <button id="bb-zoom-out" title="Zoom out">−</button>
+          <button id="bb-zoom-reset" title="Reset view">⤢</button>
+          <button id="bb-zoom-in" title="Zoom in">+</button>
+        </div>
+        <div class="bubble-tip" id="bb-tip"></div>
+      </div>
+    </div>
   </section>
 </div>
 
 <script>
 'use strict';
 const API='';                 // same origin as the server
-let CFG=null, scene='apartment', dirty=false, MODE='procedural';
+let CFG=null, scene='apartment', dirty=false, MODE='bubble';
+let APP_ROOMS=[];   // room types the app currently has on its canvas (mirrors the front end)
+let APP_SHAPES=[];  // the actual rectangles drawn in the app — drives the real wall preview + prediction
+function curShapes(){return (APP_SHAPES&&APP_SHAPES.length)?APP_SHAPES:(SAMPLES[scene]||[]);}
+function curRoomTypes(){return curShapes().map(s=>s.roomType).filter(Boolean);}
 const $=id=>document.getElementById(id);
 
 // ── baked sample layouts so the preview + prediction show something real ──
@@ -299,8 +362,28 @@ function hueOf(t){let h=7;for(let i=0;i<t.length;i++)h=(h*33+t.charCodeAt(i))%36
 function colorOf(t){return `hsl(${hueOf(t)},58%,52%)`;}
 
 // ── load config, build UI ──
-fetch(API+'/api/config').then(r=>r.json()).then(c=>{CFG=c;buildScenes();buildPanel();render();})
+function loadConfig(switchTo){
+  return fetch(API+'/api/config').then(r=>r.json()).then(c=>{
+    CFG=c;
+    if(switchTo&&CFG.scenes[switchTo])scene=switchTo;
+    if(!CFG.scenes[scene])scene=Object.keys(CFG.scenes)[0];
+    buildScenes();buildPanel();render();
+  });
+}
+loadConfig()
+  .then(()=>fetch(API+'/api/active').then(r=>r.json()).then(a=>{if(a){APP_ROOMS=a.rooms||[];APP_SHAPES=a.shapes||[];if(a.key)return loadConfig(a.key);render();}}).catch(()=>{}))
   .catch(()=>{$('cap').textContent='cannot reach the server — run: node server.js';});
+
+// follow the app: mirror its active scene, the rooms drawn, and the actual layout (local dev only)
+(function(){
+  try{
+    const es=new EventSource(API+'/api/events');
+    es.onmessage=e=>{try{const m=JSON.parse(e.data);
+      if(m.type==='active'){APP_ROOMS=m.rooms||[];APP_SHAPES=m.shapes||[];   // ignore 'config' echoes — those are our own saves
+        if(m.key&&m.key!==scene)loadConfig(m.key);else render();}
+    }catch(_){}};
+  }catch(_){}
+})();
 
 function buildScenes(){
   const sel=$('scene-sel');sel.innerHTML='';
@@ -314,18 +397,24 @@ function buildScenes(){
 function buildPanel(){
   const p=$('panel');p.innerHTML='';
 
-  // ── numeric params ──
-  p.appendChild(sec('Door & wall parameters'));
-  p.appendChild(slider('Door threshold','doorThreshold',0,5,1,'Adjacency weight needed to auto-open a door. Higher = fewer doors, more reliance on the connectivity net.'));
-  p.appendChild(slider('Door width','doorWidth',24,100,2,'Width of each door opening (world units; 20 = 1 ft).'));
-  p.appendChild(slider('Exterior wall','wallExt',2,20,1,'Thickness of perimeter walls.'));
-  p.appendChild(slider('Interior wall','wallInt',2,16,1,'Thickness of partition walls between rooms.'));
+  // ── numeric params (collapsible) ──
+  const dwHead=sec('Door & wall parameters');
+  dwHead.classList.add('sec-toggle','collapsed');
+  const caret=document.createElement('span');caret.className='caret';caret.textContent='▾';
+  dwHead.appendChild(caret);
+  const dwBody=document.createElement('div');dwBody.className='sec-body collapsed';
+  dwBody.appendChild(slider('Door threshold','doorThreshold',0,5,1,'Adjacency weight needed to auto-open a door. Higher = fewer doors, more reliance on the connectivity net.'));
+  dwBody.appendChild(slider('Door width','doorWidth',24,100,2,'Width of each door opening (world units; 20 = 1 ft).'));
+  dwBody.appendChild(slider('Exterior wall','wallExt',2,20,1,'Thickness of perimeter walls.'));
+  dwBody.appendChild(slider('Interior wall','wallInt',2,16,1,'Thickness of partition walls between rooms.'));
   const tg=document.createElement('label');tg.className='toggle';
   const cb=document.createElement('input');cb.type='checkbox';cb.checked=CFG.connectivity!==false;
   cb.onchange=()=>{CFG.connectivity=cb.checked;mark();render();};
   const tx=document.createElement('div');tx.className='tx';
   tx.innerHTML='<b>Connectivity safety net</b><small>Never leave a room unreachable from the entrance.</small>';
-  tg.appendChild(cb);tg.appendChild(tx);p.appendChild(tg);
+  tg.appendChild(cb);tg.appendChild(tx);dwBody.appendChild(tg);
+  dwHead.onclick=()=>{const c=dwHead.classList.toggle('collapsed');dwBody.classList.toggle('collapsed',c);};
+  p.appendChild(dwHead);p.appendChild(dwBody);
 
   // ── adjacency matrix ──
   const head=secTag('Adjacency · '+pretty(scene),'drives both algorithms');
@@ -341,7 +430,7 @@ function buildPanel(){
   // ── prediction viz (NEW) ──
   p.appendChild(secTag('Next-room prediction','from this matrix'));
   const proomsLbl=document.createElement('div');proomsLbl.style.cssText='font-size:11px;color:var(--muted);margin-bottom:9px;line-height:1.45';
-  proomsLbl.textContent='Given the sample rooms, here is what the app would predict as the next room:';
+  proomsLbl.textContent='Given the rooms currently on the canvas (live from the app), the next-room prediction is:';
   p.appendChild(proomsLbl);
   const prooms=document.createElement('div');prooms.className='pred-rooms';prooms.id='pred-rooms';p.appendChild(prooms);
   const plist=document.createElement('div');plist.className='pred-list';plist.id='pred-list';p.appendChild(plist);
@@ -427,7 +516,7 @@ function short(t){return t.length>7?t.slice(0,6)+'.':pretty(t);}
 // ── prediction: replicates the app's type-fit scoring, driven by the matrix ──
 function predict(){
   const sc=CFG.scenes[scene],adj=sc.adj||{},types=sc.types;
-  const existing=(SAMPLES[scene]||[]).map(r=>r.roomType).filter(Boolean);
+  const existing=curRoomTypes();
   const cnt={};existing.forEach(t=>cnt[t]=(cnt[t]||0)+1);
   const scores={};
   for(const t of types){
@@ -476,7 +565,7 @@ function flash(txt){$('applied-tx').textContent=txt;$('applied').classList.add('
   setTimeout(()=>$('applied').classList.remove('show'),1500);}
 
 // ── render = prediction + wall preview (called on every change) ──
-function render(){renderPrediction();preview();}
+function render(){renderPrediction();preview();if(MODE==='bubble')buildBubble({relax:55});}
 
 // ── live preview of walls/doors ──
 let pvTimer=null;
@@ -486,7 +575,7 @@ function preview(){
   pvTimer=setTimeout(async()=>{
     try{
       const res=await fetch(API+'/api/arch',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({shapes:SAMPLES[scene],sceneKey:scene,config:CFG})});
+        body:JSON.stringify({shapes:curShapes(),sceneKey:scene,config:CFG})});
       const data=await res.json();drawPlan(data.runs||[]);
       const runs=data.runs||[],doors=runs.filter(r=>r.door).length,
         ext=runs.filter(r=>r.kind==='ext').length,intc=runs.filter(r=>r.kind==='int').length;
@@ -497,36 +586,38 @@ function preview(){
   },110);
 }
 
-const cv=$('cv'),ctx=cv.getContext('2d');
-function drawPlan(runs){
+const cv=$('cv');
+function drawPlan(runs,target){
+  const cvx=target||cv,cx=cvx.getContext('2d');
   const dpr=window.devicePixelRatio||1;
-  if(cv.width!==600*dpr){cv.width=600*dpr;cv.height=520*dpr;}
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  const W=600,H=520;
-  ctx.clearRect(0,0,W,H);
-  if(!runs.length)return;
+  const W=cvx.clientWidth||parseInt(cvx.getAttribute('width'))||600,H=cvx.clientHeight||parseInt(cvx.getAttribute('height'))||520;
+  if(cvx.width!==Math.round(W*dpr)){cvx.width=Math.round(W*dpr);cvx.height=Math.round(H*dpr);}
+  cx.setTransform(dpr,0,0,dpr,0,0);
+  cx.clearRect(0,0,W,H);
+  if(!runs.length)return null;
   let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
   for(const r of runs){minX=Math.min(minX,r.ax,r.bx);minY=Math.min(minY,r.ay,r.by);maxX=Math.max(maxX,r.ax,r.bx);maxY=Math.max(maxY,r.ay,r.by);}
-  const pad=56,sc=Math.min((W-pad*2)/(maxX-minX||1),(H-pad*2)/(maxY-minY||1));
+  const pad=Math.max(22,Math.min(W,H)*0.1),sc=Math.min((W-pad*2)/(maxX-minX||1),(H-pad*2)/(maxY-minY||1));
   const ox=(W-(maxX-minX)*sc)/2-minX*sc,oy=(H-(maxY-minY)*sc)/2-minY*sc;
   const X=x=>x*sc+ox,Y=y=>y*sc+oy;
-  ctx.fillStyle='#23231F';ctx.strokeStyle='#23231F';ctx.lineJoin='round';
+  cx.fillStyle='#23231F';cx.strokeStyle='#23231F';cx.lineJoin='round';
   for(const r of runs){
     const len=r.len||1,ux=(r.bx-r.ax)/len,uy=(r.by-r.ay)/len,t=r.t*sc,ex=r.t/2;
     const seg=(t0,t1)=>{
       const ax=X(r.ax+ux*t0),ay=Y(r.ay+uy*t0),bx=X(r.ax+ux*t1),by=Y(r.ay+uy*t1),nx=-uy*t/2,ny=ux*t/2;
-      ctx.beginPath();ctx.moveTo(ax+nx,ay+ny);ctx.lineTo(bx+nx,by+ny);ctx.lineTo(bx-nx,by-ny);ctx.lineTo(ax-nx,ay-ny);ctx.closePath();ctx.fill();
+      cx.beginPath();cx.moveTo(ax+nx,ay+ny);cx.lineTo(bx+nx,by+ny);cx.lineTo(bx-nx,by-ny);cx.lineTo(ax-nx,ay-ny);cx.closePath();cx.fill();
     };
     if(r.door){
       const [c0,c1]=r.door,dw=c1-c0;seg(-ex,c0);seg(c1,len+ex);
       const hx=r.ax+ux*c0,hy=r.ay+uy*c0,tipx=hx+r.nx*dw,tipy=hy+r.ny*dw;
-      ctx.lineWidth=1.4;ctx.strokeStyle='#23231F';ctx.beginPath();ctx.moveTo(X(hx),Y(hy));ctx.lineTo(X(tipx),Y(tipy));ctx.stroke();
+      cx.lineWidth=1.4;cx.strokeStyle='#23231F';cx.beginPath();cx.moveTo(X(hx),Y(hy));cx.lineTo(X(tipx),Y(tipy));cx.stroke();
       let a0=Math.atan2(r.ny,r.nx),a1=Math.atan2(uy,ux),da=a1-a0;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
-      ctx.strokeStyle='rgba(35,35,31,.5)';ctx.lineWidth=1;ctx.setLineDash([3,2.5]);ctx.beginPath();
-      for(let k=0;k<=16;k++){const ang=a0+da*k/16,px=X(hx+Math.cos(ang)*dw),py=Y(hy+Math.sin(ang)*dw);k?ctx.lineTo(px,py):ctx.moveTo(px,py);}
-      ctx.stroke();ctx.setLineDash([]);
+      cx.strokeStyle='rgba(35,35,31,.5)';cx.lineWidth=1;cx.setLineDash([3,2.5]);cx.beginPath();
+      for(let k=0;k<=16;k++){const ang=a0+da*k/16,px=X(hx+Math.cos(ang)*dw),py=Y(hy+Math.sin(ang)*dw);k?cx.lineTo(px,py):cx.moveTo(px,py);}
+      cx.stroke();cx.setLineDash([]);
     }else seg(-ex,len+ex);
   }
+  return {X,Y,sc,ctx:cx,W,H};
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -619,12 +710,15 @@ async function diffSampleAll(){
 function setMode(m){
   MODE=m;
   [...document.querySelectorAll('#mode-sel button')].forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  $('proc-card').style.display=m==='procedural'?'':'none';
+  $('diff-wrap').style.display=m==='diffusional'?'flex':'none';
+  $('bubble-card').style.display=m==='bubble'?'':'none';
   if(m==='diffusional'){
-    $('proc-card').style.display='none';$('diff-wrap').style.display='flex';
     if(!GAL.tiles.length)buildGallery();
     if(DIFF.model&&!GAL.finals.length&&!GAL.playing)diffSampleAll();
+  }else if(m==='bubble'){
+    buildBubble({});
   }else{
-    $('diff-wrap').style.display='none';$('proc-card').style.display='';
     preview();
   }
 }
@@ -651,6 +745,233 @@ $('diff-fs').onclick=()=>{
 };
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('diff-wrap').classList.contains('fs')){
   $('diff-wrap').classList.remove('fs');$('diff-fs').textContent='⤢';}});
+
+// ─────────────────────────────────────────────────────────────
+//  BUBBLE DIAGRAM — the adjacency table as a node-link graph.
+//  rooms = nodes, edges = adjacency (thicker = stronger). Hover for
+//  details; ✦ Explain fetches per-edge rationale from the LLM; Flow
+//  traces the shortest path from the entry room. Reads the same matrix
+//  the rest of the tuner edits, so it stays in sync live.
+// ─────────────────────────────────────────────────────────────
+const SVGNS='http://www.w3.org/2000/svg';
+const BUB={pos:{},nodes:[],edges:[],start:null,typeOf:{},px:{},reasons:{},circ:false,view:'drawn',scene:null,merged:false,T:null,runs:[],VBW:760};
+const edgeKey=(a,b)=>[a,b].sort().join('|');
+let BUB_RAF=null;
+function bbStageSize(){const c=$('bb-cv');return {W:c.clientWidth||760,H:c.clientHeight||540};}
+
+// Build the graph model. "merged" = nodes are the actual drawn rooms (placed on
+// the plan); otherwise nodes are the scene's room types (abstract force graph).
+function bbModel(){
+  const sc=CFG.scenes[scene],adj=sc.adj||{};
+  const W=(a,b)=>Math.max((adj[a]&&adj[a][b])||0,(adj[b]&&adj[b][a])||0);
+  const drawn=(APP_SHAPES||[]).filter(s=>s.type==='rect'&&s.roomType&&sc.types.includes(s.roomType));
+  const merged=BUB.view==='drawn'&&drawn.length>0;
+  let nodes,edges,start,typeOf={};
+  if(merged){
+    nodes=drawn.map((s,i)=>({id:'n'+i,type:s.roomType,cx:s.x+s.w/2,cy:s.y+s.h/2,shape:s}));
+    nodes.forEach(n=>typeOf[n.id]=n.type);
+    edges=[];for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const w=W(nodes[i].type,nodes[j].type);if(w>0)edges.push({a:nodes[i].id,b:nodes[j].id,w});}
+    start=(nodes.find(n=>n.type===sc.startType)||nodes[0]).id;
+  }else{
+    const types=sc.types;nodes=types.map(t=>({id:t,type:t}));types.forEach(t=>typeOf[t]=t);
+    edges=[];for(let i=0;i<types.length;i++)for(let j=i+1;j<types.length;j++){const w=W(types[i],types[j]);if(w>0)edges.push({a:types[i],b:types[j],w});}
+    start=types.includes(sc.startType)?sc.startType:types[0];
+  }
+  return {nodes,edges,start,typeOf,merged};
+}
+function buildBubble(opts){
+  opts=opts||{};if(!CFG||!CFG.scenes[scene])return;
+  if(BUB.scene!==scene){BUB.scene=scene;BUB.reasons={};const ex=$('bb-explain');if(ex)ex.textContent='✦ Explain logic';}
+  const m=bbModel();
+  BUB.nodes=m.nodes;BUB.edges=m.edges;BUB.start=m.start;BUB.typeOf=m.typeOf;BUB.merged=m.merged;BUB.px={};
+  const svg=$('bb-svg'),{W,H}=bbStageSize();svg.setAttribute('viewBox',`0 0 ${W} ${H}`);BUB.VBW=W;
+  if(m.merged){
+    cancelAnimationFrame(BUB_RAF);
+    fetch(API+'/api/arch',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({shapes:curShapes(),sceneKey:scene,config:CFG})})
+      .then(r=>r.json()).then(data=>{
+        BUB.runs=data.runs||[];BUB.T=drawPlan(BUB.runs,$('bb-cv'));
+        layoutMerged(W,H);renderNodes();if(BUB.circ)applyCirc();
+        const doors=BUB.runs.filter(r=>r.door).length;
+        if(!BUB.circ)$('bb-read').textContent=`your plan · ${BUB.nodes.length} rooms · ${BUB.runs.length} walls · ${doors} doors`;
+      }).catch(()=>{BUB.runs=[];BUB.T=drawPlan([],$('bb-cv'));layoutMerged(W,H);renderNodes();$('bb-read').textContent='preview needs the server';});
+  }else{
+    drawPlan([],$('bb-cv'));BUB.T=null;            // no plan in the abstract view
+    layoutAbstractInit(W,H);renderNodes();animateBubble(170);
+    if(!BUB.circ)$('bb-read').textContent=`full scene · ${BUB.nodes.length} room types`;
+  }
+}
+// merged: nodes sit at the real room centroids, mapped through the plan transform
+function layoutMerged(W,H){
+  const T=BUB.T;
+  if(T){for(const n of BUB.nodes)BUB.px[n.id]={x:T.X(n.cx),y:T.Y(n.cy)};return;}
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  for(const n of BUB.nodes){minX=Math.min(minX,n.cx);minY=Math.min(minY,n.cy);maxX=Math.max(maxX,n.cx);maxY=Math.max(maxY,n.cy);}
+  const pad=60,sc=Math.min((W-2*pad)/((maxX-minX)||1),(H-2*pad)/((maxY-minY)||1));
+  const ox=(W-(maxX-minX)*sc)/2-minX*sc,oy=(H-(maxY-minY)*sc)/2-minY*sc;
+  for(const n of BUB.nodes)BUB.px[n.id]={x:n.cx*sc+ox,y:n.cy*sc+oy};
+}
+// abstract: seed a force simulation (animated)
+function layoutAbstractInit(W,H){
+  BUB.pos[scene]=BUB.pos[scene]||{};
+  const n=BUB.nodes.length,k=Math.min(W,H)/(Math.sqrt(n)+1)*0.8,cx=W/2,cy=H/2;
+  const fresh=!BUB.nodes.every(nd=>BUB.pos[scene][nd.id]);
+  const nd=BUB.nodes.map((node,i)=>{const p=BUB.pos[scene][node.id];if(p)return{id:node.id,x:p.x,y:p.y};
+    const a=-Math.PI/2+2*Math.PI*i/n;return{id:node.id,x:cx+Math.cos(a)*k*1.7,y:cy+Math.sin(a)*k*1.7};});
+  BUB.sim={nd,byId:Object.fromEntries(nd.map(d=>[d.id,d])),k,temp:k*(fresh?0.95:0.4),edges:BUB.edges,W,H,cx,cy};
+  for(const d of nd)BUB.px[d.id]={x:d.x,y:d.y};
+}
+function simStep(){
+  const s=BUB.sim;if(!s)return;const {nd,byId,k,edges,cx,cy,W,H}=s,n=nd.length;
+  nd.forEach(d=>{d.dx=0;d.dy=0;});
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const a=nd[i],b=nd[j];let dx=a.x-b.x,dy=a.y-b.y,dd=Math.hypot(dx,dy)||0.01,f=k*k/dd;a.dx+=dx/dd*f;a.dy+=dy/dd*f;b.dx-=dx/dd*f;b.dy-=dy/dd*f;}
+  for(const e of edges){const a=byId[e.a],b=byId[e.b];if(!a||!b)continue;let dx=a.x-b.x,dy=a.y-b.y,dd=Math.hypot(dx,dy)||0.01;const ideal=Math.max(k*0.55,k*(1.45-0.12*e.w)),f=(dd-ideal)*0.5;a.dx-=dx/dd*f;a.dy-=dy/dd*f;b.dx+=dx/dd*f;b.dy+=dy/dd*f;}
+  for(const a of nd){a.dx+=(cx-a.x)*0.015;a.dy+=(cy-a.y)*0.015;}
+  const t=s.temp;for(const a of nd){const dd=Math.hypot(a.dx,a.dy)||0.01,m=Math.min(dd,t);a.x=Math.max(40,Math.min(W-40,a.x+a.dx/dd*m));a.y=Math.max(40,Math.min(H-40,a.y+a.dy/dd*m));}
+  s.temp*=0.94;
+}
+function syncPositions(){const s=BUB.sim;if(!s)return;for(const d of s.nd)BUB.px[d.id]={x:d.x,y:d.y};positionDOM();}
+function positionDOM(){const svg=$('bb-svg');if(!svg)return;
+  svg.querySelectorAll('.bb-edge').forEach(l=>{const a=BUB.px[l.dataset.a],b=BUB.px[l.dataset.b];if(a&&b){l.setAttribute('x1',a.x);l.setAttribute('y1',a.y);l.setAttribute('x2',b.x);l.setAttribute('y2',b.y);}});
+  svg.querySelectorAll('.bb-node').forEach(g=>{const p=BUB.px[g.dataset.id];if(p)g.setAttribute('transform',`translate(${p.x},${p.y})`);});}
+function animateBubble(frames){cancelAnimationFrame(BUB_RAF);let f=0;
+  const tick=()=>{simStep();simStep();syncPositions();f++;
+    if(f<frames&&BUB.sim&&BUB.sim.temp>0.35)BUB_RAF=requestAnimationFrame(tick);else if(BUB.circ)applyCirc();};
+  BUB_RAF=requestAnimationFrame(tick);}
+function renderNodes(){
+  const svg=$('bb-svg');if(!svg)return;svg.innerHTML='';const R=BUB.merged?13:18;
+  const eg=document.createElementNS(SVGNS,'g');
+  for(const e of BUB.edges){const a=BUB.px[e.a],b=BUB.px[e.b];if(!a||!b)continue;const ln=document.createElementNS(SVGNS,'line');
+    ln.setAttribute('x1',a.x);ln.setAttribute('y1',a.y);ln.setAttribute('x2',b.x);ln.setAttribute('y2',b.y);
+    ln.setAttribute('stroke',BUB.merged?'#94A3B8':'#C7C6C1');ln.setAttribute('stroke-width',1.1+e.w*1.05);
+    ln.setAttribute('stroke-linecap','round');ln.setAttribute('opacity',BUB.merged?'0.8':'0.6');ln.setAttribute('class','bb-edge');
+    ln.dataset.a=e.a;ln.dataset.b=e.b;ln.dataset.w=e.w;
+    ln.addEventListener('mouseenter',()=>hoverEdge(e));ln.addEventListener('mouseleave',clearHover);eg.appendChild(ln);}
+  svg.appendChild(eg);
+  const ng=document.createElementNS(SVGNS,'g');
+  for(const node of BUB.nodes){const p=BUB.px[node.id]||{x:0,y:0},col=colorOf(node.type),g=document.createElementNS(SVGNS,'g');
+    g.setAttribute('class','bb-node');g.dataset.id=node.id;g.setAttribute('transform',`translate(${p.x},${p.y})`);
+    if(node.id===BUB.start){const ring=document.createElementNS(SVGNS,'circle');ring.setAttribute('r',R+6);ring.setAttribute('fill','none');ring.setAttribute('stroke',col);ring.setAttribute('stroke-width',2);ring.setAttribute('stroke-dasharray','3 3');ring.setAttribute('opacity','.85');g.appendChild(ring);}
+    const c=document.createElementNS(SVGNS,'circle');c.setAttribute('class','bb-disc');c.setAttribute('r',R);c.setAttribute('fill',col);c.dataset.col=col;c.setAttribute('stroke','#fff');c.setAttribute('stroke-width',2);g.appendChild(c);
+    const ini=document.createElementNS(SVGNS,'text');ini.setAttribute('text-anchor','middle');ini.setAttribute('y',3.5);ini.setAttribute('fill','#fff');ini.setAttribute('font-size',BUB.merged?'8':'9');ini.setAttribute('font-weight','700');ini.textContent=node.type.slice(0,3).toUpperCase();g.appendChild(ini);
+    const lab=document.createElementNS(SVGNS,'text');lab.setAttribute('text-anchor','middle');lab.setAttribute('y',R+13);lab.setAttribute('fill','#3A3A36');lab.setAttribute('font-size','10');lab.setAttribute('font-weight','600');lab.textContent=pretty(node.type);g.appendChild(lab);
+    g.addEventListener('mouseenter',()=>hoverNode(node.id));g.addEventListener('mouseleave',clearHover);ng.appendChild(g);}
+  svg.appendChild(ng);
+}
+// ── tooltip + hover highlight ──
+function showTip(cx,cy,html){const tip=$('bb-tip');tip.innerHTML=html;tip.style.left=cx+'px';tip.style.top=cy+'px';tip.classList.add('show');}
+function tipAtVB(vx,vy,html){const svg=$('bb-svg'),stage=$('bb-stage').getBoundingClientRect(),sr=svg.getBoundingClientRect();
+  const vbw=(svg.viewBox&&svg.viewBox.baseVal&&svg.viewBox.baseVal.width)||sr.width,s=sr.width/vbw;
+  showTip((sr.left-stage.left)+vx*s,(sr.top-stage.top)+vy*s,html);}
+function setFaded(keepN,keepE){
+  $('bb-svg').querySelectorAll('.bb-node').forEach(g=>g.classList.toggle('faded',!keepN.has(g.dataset.id)));
+  $('bb-svg').querySelectorAll('.bb-edge').forEach(l=>{const k=edgeKey(l.dataset.a,l.dataset.b);
+    l.classList.toggle('faded',!keepE.has(k));l.classList.toggle('hl',keepE.has(k));});
+}
+function hoverNode(id){
+  const keepN=new Set([id]),keepE=new Set();
+  BUB.edges.forEach(e=>{if(e.a===id||e.b===id){keepE.add(edgeKey(e.a,e.b));keepN.add(e.a===id?e.b:e.a);}});
+  setFaded(keepN,keepE);
+  const t=BUB.typeOf[id],deg=BUB.edges.filter(e=>e.a===id||e.b===id);
+  let html=`<b>${pretty(t)}</b>${id===BUB.start?' <span class="muted">· entry</span>':''}`;
+  html+=`<span class="muted">${deg.length} connection${deg.length===1?'':'s'}</span>`;
+  const p=BUB.px[id];tipAtVB(p.x,p.y-18,html);
+}
+function hoverEdge(e){
+  setFaded(new Set([e.a,e.b]),new Set([edgeKey(e.a,e.b)]));
+  const ta=BUB.typeOf[e.a],tb=BUB.typeOf[e.b],why=BUB.reasons[edgeKey(ta,tb)],a=BUB.px[e.a],b=BUB.px[e.b];
+  let html=`<b>${pretty(ta)}</b> ↔ <b>${pretty(tb)}</b> <span class="w">w${e.w}</span>`;
+  html+= why?`<span class="why">${why}</span>`:`<span class="why muted">✦ Explain logic to see why</span>`;
+  tipAtVB((a.x+b.x)/2,(a.y+b.y)/2,html);
+}
+function clearHover(){
+  $('bb-tip').classList.remove('show');
+  $('bb-svg').querySelectorAll('.faded').forEach(el=>el.classList.remove('faded'));
+  $('bb-svg').querySelectorAll('.bb-edge.hl').forEach(el=>el.classList.remove('hl'));
+}
+// ── circulation: shortest-path tree from the entry (stronger adjacency = cheaper hop) ──
+function dijkstra(start){
+  const adj={};BUB.nodes.forEach(n=>adj[n.id]=[]);
+  BUB.edges.forEach(e=>{const c=Math.max(1,6-e.w);adj[e.a].push([e.b,c,e]);adj[e.b].push([e.a,c,e]);});
+  const dist={},prev={},prevEdge={},seen={};BUB.nodes.forEach(n=>dist[n.id]=Infinity);dist[start]=0;
+  const pq=[[0,start]];
+  while(pq.length){pq.sort((a,b)=>a[0]-b[0]);const[d,u]=pq.shift();if(seen[u])continue;seen[u]=1;
+    for(const[v,c,e]of adj[u])if(d+c<dist[v]){dist[v]=d+c;prev[v]=u;prevEdge[v]=edgeKey(e.a,e.b);pq.push([dist[v],v]);}}
+  return {dist,prev,prevEdge};
+}
+const isCirc=ty=>/corridor|hall|atrium|concourse|lobby|circulation/.test(ty);
+function applyCirc(){
+  if(!BUB.start)return;const {dist,prev,prevEdge}=dijkstra(BUB.start);
+  const tree=new Set(Object.values(prevEdge)),depth={};let maxD=1;
+  for(const n of BUB.nodes){const id=n.id;if(!isFinite(dist[id])){depth[id]=-1;continue;}
+    let d=0,x=id,g=new Set();while(prev[x]!==undefined&&!g.has(x)){g.add(x);d++;x=prev[x];}depth[id]=d;maxD=Math.max(maxD,d);}
+  $('bb-svg').querySelectorAll('.bb-edge').forEach(l=>{const t=tree.has(edgeKey(l.dataset.a,l.dataset.b));
+    l.setAttribute('stroke',t?'#1D6AF5':(BUB.merged?'#CBD5E1':'#E2E1DC'));l.setAttribute('opacity',t?'0.95':'0.28');});
+  $('bb-svg').querySelectorAll('.bb-node').forEach(g=>{const id=g.dataset.id,disc=g.querySelector('.bb-disc'),ty=BUB.typeOf[id];
+    if(BUB.merged){disc.setAttribute('stroke',isCirc(ty)?'#1D6AF5':'#fff');disc.setAttribute('stroke-width',isCirc(ty)?3:2);}
+    else{const d=depth[id];disc.setAttribute('fill',d<0?'#CFCFCA':`hsl(214,75%,${38+(d/(maxD||1))*42}%)`);}});
+  if(BUB.merged&&BUB.T){const T=BUB.T,cx=T.ctx;cx.save();cx.fillStyle='rgba(29,106,245,.16)';
+    for(const n of BUB.nodes)if(isCirc(n.type)&&n.shape){const s=n.shape;cx.fillRect(T.X(s.x),T.Y(s.y),s.w*T.sc,s.h*T.sc);}cx.restore();}
+  $('bb-read').textContent=`circulation · entry ${pretty(BUB.typeOf[BUB.start])} · ${maxD} step${maxD===1?'':'s'} deep`;
+}
+$('bb-circ-btn').addEventListener('click',()=>{
+  BUB.circ=!BUB.circ;const b=$('bb-circ-btn');b.classList.toggle('ghost',!BUB.circ);b.textContent=BUB.circ?'✓ Circulation':'Circulation';
+  if(BUB.circ)applyCirc();
+  else{if(BUB.merged&&BUB.T)BUB.T=drawPlan(BUB.runs,$('bb-cv'));renderNodes();
+    $('bb-read').textContent=BUB.merged?`your plan · ${BUB.nodes.length} rooms`:`full scene · ${BUB.nodes.length} room types`;}
+});
+// ── zoom + pan for the bubble stage (canvas plan + svg graph move together) ──
+(function bbZoom(){
+  const stage=$('bb-stage'),layer=$('bb-zoom');if(!stage||!layer)return;
+  const Z={scale:1,tx:0,ty:0},MIN=0.4,MAX=6;
+  const apply=()=>{layer.style.transform=`translate(${Z.tx}px,${Z.ty}px) scale(${Z.scale})`;};
+  // zoom toward a point given in stage-local coordinates
+  function zoomAt(px,py,factor){
+    const ns=Math.max(MIN,Math.min(MAX,Z.scale*factor));if(ns===Z.scale)return;
+    Z.tx=px-(px-Z.tx)*(ns/Z.scale);Z.ty=py-(py-Z.ty)*(ns/Z.scale);Z.scale=ns;apply();
+  }
+  function zoomCenter(factor){const r=stage.getBoundingClientRect();zoomAt(r.width/2,r.height/2,factor);}
+  stage.addEventListener('wheel',e=>{
+    e.preventDefault();const r=stage.getBoundingClientRect();
+    zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*0.0015));
+  },{passive:false});
+  // drag to pan
+  let pan=null;
+  stage.addEventListener('pointerdown',e=>{
+    if(e.button!==0||e.target.closest('.bb-zoom-ctrl'))return;
+    pan={x:e.clientX,y:e.clientY,tx:Z.tx,ty:Z.ty};stage.classList.add('panning');
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener('pointermove',e=>{
+    if(!pan)return;Z.tx=pan.tx+(e.clientX-pan.x);Z.ty=pan.ty+(e.clientY-pan.y);apply();
+  });
+  const endPan=()=>{pan=null;stage.classList.remove('panning');};
+  stage.addEventListener('pointerup',endPan);stage.addEventListener('pointercancel',endPan);
+  $('bb-zoom-in').onclick=()=>zoomCenter(1.25);
+  $('bb-zoom-out').onclick=()=>zoomCenter(1/1.25);
+  $('bb-zoom-reset').onclick=()=>{Z.scale=1;Z.tx=0;Z.ty=0;apply();};
+})();
+// toggle: nodes on the plan ("your plan") vs the whole scene's adjacency table
+$('bb-view-btn').addEventListener('click',()=>{
+  BUB.view=BUB.view==='drawn'?'all':'drawn';
+  $('bb-view-btn').textContent=BUB.view==='drawn'?'Rooms: your plan':'Rooms: full scene';
+  buildBubble({});});
+// ── ✦ Explain: ask the LLM for a one-line reason per adjacency (by room type) ──
+$('bb-explain').onclick=async()=>{
+  if(BUB._busy)return;BUB._busy=true;const btn=$('bb-explain');btn.disabled=true;btn.textContent='✦ thinking…';
+  try{
+    const typeSet=new Set(BUB.nodes.map(n=>n.type));
+    const rooms=[...typeSet].map(k=>({key:k,name:pretty(k)}));
+    const seen={},edges=[];
+    for(const e of BUB.edges){const ta=BUB.typeOf[e.a],tb=BUB.typeOf[e.b],kk=edgeKey(ta,tb);if(!seen[kk]){seen[kk]=1;edges.push({from:ta,to:tb,weight:e.w});}}
+    const res=await fetch(API+'/api/explain',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({buildingType:pretty(scene),rooms,edges})});
+    const data=await res.json();if(!res.ok)throw new Error(data.error||('HTTP '+res.status));
+    BUB.reasons={};for(const r of (data.reasons||[]))BUB.reasons[edgeKey(r.from,r.to)]=r.reason;
+    btn.textContent='✦ Explained — hover an edge';$('bb-read').textContent=Object.keys(BUB.reasons).length+' reasons';
+  }catch(e){btn.textContent='✦ Explain logic';$('bb-read').textContent='couldn’t explain: '+(e.message||e);}
+  finally{BUB._busy=false;btn.disabled=false;setTimeout(()=>{const b=$('bb-explain');if(b&&!BUB._busy)b.textContent='✦ Explain logic';},3000);}
+};
 
 // ── draggable left-panel width + collapse toggle ──
 (function(){
