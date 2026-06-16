@@ -31,6 +31,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   padding:2px 8px;font-size:10.5px;font-weight:500;cursor:pointer;color:var(--muted);
   transition:background .12s,border-color .12s,color .12s;white-space:nowrap}
 .tb-chip:hover,.tb-chip.on{background:var(--accent-lt);border-color:var(--accent);color:var(--accent)}
+/* circular floating tool buttons (bottom-left) — grow on hover to reveal the full name */
+#float-tools{position:fixed;left:14px;bottom:34px;z-index:55;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.float-chip{display:flex;align-items:center;height:44px;padding:0;border:1px solid var(--border);
+  background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-radius:999px;cursor:pointer;color:var(--text);
+  overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.10);
+  transition:box-shadow .2s,background .18s,color .18s,border-color .18s,transform .18s}
+.float-chip:hover{box-shadow:0 7px 20px rgba(0,0,0,.16);color:var(--accent);border-color:var(--accent);transform:translateY(-1px)}
+.float-chip .fc-ico{flex:0 0 44px;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+.float-chip .fc-ico svg{width:18px;height:18px}
+.float-chip .fc-label{max-width:0;opacity:0;overflow:hidden;white-space:nowrap;font-size:12px;font-weight:600;
+  transition:max-width .28s cubic-bezier(.2,.8,.2,1),opacity .2s,padding .28s}
+.float-chip:hover .fc-label,.float-chip.busy .fc-label{max-width:170px;opacity:1;padding-right:16px}
+.float-chip.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(29,106,245,.3)}
+.float-chip em{font-style:normal;font-size:8.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+  background:var(--accent-lt);color:var(--accent);padding:1px 5px;border-radius:999px;margin-left:5px}
+.float-chip.on em{background:rgba(255,255,255,.25);color:#fff}
 .tb-export{background:var(--text);color:#fff;border:none;border-radius:5px;
   padding:3px 10px;font-size:10.5px;font-weight:600;cursor:pointer;transition:opacity .12s}
 .tb-export:hover{opacity:.76}
@@ -233,6 +249,79 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #scene-box .ty-hint b{color:var(--text);font-weight:600}
 #scene-box .ty-ex{cursor:pointer;color:var(--accent);font-weight:600}
 #scene-box .ty-ex:hover{text-decoration:underline}
+/* ── REGIONS panel ── */
+#region-box{position:absolute;top:46px;right:14px;z-index:650;display:none;
+  background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-lg);
+  padding:12px 13px;width:300px;height:auto;min-width:240px;min-height:150px;max-width:96%;
+  resize:both;overflow:auto;animation:ctxIn .12s cubic-bezier(.2,.8,.4,1)}
+#region-box.show{display:flex;flex-direction:column}
+#region-box .rg-title{font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px;cursor:move;user-select:none;flex:0 0 auto}
+#region-box .rg-title::before{content:"⠿";margin-right:6px;color:var(--muted);font-weight:400;letter-spacing:-1px}
+#region-box .rg-sub{display:block;font-size:10px;font-weight:500;color:var(--muted);margin-top:3px;cursor:default}
+#region-box .rg-foot{flex:0 0 auto}
+#rg-list{display:flex;flex-direction:column;gap:6px;flex:1 1 auto;min-height:60px;overflow:auto}
+.rg-empty{font-size:11px;color:var(--muted);padding:6px 2px}
+.rg-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border-2,#EFEEEB);
+  border-radius:8px;background:#FAFAF8}
+.rg-item .rg-name{flex:1;font-size:12px;font-weight:600;color:var(--text);border:none;background:none;outline:none;min-width:0}
+.rg-item .rg-cnt{font-size:10px;color:var(--muted);font-family:'SF Mono','Menlo',monospace}
+.rg-item .rg-ang{width:42px;font-size:11px;font-family:'SF Mono','Menlo',monospace;border:1px solid var(--border);
+  border-radius:5px;padding:2px 4px;text-align:right;outline:none;color:var(--text);background:#fff}
+.rg-item .rg-ang:focus{border-color:var(--accent)}
+.rg-ic{cursor:pointer;border:none;background:none;font-size:13px;line-height:1;padding:3px;border-radius:5px;color:var(--muted)}
+.rg-ic:hover{background:#ECECE8;color:var(--text)}
+.rg-item.locked{background:#F3F4F6}
+#iso-bar{position:fixed;top:46px;left:50%;transform:translateX(-50%) translateY(-70px);opacity:0;
+  display:flex;align-items:center;gap:12px;background:rgba(29,106,245,.96);color:#fff;
+  padding:7px 8px 7px 16px;border-radius:999px;box-shadow:0 8px 28px rgba(0,0,0,.20);
+  font-size:13px;font-weight:500;z-index:680;transition:transform .32s ease,opacity .32s ease;pointer-events:none}
+#iso-bar.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+#iso-bar .iso-done{background:#fff;color:#1D6AF5;border:none;border-radius:999px;padding:5px 14px;font-weight:600;cursor:pointer;font-size:12px}
+#iso-bar .iso-done:hover{background:#EAF1FF}
+.rg-item.locked .rg-name{color:#6B7280}
+.rg-foot{margin-top:10px;padding-top:9px;border-top:1px solid var(--border)}
+.rg-btn{width:100%;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);
+  border-radius:8px;padding:7px;font-size:11px;font-weight:600;cursor:pointer}
+.rg-btn:hover{filter:brightness(.98)}
+.rg-btn:disabled{opacity:.45;cursor:not-allowed;border-color:var(--border);background:#F5F5F2;color:var(--muted)}
+/* ── LIBRARY panel (local, localStorage) ── reuses the region-box look ── */
+#library-box{position:absolute;top:46px;right:14px;z-index:650;display:none;
+  background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-lg);
+  padding:12px 13px;width:320px;max-width:92%;animation:ctxIn .12s cubic-bezier(.2,.8,.4,1)}
+#library-box.show{display:block}
+#lib-list{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto}
+.lib-row{display:flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid var(--border-2,#EFEEEB);border-radius:8px;background:#FAFAF8}
+.lib-row .lib-name{flex:1;font-size:12.5px;font-weight:600;color:var(--text);border:none;background:none;outline:none;min-width:0;cursor:pointer}
+.lib-row .lib-thumb{width:56px;height:40px;flex-shrink:0;border:1px solid var(--border-2,#EFEEEB);border-radius:5px;background:#fff}
+.lib-row .lib-when{font-size:9.5px;color:var(--muted);font-family:'SF Mono','Menlo',monospace}
+.lib-ic{cursor:pointer;border:none;background:none;font-size:12px;line-height:1;padding:3px;border-radius:5px;color:var(--muted)}
+.lib-ic:hover{background:#ECECE8;color:var(--text)}
+.lib-empty{font-size:11px;color:var(--muted);padding:6px 2px}
+/* ── AUTH (Supabase login + save) ── */
+#auth-area{display:inline-flex;align-items:center;gap:6px;margin-left:8px}
+#auth-user{display:inline-flex;align-items:center;gap:6px}
+.auth-email{font-size:10.5px;color:var(--muted);font-family:'SF Mono','Menlo',monospace;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#auth-backdrop{position:fixed;inset:0;z-index:900;background:rgba(20,20,18,.28);display:none}
+#auth-backdrop.show{display:block}
+#signin-modal,#mydrawings-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:901;display:none;
+  background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh-lg);padding:20px;width:340px;max-width:92%}
+#signin-modal.show,#mydrawings-modal.show{display:block}
+.am-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.am-sub{font-size:11.5px;color:var(--muted);margin-bottom:14px;line-height:1.5}
+#signin-email{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;outline:none;margin-bottom:10px}
+#signin-email:focus{border-color:var(--accent)}
+.am-btn{width:100%;border:none;background:var(--accent);color:#fff;border-radius:8px;padding:9px;font-size:12px;font-weight:600;cursor:pointer}
+.am-btn:hover{filter:brightness(.96)}
+.am-btn.ghost{background:#F2F2EF;color:var(--text);margin-top:10px}
+.am-msg{font-size:11px;color:var(--muted);margin-top:10px;min-height:14px}
+.md-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto;margin-bottom:4px}
+.md-empty{font-size:12px;color:var(--muted);padding:8px 2px}
+.md-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border-2,#EFEEEB);border-radius:8px;cursor:pointer}
+.md-row:hover{background:#FAFAF8;border-color:var(--accent)}
+.md-row .md-name{flex:1;font-size:12.5px;font-weight:600;color:var(--text)}
+.md-row .md-when{font-size:10px;color:var(--muted);font-family:'SF Mono','Menlo',monospace}
+.md-row .md-del{border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:5px}
+.md-row .md-del:hover{background:#ECECE8;color:#DC2626}
 /* ── FACADE generator panel ── */
 #facade-box{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:650;display:none;
   background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-lg);
@@ -361,13 +450,66 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 
 <div class="topbar">
   <span class="logo">dtd2</span>
+  <span id="auth-area">
+    <button class="tb-chip" id="btn-signin">Sign in</button>
+    <span id="auth-user" style="display:none">
+      <button class="tb-chip" id="btn-save">Save</button>
+      <button class="tb-chip" id="btn-mydrawings">My drawings</button>
+      <span class="auth-email" id="auth-email"></span>
+      <button class="tb-chip" id="btn-signout">Sign out</button>
+    </span>
+  </span>
   <div class="tb-sep"></div>
-  <button class="tb-chip" id="btn-scene">✦ LLM</button>
+  <button class="tb-chip" id="btn-scene">✦ AI</button>
+  <button class="tb-chip" id="btn-plan">Plan</button>
   <button class="tb-chip" id="btn-facade">Facade</button>
-  <button class="tb-chip" id="btn-gen">Diffusion</button>
-  <button class="tb-chip" id="btn-plan">Procedural</button>
+  <button class="tb-chip" id="btn-library">Library</button>
   <button class="tb-chip" id="btn-clear">Clear</button>
-  <button class="tb-chip" id="btn-explain">Demo</button>
+</div>
+<!-- circular floating tools (bottom-left) -->
+<div id="float-tools">
+  <button class="float-chip" id="btn-gen" title="Diffusion-model layout (experimental)">
+    <span class="fc-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.2l1.7 5.6 5.6 1.7-5.6 1.7L12 16.8l-1.7-5.6L4.7 9.5l5.6-1.7z"/><path d="M18.5 13.5l.8 2.4 2.4.8-2.4.8-.8 2.4-.8-2.4-2.4-.8 2.4-.8z"/></svg></span>
+    <span class="fc-label">Diffusion <em>beta</em></span>
+  </button>
+  <button class="float-chip" id="btn-regions" title="Group rooms into regions">
+    <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg></span>
+    <span class="fc-label">Regions</span>
+  </button>
+  <button class="float-chip" id="btn-explain" title="Live algorithm walkthrough">
+    <span class="fc-ico"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="7 5 19 12 7 19"/></svg></span>
+    <span class="fc-label">Demo</span>
+  </button>
+</div>
+
+<div id="region-box">
+  <div class="rg-title">Regions <span class="rg-sub">lock a group of rooms to protect it while you work elsewhere</span></div>
+  <div id="rg-list"></div>
+  <div class="rg-foot">
+    <button id="rg-create" class="rg-btn">＋ Group selection into region</button>
+  </div>
+</div>
+
+<div id="library-box">
+  <div class="rg-title">Library <span class="rg-sub">saved on this device — open to keep editing</span></div>
+  <div id="lib-list"></div>
+  <div class="rg-foot">
+    <button id="lib-save" class="rg-btn">＋ Save current plan to library</button>
+  </div>
+</div>
+
+<div id="auth-backdrop"></div>
+<div id="signin-modal">
+  <div class="am-title">Sign in</div>
+  <div class="am-sub">Save your generated plans and open them from any device.</div>
+  <input id="signin-email" type="email" placeholder="you@example.com" autocomplete="email"/>
+  <button id="signin-magic" class="am-btn">Email me a magic link</button>
+  <div class="am-msg" id="signin-msg"></div>
+</div>
+<div id="mydrawings-modal">
+  <div class="am-title">My drawings</div>
+  <div id="md-list" class="md-list"></div>
+  <button id="md-close" class="am-btn ghost">Close</button>
 </div>
 
 <div class="workspace">
@@ -464,6 +606,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   </div>
 </div>
 
+<!-- Supabase JS SDK (auth + per-user save). Loads before the app so window.supabase is ready. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ── Supabase config — fill these in (Project Settings → API). The anon key is
+  //    public and safe to ship in the client AS LONG AS Row-Level Security is on
+  //    (see supabase/schema.sql). Leave blank to disable login/save.
+  window.SUPABASE_URL='';
+  window.SUPABASE_ANON_KEY='';
+</script>
 <script>
 'use strict';
 // ─────────────────────────────────────────
@@ -589,10 +740,18 @@ const S={
   predHidden:false, // true after Esc — hides the dashed prediction ghosts until re-triggered
   archOn:false,     // architectural mode — walls + doors fetched from the backend
   archRuns:[],archErr:false,_archT:null,
+  doorOverrides:{}, // wallKey → door centre param (t along the run) — user-nudged doors
+  doorDrag:null,    // {key,idx,dw,len,ux,uy,ex} while dragging a door along its wall
+  regions:[],       // [{id,name,shapeIds:[],locked}] — named groups that can be locked
+  _lockedIds:new Set(), // cache of shape ids inside a locked region
   deformDrag:false, // true while alt-dragging a corner (free vertex move)
   shiftScale:false, // true while shift-dragging a scale handle (proportional)
   edgeClick:null,   // pending edge interaction: drag→resize side, click→wall menu
   rotating:false,rotSid:null,rotPoly0:null,rotCenter:null,rotStart:0, // free rotation
+  rgRotating:null, // {id,center,start,angle0} while drag-rotating a whole region
+  drawFrame:null,  // {angle,pivot,rgid} when drawing a new room inside a tilted region
+  viewRot:0,viewPivot:{x:0,y:0}, // temporary canvas rotation (isolate mode renders a tilted region upright)
+  iso:null,        // {rgid,prevView,animating} while a region is isolated for focused editing
   famSeq:1, // next panel-family id (linked panels resize/recolor together)
   famNames:{}, // optional display names per family id
   famDetail:{}, // fam id → normalized internal sub-shapes (mullions / sub-frames), shared by the whole family
@@ -643,8 +802,11 @@ function attachHint(el,text,sub){
 function ns(tag,a={}){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(a))e.setAttribute(k,v);return e;}
 function cW(){return cwrap.offsetWidth}
 function cH(){return cwrap.offsetHeight}
-function s2w(sx,sy){return{x:(sx-RW-S.vx)/S.zoom,y:(sy-RW-S.vy)/S.zoom}}
-function w2s(wx,wy){return{x:wx*S.zoom+S.vx+RW,y:wy*S.zoom+S.vy+RW}}
+function s2w(sx,sy){let x=(sx-RW-S.vx)/S.zoom,y=(sy-RW-S.vy)/S.zoom;
+  if(S.viewRot){const p=rotPt({x,y},S.viewPivot,-S.viewRot);x=p.x;y=p.y;}return{x,y};}
+function w2s(wx,wy){let x=wx,y=wy;
+  if(S.viewRot){const p=rotPt({x:wx,y:wy},S.viewPivot,S.viewRot);x=p.x;y=p.y;}
+  return{x:x*S.zoom+S.vx+RW,y:y*S.zoom+S.vy+RW}}
 function evtSP(e){const r=cwrap.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
 function evtWP(e){const sp=evtSP(e);return s2w(sp.x,sp.y)}
 function gSnapX(x){return S.snapOn?Math.round(x/GRID)*GRID:x}
@@ -698,13 +860,43 @@ function showSnap(pt){
   else if(pt.t==='center')lSnap.appendChild(ns('circle',{cx:sp.x,cy:sp.y,r:4.5,fill:'none',stroke:c,'stroke-width':1.5}));
   else lSnap.appendChild(ns('circle',{cx:sp.x,cy:sp.y,r:3,fill:'none',stroke:c,'stroke-width':1.5}));
 }
+// ── per-axis snap targets from neighbouring rooms (used while scaling/resizing) ──
+// every other room contributes its left/right (X) and top/bottom (Y) edges plus
+// its centre lines, so a dragged side/corner can land flush against a neighbour.
+function axisSnapTargets(excl){
+  const xs=[],ys=[];
+  for(const s of S.shapes){
+    if(s.id===excl)continue;
+    let bx;
+    if(s.type==='rect'&&!s.poly)bx={x:s.x,y:s.y,r:s.x+s.w,b:s.y+s.h};
+    else if(s.type==='rect'&&s.poly)bx=bounds(s);
+    else continue;
+    xs.push(bx.x,bx.r,(bx.x+bx.r)/2);
+    ys.push(bx.y,bx.b,(bx.y+bx.b)/2);
+  }
+  return {xs,ys};
+}
+function snap1D(val,cands){
+  const th=SNAP_THRESH/S.zoom;let best=null,bd=th;
+  for(const c of cands){const d=Math.abs(c-val);if(d<bd){bd=d;best=c;}}
+  return best;
+}
+// snap a drag point to neighbour-room edges on the requested axes; else grid.
+// Always magnetic to other rooms' borders (like dragSnap) — the grid fallback below
+// still honours S.snapOn via gSnapX/gSnapY, so scaling aligns flush even with grid-snap off.
+function resizeSnap(wp,excl,ax){
+  const tg=axisSnapTargets(excl);let x=wp.x,y=wp.y,hit=false;
+  if(ax.x!==false){const s=snap1D(wp.x,tg.xs);if(s!=null){x=s;hit=true;}else x=gSnapX(wp.x);}
+  if(ax.y!==false){const s=snap1D(wp.y,tg.ys);if(s!=null){y=s;hit=true;}else y=gSnapY(wp.y);}
+  return{x,y,t:hit?'endpoint':'grid'};
+}
 
 // ─────────────────────────────────────────
 //  HISTORY
 // ─────────────────────────────────────────
 function saveH(){
   S.hist=S.hist.slice(0,S.histIdx+1);
-  S.hist.push(JSON.stringify({shapes:S.shapes,nextId:S.nextId,famDetail:S.famDetail,famNames:S.famNames}));
+  S.hist.push(JSON.stringify({shapes:S.shapes,nextId:S.nextId,famDetail:S.famDetail,famNames:S.famNames,regions:S.regions,doorOverrides:S.doorOverrides}));
   S.histIdx=S.hist.length-1;
   if(S.hist.length>80){S.hist.shift();S.histIdx--;}
   scheduleArch(); // layout changed → refresh the generated plan
@@ -715,13 +907,15 @@ function undo(){
   const d=JSON.parse(S.hist[--S.histIdx]);
   S.shapes=d.shapes;S.nextId=d.nextId;S.selIds=new Set();
   if(d.famDetail)S.famDetail=d.famDetail;if(d.famNames)S.famNames=d.famNames;
+  S.regions=d.regions||[];S.doorOverrides=d.doorOverrides||{};rebuildLockedIds();
   if(S.sceneKey)S.candidates=predictNextRooms();
   scheduleArch();render();
 }
 function redo(){
   if(S.histIdx>=S.hist.length-1)return;
   const d=JSON.parse(S.hist[++S.histIdx]);
-  S.shapes=d.shapes;S.nextId=d.nextId;if(d.famDetail)S.famDetail=d.famDetail;if(d.famNames)S.famNames=d.famNames;scheduleArch();render();
+  S.shapes=d.shapes;S.nextId=d.nextId;if(d.famDetail)S.famDetail=d.famDetail;if(d.famNames)S.famNames=d.famNames;
+  S.regions=d.regions||[];S.doorOverrides=d.doorOverrides||{};rebuildLockedIds();scheduleArch();render();
 }
 
 // ─────────────────────────────────────────
@@ -738,6 +932,92 @@ function mkLine(pts){return{id:S.nextId++,type:'line',pts,stroke:'#94A3B8',strok
 function getS(id){return S.shapes.find(s=>s.id===id)}
 function updS(id,p){const i=S.shapes.findIndex(s=>s.id===id);if(i>=0)S.shapes[i]={...S.shapes[i],...p}}
 function delS(id){S.shapes=S.shapes.filter(s=>s.id!==id)}
+// ── regions / locking ──
+function regionOf(id){return S.regions.find(rg=>rg.shapeIds.includes(id))||null}
+function shapeLocked(s){return !!s&&S._lockedIds.has(s.id)}
+function rebuildLockedIds(){const set=new Set();for(const rg of S.regions||[])if(rg.locked)for(const id of rg.shapeIds)set.add(id);S._lockedIds=set;}
+// selected shapes minus any that are locked — every batch edit routes through this
+function editableSel(){return [...S.selIds].map(getS).filter(s=>s&&!shapeLocked(s));}
+function editableIds(){return editableSel().map(s=>s.id);}
+// stable geometric key for a wall run (runs from arch.js carry no id/pair)
+function runKey(r){const a=[Math.round(r.ax),Math.round(r.ay)],b=[Math.round(r.bx),Math.round(r.by)];
+  const lo=(a[0]<b[0]||(a[0]===b[0]&&a[1]<=b[1]))?a:b,hi=lo===a?b:a;return lo[0]+','+lo[1]+','+hi[0]+','+hi[1];}
+// ── per-region tilt frames (A-per-region): rooms in a region share an angle ──
+function rotPt(p,c,ang){const cs=Math.cos(ang),sn=Math.sin(ang),dx=p.x-c.x,dy=p.y-c.y;return{x:c.x+dx*cs-dy*sn,y:c.y+dx*sn+dy*cs};}
+function regionCentroid(rg){
+  let x=Infinity,y=Infinity,r=-Infinity,b=-Infinity;
+  for(const id of rg.shapeIds){const s=getS(id);if(!s)continue;const bb=bounds(s);x=Math.min(x,bb.x);y=Math.min(y,bb.y);r=Math.max(r,bb.r);b=Math.max(b,bb.b);}
+  return isFinite(x)?{x:(x+r)/2,y:(y+b)/2}:{x:0,y:0};
+}
+function frameOf(shape){const rg=shape&&regionOf(shape.id);
+  return(rg&&rg.angle)?{angle:rg.angle,pivot:rg.pivot||regionCentroid(rg)}:{angle:0,pivot:{x:0,y:0}};}
+function rotVec(v,ang){const cs=Math.cos(ang),sn=Math.sin(ang);return{x:v.x*cs-v.y*sn,y:v.x*sn+v.y*cs};}
+function polyCenter(poly){let x=0,y=0;for(const p of poly){x+=p.x;y+=p.y;}return{x:x/poly.length,y:y/poly.length};}
+// is this 4-pt poly a genuine rectangle (opposite sides equal, ~90° corner)?
+function isRectPoly(poly){
+  if(!poly||poly.length!==4)return false;
+  const d=(a,b)=>Math.hypot(poly[b].x-poly[a].x,poly[b].y-poly[a].y);
+  if(Math.abs(d(0,1)-d(2,3))>0.5||Math.abs(d(1,2)-d(3,0))>0.5)return false;
+  const ux=poly[1].x-poly[0].x,uy=poly[1].y-poly[0].y,vx=poly[2].x-poly[1].x,vy=poly[2].y-poly[1].y;
+  const mag=Math.hypot(ux,uy)*Math.hypot(vx,vy)||1;
+  return Math.abs((ux*vx+uy*vy)/mag)<0.02;
+}
+// normalize a rect orientation to the minimal tilt in (-45°,45°] (rects repeat every 90°)
+function normAng(a){const Q=Math.PI/2;a=a%Q;if(a>Q/2)a-=Q;if(a<=-Q/2)a+=Q;return a;}
+function polyAngle(poly){return normAng(Math.atan2(poly[1].y-poly[0].y,poly[1].x-poly[0].x));}
+// dominant edge orientation of ANY rectilinear poly (incl. merged L-shapes), normalized to (-45°,45°]
+function polyTilt(poly){let best=0,bl=0;
+  for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],len=Math.hypot(b.x-a.x,b.y-a.y);
+    if(len>bl){bl=len;best=Math.atan2(b.y-a.y,b.x-a.x);}}
+  return normAng(best);}
+// the frame a shape lives in for GENERATION & DRAG-SNAP: its region's tilt, else its OWN rotation
+// (so a single rotated rectangle — not grouped — still generates + snaps along its tilt)
+function selfFrame(s){
+  const rg=regionOf(s.id);
+  if(rg)return regionTilt(rg);                       // region members share the wing's tilt (even after merges)
+  if(s.poly&&s.poly.length>=4){const a=polyTilt(s.poly); // a lone rotated rect/merged shape uses its own tilt
+    if(Math.abs(a)>1e-3)return{angle:a,pivot:polyCenter(s.poly)};}
+  return{angle:0,pivot:{x:0,y:0}};
+}
+// a region's effective tilt: its stored angle, or — if never set via the handle — inferred from its tilted members
+function regionTilt(rg){
+  const pivot=rg.pivot||regionCentroid(rg);
+  if(rg.angle)return{angle:rg.angle,pivot};
+  for(const id of rg.shapeIds){const s=getS(id);if(!s||!s.poly)continue;const a=polyTilt(s.poly);if(Math.abs(a)>1e-3)return{angle:a,pivot};}
+  return{angle:0,pivot};
+}
+function toFrame(p,fr){return fr.angle?rotPt(p,fr.pivot,-fr.angle):{x:p.x,y:p.y};}
+function fromFrame(p,fr){return fr.angle?rotPt(p,fr.pivot,fr.angle):{x:p.x,y:p.y};}
+// the shape as an axis-aligned rect IN its frame: {x,y,w,h}
+function frameRect(shape,fr){
+  const poly=shape.poly?shape.poly:rectToPoly(shape);
+  let x=Infinity,y=Infinity,r=-Infinity,b=-Infinity;
+  for(const p of poly){const q=toFrame(p,fr);x=Math.min(x,q.x);y=Math.min(y,q.y);r=Math.max(r,q.x);b=Math.max(b,q.y);}
+  return{x,y,w:r-x,h:b-y};
+}
+// is this shape a tilted room that should be edited in its frame? (clean 4-pt rect in a non-zero frame)
+// a tilted room edited in its own frame: region tilt OR a lone rotated rectangle (so it scales without shearing)
+function framedRect(s){if(s.type!=='rect'||!s.poly||s.poly.length!==4||!isRectPoly(s.poly))return null;const fr=selfFrame(s);return fr.angle?fr:null;}
+// world polygon for a candidate {fx,fy,w,h,angle,pivot} (axis-aligned when angle==0)
+function candPoly(c){const fr={angle:c.angle||0,pivot:c.pivot||{x:0,y:0}};
+  return[{x:c.fx,y:c.fy},{x:c.fx+c.w,y:c.fy},{x:c.fx+c.w,y:c.fy+c.h},{x:c.fx,y:c.fy+c.h}].map(p=>fromFrame(p,fr));}
+// overlap test in frame coords: a frame rect vs every room's AABB *in that same frame*
+function overlapCheckFrame(fx,fy,fw,fh,fr,exclId,margin=2){
+  return S.shapes.some(s=>{if(s.type!=='rect'||s.id===exclId)return false;const r=frameRect(s,fr);
+    return fx<r.x+r.w-margin&&fx+fw>r.x+margin&&fy<r.y+r.h-margin&&fy+fh>r.y+margin;});
+}
+// snap a world pointer in frame coords: flush to same-region neighbours' frame edges, else grid
+function resizeSnapFrame(wp,exclId,fr){
+  const fp=toFrame(wp,fr);let fx=fp.x,fy=fp.y;
+  const rg=S.regions.find(r=>r.shapeIds.includes(exclId));
+  const TH=8/S.zoom;let bx=null,by=null,bdx=TH,bdy=TH;
+  if(rg)for(const sid of rg.shapeIds){if(sid===exclId)continue;const s=getS(sid);if(!s)continue;
+    const r=frameRect(s,fr);
+    for(const ex of[r.x,r.x+r.w]){const d=Math.abs(fx-ex);if(d<bdx){bdx=d;bx=ex;}}
+    for(const ey of[r.y,r.y+r.h]){const d=Math.abs(fy-ey);if(d<bdy){bdy=d;by=ey;}}}
+  fx=bx!=null?bx:gSnapX(fx);fy=by!=null?by:gSnapY(fy);
+  return{fp:{x:fx,y:fy},world:fromFrame({x:fx,y:fy},fr)};
+}
 function bounds(s){
   if(s.type==='rect'){
     if(s.poly){let x=Infinity,y=Infinity,r=-Infinity,b=-Infinity;for(const p of s.poly){x=Math.min(x,p.x);y=Math.min(y,p.y);r=Math.max(r,p.x);b=Math.max(b,p.y);}return{x,y,r,b};}
@@ -794,6 +1074,7 @@ function hitTest(wx,wy){
   const th=Math.max(5,7/S.zoom);
   for(let i=S.shapes.length-1;i>=0;i--){
     const s=S.shapes[i];
+    if(S.iso&&!isoHas(s.id))continue; // isolate mode → only the isolated region is hittable
     if(s.type==='rect'){
       if(s.poly){if(pointInPoly(wx,wy,s.poly))return s.id;}
       else{if(wx>=s.x&&wx<=s.x+s.w&&wy>=s.y&&wy<=s.y+s.h)return s.id;}
@@ -836,32 +1117,48 @@ function sharedFit(ax,ay,aw,ah,bx,by,bw,bh){
 // appear when the user has drawn untyped rects around the scene's seed room.
 function getAnchorRects(){return S.shapes.filter(s=>s.type==='rect').map(s=>({type:s.roomType,...rectBox(s),id:s.id}));}
 function findPlacements(w,h,type){
-  const anchors=getAnchorRects();if(!anchors.length)return[];
-  const tr=getTypedRooms(),ref=tr.length?tr:anchors;
+  let anchorShapes=S.shapes.filter(s=>s.type==='rect');if(!anchorShapes.length)return[];
+  // "Select a region, generate from it": when rooms are selected, only those anchor new rooms,
+  // so generation follows the selected region (and inherits its frame — tilted or flat).
+  let selRects=anchorShapes.filter(s=>S.selIds.has(s.id));
+  if(!selRects.length&&S.iso){const rg=S.regions.find(r=>r.id===S.iso.rgid);if(rg)selRects=anchorShapes.filter(s=>rg.shapeIds.includes(s.id));}
+  if(selRects.length)anchorShapes=selRects;
+  const tr=getTypedRooms(),ref=tr.length?tr:getAnchorRects();
   const sc=type?getScene():null; // when a type is given, prefer attaching to its best-adjacency neighbour
   let mx=Infinity,my=Infinity,MX=-Infinity,MY=-Infinity;
   ref.forEach(r=>{mx=Math.min(mx,r.x);my=Math.min(my,r.y);MX=Math.max(MX,r.x+r.w);MY=Math.max(MY,r.y+r.h);});
-  const cx=(mx+MX)/2,cy=(my+MY)/2;
+  const cx=(mx+MX)/2,cy=(my+MY)/2; // world centroid → distance bias
   const scan=minShare=>{
     const out=[];
-    for(const room of anchors){
+    for(const sh of anchorShapes){
+      // candidates are generated in the anchor's own frame, so a tilted wing — or even a single
+      // rotated rectangle — grows along its tilt
+      const fr=selfFrame(sh),tilt=!!fr.angle;
+      const ar=tilt?frameRect(sh,fr):rectBox(sh); // anchor rect IN its frame
+      const rx=ar.x,ry=ar.y,rw=ar.w,rh=ar.h,rtype=sh.roomType;
+      const SX=tilt?(v=>v):gSnapX, SY=tilt?(v=>v):gSnapY; // grid-snap only on world-axis anchors
       // architectural bias: a room gravitates to the existing room it most wants to be beside
-      const aw=(sc&&room.type)?((sc.adj[room.type]||{})[type]||0):0;
+      const aw=(sc&&rtype)?((sc.adj[rtype]||{})[type]||0):0;
       const adjBonus=aw*0.22; // weight 5 → +1.1, easily out-ranks distance/alignment
       const cfgs=[
-        {x:gSnapX(room.x+room.w),y:gSnapY(room.y)},{x:gSnapX(room.x+room.w),y:gSnapY(room.y+room.h-h)},
-        {x:gSnapX(room.x-w),y:gSnapY(room.y)},{x:gSnapX(room.x-w),y:gSnapY(room.y+room.h-h)},
-        {x:gSnapX(room.x),y:gSnapY(room.y+room.h)},{x:gSnapX(room.x+room.w-w),y:gSnapY(room.y+room.h)},
-        {x:gSnapX(room.x),y:gSnapY(room.y-h)},{x:gSnapX(room.x+room.w-w),y:gSnapY(room.y-h)},
+        {x:SX(rx+rw),y:SY(ry)},{x:SX(rx+rw),y:SY(ry+rh-h)},
+        {x:SX(rx-w),y:SY(ry)},{x:SX(rx-w),y:SY(ry+rh-h)},
+        {x:SX(rx),y:SY(ry+rh)},{x:SX(rx+rw-w),y:SY(ry+rh)},
+        {x:SX(rx),y:SY(ry-h)},{x:SX(rx+rw-w),y:SY(ry-h)},
       ];
-      for(const c of cfgs){
-        if(overlapCheck(c.x,c.y,w,h,2))continue;
-        if(sharedEdge(room.x,room.y,room.w,room.h,c.x,c.y,w,h)<minShare)continue;
-        const dist=Math.hypot(c.x+w/2-cx,c.y+h/2-cy);
-        const align=(c.x===room.x||c.x+w===room.x+room.w||c.y===room.y||c.y+h===room.y+room.h)?0.12:0;
-        const selBoost=S.selIds.has(room.id)?0.6:0; // prefer placing next to the selected room (UI only — NOT in confidence)
-        const placeQ=sharedFit(room.x,room.y,room.w,room.h,c.x,c.y,w,h); // 0..1 wall-fit, feeds confidence
-        out.push({x:c.x,y:c.y,posScore:1/(1+dist/400)+align+selBoost+adjBonus,placeQ,attachedTo:room.id});
+      for(const c of cfgs){ // c is in the anchor's frame
+        if(tilt?overlapCheckFrame(c.x,c.y,w,h,fr,null,2):overlapCheck(c.x,c.y,w,h,2))continue;
+        if(sharedEdge(rx,ry,rw,rh,c.x,c.y,w,h)<minShare)continue;
+        // candidate world polygon → bbox top-left (for legacy x,y) + center (for distance)
+        const wpoly=[{x:c.x,y:c.y},{x:c.x+w,y:c.y},{x:c.x+w,y:c.y+h},{x:c.x,y:c.y+h}].map(p=>tilt?fromFrame(p,fr):p);
+        let bxn=Infinity,byn=Infinity,bxx=-Infinity,bxy=-Infinity;
+        for(const p of wpoly){bxn=Math.min(bxn,p.x);byn=Math.min(byn,p.y);bxx=Math.max(bxx,p.x);bxy=Math.max(bxy,p.y);}
+        const dist=Math.hypot((bxn+bxx)/2-cx,(byn+bxy)/2-cy);
+        const align=(c.x===rx||c.x+w===rx+rw||c.y===ry||c.y+h===ry+rh)?0.12:0;
+        const selBoost=S.selIds.has(sh.id)?0.6:0; // prefer placing next to the selected room (UI only — NOT in confidence)
+        const placeQ=sharedFit(rx,ry,rw,rh,c.x,c.y,w,h); // 0..1 wall-fit, feeds confidence
+        out.push({x:bxn,y:byn,fx:c.x,fy:c.y,angle:fr.angle,pivot:fr.pivot,
+          posScore:1/(1+dist/400)+align+selBoost+adjBonus,placeQ,attachedTo:sh.id});
       }
     }
     return out;
@@ -901,17 +1198,23 @@ function predictNextRooms(){
     const ar=getScene().types[tr.find(r=>r.id===best.attachedTo)?.type];
     const adj=(sc.adj[ar?.type]||{})[type]||0;
     const reason=adj>=4?`Fits with ${ar?.name||'neighbor'}`:(adj>=2?`Near ${ar?.name||'neighbor'}`:'Compatible');
-    res.push({type,x:best.x,y:best.y,w:fw,h:fh,confidence:conf,reasoning:reason,
+    res.push({type,x:best.x,y:best.y,w:fw,h:fh,fx:best.fx,fy:best.fy,angle:best.angle,pivot:best.pivot,attachedTo:best.attachedTo,
+      confidence:conf,reasoning:reason,
       detail:{typeConf:Math.round(typeConf),wallFit:Math.round(Math.min(1,best.placeQ||0)*100),
         adj,neighbor:ar?.name||null,w:fw,h:fh}});
   }
   return res;
 }
+// recompute the dashed suggestions; called whenever the selection (= generation focus) changes
+function refreshCandidates(){if(S.sceneKey)S.candidates=predictNextRooms();}
 function acceptCandidate(idx){
   const c=S.candidates[idx];if(!c)return;
   const sc=getScene();if(!sc)return;
   const def=sc.types[c.type];
-  S.shapes.push(mkRect(c.x,c.y,c.w,c.h,{fill:def.fill,stroke:def.stroke,roomType:c.type}));
+  const s=mkRect(c.x,c.y,c.w,c.h,{fill:def.fill,stroke:def.stroke,roomType:c.type});
+  if(c.angle){s.poly=candPoly(c);} // tilted wing → store as a rotated polygon
+  S.shapes.push(s);
+  if(c.angle){const rg=regionOf(c.attachedTo);if(rg)rg.shapeIds.push(s.id);} // inherit the wing's tilt + region
   saveH();S.hovCand=null;S.predHidden=false;S.candidates=predictNextRooms();
   fitScreen();render();updateSceneBadge();
 }
@@ -942,10 +1245,22 @@ function startScene(key){
 //  VIEW
 // ─────────────────────────────────────────
 function applyView(){
-  lWorld.setAttribute('transform',`translate(${S.vx+RW},${S.vy+RW}) scale(${S.zoom})`);
+  let t=`translate(${S.vx+RW},${S.vy+RW}) scale(${S.zoom})`;
+  if(S.viewRot)t+=` rotate(${S.viewRot*180/Math.PI},${S.viewPivot.x},${S.viewPivot.y})`;
+  lWorld.setAttribute('transform',t);
+  uprightTexts();
   drawGrid();drawRulers();
   document.getElementById('s-zoom').textContent=Math.round(S.zoom*100)+'%';
   if(typeof updateFloatBar!=='undefined')updateFloatBar();
+}
+// in isolate mode the whole canvas is rotated; counter-rotate every label so text stays upright on screen
+function uprightTexts(){
+  if(!S.viewRot)return;
+  const deg=-S.viewRot*180/Math.PI;
+  for(const el of lWorld.querySelectorAll('text')){
+    const x=parseFloat(el.getAttribute('x'))||0,y=parseFloat(el.getAttribute('y'))||0;
+    el.setAttribute('transform',`rotate(${deg},${x},${y})`);
+  }
 }
 function doZoom(f,csx,csy){
   csx??=(cW()+RW)/2;csy??=(cH()+RW)/2;
@@ -1041,6 +1356,8 @@ function shapeStyle(s,isSel,isHov){
   const fill=isSel?hexToRgba(bf,baseA+.12):isHov?hexToRgba(bf,baseA+.07):hexToRgba(bf,baseA);
   // Border always matches the shape's own color, so recoloring the inside updates the
   // outline too (selection/hover are shown by a thicker stroke + the handles).
+  if(shapeLocked(s)) // locked → fade the fill and grey the outline so the region reads as "done"
+    return{fill:hexToRgba(bf,baseA*0.4),stroke:'#9CA3AF','stroke-width':sw*(isSel?2:1)};
   return{fill,stroke:bs,'stroke-width':sw*(isSel?2:isHov?1.4:1)};
 }
 function shapeAreaStr(s){
@@ -1231,6 +1548,12 @@ function rotHandleEl(sid,minX,minY,maxX,maxY,inv){
   return g;
 }
 function renderHandles(s){
+  if(shapeLocked(s)){ // locked → no resize/rotate/edge handles, just a lock badge
+    const g=ns('g'),inv=1/S.zoom,b=bounds(s);
+    const t=ns('text',{x:b.x+8*inv,y:b.y+8*inv,'text-anchor':'start','dominant-baseline':'hanging',
+      'font-size':13*inv,style:'pointer-events:none',opacity:.55});t.textContent='🔒';g.appendChild(t);
+    return g;
+  }
   if(s.type==='line'){
     const g=ns('g'),inv=1/S.zoom,hs=5.5*inv;
     s.pts.forEach((p,i)=>{
@@ -1244,6 +1567,51 @@ function renderHandles(s){
   }
   if(s.type!=='rect')return ns('g');
   const g=ns('g'),inv=1/S.zoom,hs=5.5*inv;
+
+  // ── Tilted room (in a rotated region): scale/edge handles drawn in its frame (Phase 2) ──
+  const _fr=framedRect(s);
+  if(_fr){
+    const rc=frameRect(s,_fr),FW=(fx,fy)=>fromFrame({x:fx,y:fy},_fr);
+    const cs=[{id:'fnw',fx:rc.x,fy:rc.y,cur:'nwse-resize'},{id:'fne',fx:rc.x+rc.w,fy:rc.y,cur:'nesw-resize'},
+      {id:'fse',fx:rc.x+rc.w,fy:rc.y+rc.h,cur:'nwse-resize'},{id:'fsw',fx:rc.x,fy:rc.y+rc.h,cur:'nesw-resize'}];
+    const wc=cs.map(c=>FW(c.fx,c.fy));
+    const edges=[{id:'fen',a:0,b:1},{id:'fee',a:1,b:2},{id:'fes',a:2,b:3},{id:'few',a:3,b:0}];
+    for(const e of edges){const a=wc[e.a],b=wc[e.b],len=Math.hypot(b.x-a.x,b.y-a.y);if(len<GRID)continue;
+      const ux=(b.x-a.x)/len,uy=(b.y-a.y)/len,ein=Math.min(14*inv,len/3);
+      const eEl=ns('line',{x1:a.x+ux*ein,y1:a.y+uy*ein,x2:b.x-ux*ein,y2:b.y-uy*ein,
+        stroke:'#000','stroke-opacity':'0','stroke-width':12*inv,'pointer-events':'all',
+        class:'handle','data-sid':s.id,'data-hid':e.id,style:'cursor:move'});
+      attachHint(eEl,'Drag to resize side');g.appendChild(eEl);}
+    cs.forEach((c,i)=>{const w=wc[i];const hEl=ns('rect',{x:w.x-hs,y:w.y-hs,width:hs*2,height:hs*2,
+        fill:'white',stroke:'#8CA3C5','stroke-width':1.4*inv,rx:1.5*inv,
+        class:'handle','data-hid':c.id,'data-sid':s.id,style:`cursor:${c.cur}`});
+      attachHint(hEl,'Scale','⇧ proportional');g.appendChild(hEl);});
+    // "+" duplicate buttons on the 4 frame edges (offset along the frame's world directions)
+    const off=22*inv,pr=12*inv,mid=(p,q)=>({x:(p.x+q.x)/2,y:(p.y+q.y)/2});
+    const dirs=[{m:mid(wc[1],wc[2]),fdx:rc.w+GRID,fdy:0},{m:mid(wc[3],wc[0]),fdx:-(rc.w+GRID),fdy:0},
+      {m:mid(wc[0],wc[1]),fdx:0,fdy:-(rc.h+GRID)},{m:mid(wc[2],wc[3]),fdx:0,fdy:rc.h+GRID}];
+    for(const d of dirs){const a=_fr.angle,dx=d.fdx*Math.cos(a)-d.fdy*Math.sin(a),dy=d.fdx*Math.sin(a)+d.fdy*Math.cos(a);
+      const dl=Math.hypot(dx,dy)||1,bx=d.m.x+dx/dl*off,by=d.m.y+dy/dl*off;
+      const pg=ns('g',{class:'plus-dup','data-sid':s.id,style:'cursor:pointer'});
+      const pc=ns('circle',{cx:bx,cy:by,r:pr,fill:'white',stroke:'#D4D4D0','stroke-width':1.2*inv});
+      const pt=ns('text',{x:bx,y:by,'text-anchor':'middle','dominant-baseline':'middle',fill:'#9CA3AF','font-size':15*inv,'font-weight':'300','font-family':'system-ui',style:'pointer-events:none'});
+      pt.textContent='+';pg.appendChild(pc);pg.appendChild(pt);
+      attachHint(pg,'Duplicate','copy along wing');
+      pg.addEventListener('mouseenter',()=>{pc.setAttribute('stroke',C_SEL);pc.setAttribute('fill','#EFF6FF');pt.setAttribute('fill',C_SEL);});
+      pg.addEventListener('mouseleave',()=>{pc.setAttribute('stroke','#D4D4D0');pc.setAttribute('fill','white');pt.setAttribute('fill','#9CA3AF');});
+      pg.addEventListener('click',ev=>{ev.stopPropagation();const src=getS(s.id);if(!src||!src.poly)return;
+        const nc=JSON.parse(JSON.stringify(src));nc.id=S.nextId++;nc._new=Date.now();
+        nc.poly=src.poly.map(p=>({x:p.x+dx,y:p.y+dy}));
+        S.shapes.push(nc);const rg=regionOf(s.id);if(rg)rg.shapeIds.push(nc.id);S.selIds=new Set([nc.id]);
+        saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();});
+      g.appendChild(pg);}
+    if(!regionOf(s.id)){ // a lone rotated rectangle keeps its own rotate handle (region tilt rotates via the region handle)
+      let mnx=Infinity,mny=Infinity,mxx=-Infinity,mxy=-Infinity;
+      for(const p of s.poly){mnx=Math.min(mnx,p.x);mny=Math.min(mny,p.y);mxx=Math.max(mxx,p.x);mxy=Math.max(mxy,p.y);}
+      g.appendChild(rotHandleEl(s.id,mnx,mny,mxx,mxy,inv));
+    }
+    return g;
+  }
 
   if(s.poly){
     // Merged/irregular shape — same editing model as a rectangle, on its bounding box
@@ -1389,6 +1757,15 @@ function renderMultiBounds(){
   const g=ns('g');
   g.appendChild(ns('rect',{x:bb.x,y:bb.y,width:bb.w,height:bb.h,
     fill:'none',stroke:C_SEL,'stroke-width':1.5*inv,'stroke-dasharray':`${4*inv} ${2*inv}`}));
+  // if this selection IS a region, give it a rotate handle to tilt the whole wing
+  const rg=activeRegion();
+  if(rg){
+    const cx=(bb.x+bb.r)/2,hy=bb.y-40*inv;
+    g.appendChild(ns('line',{x1:cx,y1:bb.y,x2:cx,y2:hy,stroke:C_SEL,'stroke-width':1.2*inv,'pointer-events':'none'}));
+    const h=ns('circle',{cx,cy:hy,r:6*inv,fill:'white',stroke:C_SEL,'stroke-width':1.5*inv,
+      class:'region-rot','data-rgid':rg.id,style:'cursor:grab'});
+    attachHint(h,'Rotate region','⇧ snap 15°');g.appendChild(h);
+  }
   lHandles.appendChild(g);
 }
 
@@ -1476,6 +1853,20 @@ function renderPreview(p0,p1){
   addDimLbl(lPreview,rx+rw/2,ry-20*inv,dimStr(rw),C_SEL,fs,inv);
   addDimLbl(lPreview,rx+rw+20*inv,ry+rh/2,dimStr(rh),C_SEL,fs,inv);
 }
+// preview a new rect drawn inside a tilted region's frame (rotated dashed poly)
+function renderPreviewFrame(p0,p1,fr){
+  lPreview.innerHTML='';
+  const a=toFrame(p0,fr),b=toFrame(p1,fr);
+  const fx=Math.min(a.x,b.x),fy=Math.min(a.y,b.y),fw=Math.abs(b.x-a.x),fh=Math.abs(b.y-a.y);
+  if(fw<2&&fh<2)return;
+  const inv=1/S.zoom;
+  const w=[{x:fx,y:fy},{x:fx+fw,y:fy},{x:fx+fw,y:fy+fh},{x:fx,y:fy+fh}].map(p=>fromFrame(p,fr));
+  lPreview.appendChild(ns('polygon',{points:w.map(p=>`${p.x},${p.y}`).join(' '),
+    fill:'rgba(29,106,245,.05)',stroke:C_SEL,'stroke-width':1.5*inv,'stroke-dasharray':`${6*inv} ${3*inv}`,class:'preview-dash'}));
+  const top=fromFrame({x:fx+fw/2,y:fy-20*inv},fr),side=fromFrame({x:fx+fw+20*inv,y:fy+fh/2},fr),fs=10*inv;
+  addDimLbl(lPreview,top.x,top.y,dimStr(fw),C_SEL,fs,inv);
+  addDimLbl(lPreview,side.x,side.y,dimStr(fh),C_SEL,fs,inv);
+}
 function renderLinePreview(pts,cur){
   lPreview.innerHTML='';if(!pts.length)return;
   const inv=1/S.zoom,all=[...pts,cur].map(p=>`${p.x},${p.y}`).join(' ');
@@ -1500,14 +1891,21 @@ function renderCandidatesLayer(){
   S.candidates.forEach((c,i)=>{
     const color=CAND_COLORS[i],inv=1/S.zoom,isHov=S.hovCand===i;
     const g=ns('g',{class:'cand-g','data-cand':i,style:'cursor:pointer'});
-    if(isHov)g.appendChild(ns('rect',{x:c.x-5*inv,y:c.y-5*inv,width:c.w+10*inv,height:c.h+10*inv,fill:'none',stroke:color,'stroke-width':4*inv,rx:3*inv,opacity:.18}));
-    g.appendChild(ns('rect',{x:c.x,y:c.y,width:c.w,height:c.h,fill:color+'12',stroke:color,'stroke-width':(isHov?2.5:1.5)*inv,'stroke-dasharray':`${7*inv} ${4*inv}`,rx:2*inv,class:'cand-dash'}));
-    // Room name + confidence (number and a bar) in the center of the predicted rectangle
+    const poly=c.angle?candPoly(c):null; // tilted candidate → rotated ghost
+    if(poly){
+      const pts=poly.map(p=>`${p.x},${p.y}`).join(' ');
+      if(isHov)g.appendChild(ns('polygon',{points:pts,fill:'none',stroke:color,'stroke-width':4*inv,opacity:.18}));
+      g.appendChild(ns('polygon',{points:pts,fill:color+'12',stroke:color,'stroke-width':(isHov?2.5:1.5)*inv,'stroke-dasharray':`${7*inv} ${4*inv}`,class:'cand-dash'}));
+    }else{
+      if(isHov)g.appendChild(ns('rect',{x:c.x-5*inv,y:c.y-5*inv,width:c.w+10*inv,height:c.h+10*inv,fill:'none',stroke:color,'stroke-width':4*inv,rx:3*inv,opacity:.18}));
+      g.appendChild(ns('rect',{x:c.x,y:c.y,width:c.w,height:c.h,fill:color+'12',stroke:color,'stroke-width':(isHov?2.5:1.5)*inv,'stroke-dasharray':`${7*inv} ${4*inv}`,rx:2*inv,class:'cand-dash'}));
+    }
+    // Room name + confidence (number and a bar) in the center of the predicted room
     const def=sc?sc.types[c.type]:null;
     const conf=c.confidence||0;
     if(def&&c.w*S.zoom>50&&c.h*S.zoom>28){
       const fs=Math.max(8,Math.min(12,c.w/11))*inv;
-      const cx=c.x+c.w/2,cyc=c.y+c.h/2;
+      const cx=poly?(poly[0].x+poly[2].x)/2:c.x+c.w/2,cyc=poly?(poly[0].y+poly[2].y)/2:c.y+c.h/2;
       const showConf=conf>0&&c.h*S.zoom>52;
       const t=ns('text',{x:cx,y:showConf?cyc-fs*.58:cyc,'text-anchor':'middle','dominant-baseline':'middle',fill:color,'font-size':fs,'font-weight':'600','letter-spacing':1*inv,'font-family':"'SF Mono','Menlo',monospace",style:'pointer-events:none'});
       t.textContent=def.name.toUpperCase();g.appendChild(t);
@@ -1701,15 +2099,27 @@ async function fetchArch(){
       // table along as a live config override (same channel the tuner uses).
       body:JSON.stringify({shapes:S.shapes,sceneKey:S.sceneKey,config:GEN_CONFIGS[S.sceneKey]||undefined})});
     const data=await res.json();S.archRuns=data.runs||[];S.archErr=false;
+    applyDoorOverrides();
   }catch(e){S.archRuns=[];S.archErr=true;}
   if(S.archOn)document.getElementById('s-tool').textContent=S.archErr?'Plan — start the server: node server.js':'Plan (walls + doors)';
   renderArch();
   if(typeof EXPLAIN!=='undefined')EXPLAIN.refresh();
 }
+// re-apply any user-nudged door positions on top of the freshly generated runs
+function applyDoorOverrides(){
+  for(const r of S.archRuns){
+    if(!r.door)continue;
+    const ov=S.doorOverrides[runKey(r)];if(ov==null)continue;
+    const len=r.len||1,dw=r.door[1]-r.door[0],ex=(r.t||6)/2;
+    const c=Math.max(ex+dw/2,Math.min(len-ex-dw/2,ov)); // keep the door clear of the corners
+    r.door=[c-dw/2,c+dw/2];
+  }
+}
 function renderArch(){
   lArch.innerHTML='';if(!S.archOn)return;
   const inv=1/S.zoom,COL='#2B2B2B';
-  for(const r of S.archRuns){
+  for(let ri=0;ri<S.archRuns.length;ri++){
+    const r=S.archRuns[ri];
     const len=r.len||1,ux=(r.bx-r.ax)/len,uy=(r.by-r.ay)/len,t=r.t||6,ex=t/2;
     const seg=(t0,t1)=>{
       const ax=r.ax+ux*t0,ay=r.ay+uy*t0,bx=r.ax+ux*t1,by=r.ay+uy*t1,nx=-uy*t/2,ny=ux*t/2;
@@ -1725,6 +2135,16 @@ function renderArch(){
       while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
       const pts=[];for(let k=0;k<=10;k++){const ang=a0+da*k/10;pts.push((hx+Math.cos(ang)*dw)+','+(hy+Math.sin(ang)*dw));}
       lArch.appendChild(ns('polyline',{points:pts.join(' '),fill:'none',stroke:COL,'stroke-width':inv,'stroke-dasharray':`${3*inv} ${2.5*inv}`,opacity:.6}));
+      // transparent grab target over the door span → slide the door along its wall.
+      // Width is held to a screen-space minimum so the door is easy to grab (not the room).
+      const dragging=S.doorDrag&&S.doorDrag.key===runKey(r);
+      const grabPad=8*inv;                 // extend a touch past the jambs for easier grabbing
+      const gx0=r.ax+ux*(c0-grabPad),gy0=r.ay+uy*(c0-grabPad),gx1=r.ax+ux*(c1+grabPad),gy1=r.ay+uy*(c1+grabPad);
+      lArch.appendChild(ns('line',{x1:gx0,y1:gy0,x2:gx1,y2:gy1,stroke:dragging?'#1D6AF5':'transparent',
+        'stroke-opacity':dragging?.35:1,'stroke-width':Math.max(t*1.7,22*inv),'stroke-linecap':'round',
+        'data-doorkey':runKey(r),'data-runidx':ri,style:'pointer-events:stroke;cursor:grab'}));
+      const mx=r.ax+ux*(c0+dw/2),my=r.ay+uy*(c0+dw/2); // centre dot affordance
+      lArch.appendChild(ns('circle',{cx:mx,cy:my,r:2.6*inv,fill:dragging?'#1D6AF5':COL,opacity:dragging?1:.55,style:'pointer-events:none'}));
     }else seg(-ex,len+ex);
   }
 }
@@ -1734,7 +2154,11 @@ function renderArch(){
 // ─────────────────────────────────────────
 function render(){
   lShapes.innerHTML='';lDims.innerHTML='';lHandles.innerHTML='';
-  for(const s of S.shapes)lShapes.appendChild(renderShapeEl(s));
+  for(const s of S.shapes){
+    const el=renderShapeEl(s);
+    if(S.iso&&!isoHas(s.id)){el.style.opacity=0.12;el.style.pointerEvents='none';} // dim everything outside the isolated region
+    lShapes.appendChild(el);
+  }
   renderPanelDetails();
   if(S.selIds.size===1){
     const s=getS([...S.selIds][0]);
@@ -1745,6 +2169,7 @@ function render(){
   renderFamilyHints();
   document.getElementById('s-count').textContent=S.shapes.length+(S.shapes.length===1?' shape':' shapes');
   if(typeof EXPLAIN!=='undefined')EXPLAIN.refresh();
+  if(typeof renderRegions==='function'&&document.getElementById('region-box').classList.contains('show'))renderRegions();
   applyView();
 }
 // faint dashed outline on every panel that shares a family with the selection
@@ -1777,55 +2202,38 @@ function showCtx(e,sid){
   if(hasSel){
     item(ico('<rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16H3a1 1 0 01-1-1V3a1 1 0 011-1h12a1 1 0 011 1v1"/>'),
       'Copy','Cmd+C',()=>copySel());
-    item(ico('<rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16H3a1 1 0 01-1-1V3a1 1 0 011-1h12a1 1 0 011 1v1"/>'),
-      'Duplicate','Cmd+D',()=>{copySel();pasteSel();});
-    if(S.selIds.size===1){const oneId=[...S.selIds][0],one=getS(oneId);
-      if(one&&one.type==='rect')item(ico('<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/>'),
-        'Rename','',()=>startNameEdit(oneId));}
+    // (Rename / Duplicate / Rotate / Mirror / Color / Delete live on the floating bar — not duplicated here)
     // ── Panel families (link/unlink as one type) ──
     const chain='<path d="M9 12a3 3 0 003 3h2a3 3 0 000-6"/><path d="M15 12a3 3 0 00-3-3h-2a3 3 0 000 6"/>';
     const rectSel=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect'&&!s.poly);
     if(rectSel.length>=2)item(ico(chain),'Link as type','K',()=>linkSelected());
     if(rectSel.some(s=>s.fam))item(ico(chain),'Unlink','⇧K',()=>unlinkSelected());
+    // ── Regions (lockable groups) ──
+    const anyRectSel=[...S.selIds].map(getS).some(s=>s&&s.type==='rect');
+    if(anyRectSel)item(ico('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>'),
+      'Group into region','',()=>createRegionFromSel());
+    if([...S.selIds].some(id=>regionOf(id))){
+      const someLocked=[...S.selIds].some(id=>{const rg=regionOf(id);return rg&&rg.locked;});
+      item(ico('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0"/>'),
+        someLocked?'Unlock region':'Lock region','',()=>{const seen=new Set();for(const id of S.selIds){const rg=regionOf(id);if(rg&&!seen.has(rg.id)){seen.add(rg.id);rg.locked=!someLocked;}}rebuildLockedIds();saveH();render();});
+    }
+    // ── Resolve overlap between two rooms (clip one, keep the shared area in the other) ──
+    const ovRects=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect');
+    if(ovRects.length===2&&!ovRects.some(shapeLocked)&&rectsOverlap(ovRects[0],ovRects[1])){
+      const[a,b]=ovRects,ovIco='<rect x="3" y="3" width="13" height="13" rx="1"/><rect x="8" y="8" width="13" height="13" rx="1"/>';
+      item(ico(ovIco),'Keep overlap in '+shapeLabel(a),'',()=>resolveOverlap(a.id,b.id));
+      item(ico(ovIco),'Keep overlap in '+shapeLabel(b),'',()=>resolveOverlap(b.id,a.id));
+    }
     sep();
     item(ico('<polyline points="17 2 17 7 22 7"/><path d="M3 11V9a2 2 0 012-2h14"/><polyline points="7 22 7 17 2 17"/><path d="M21 13v2a2 2 0 01-2 2H5"/>'),
       'Bring to Front','',()=>bringFront());
     item(ico('<polyline points="7 2 7 7 2 7"/><path d="M21 11V9a2 2 0 00-2-2H5"/><polyline points="17 22 17 17 22 17"/><path d="M3 13v2a2 2 0 002 2h14"/>'),
-      'Send to Back','',()=>sendBack());sep();
-    item(ico('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>'),
-      'Rotate 90°','',()=>rotateSel(1));
-    item(ico('<path d="M12 3v18"/><path d="M5 8l-3 4 3 4"/><path d="M19 8l3 4-3 4"/>'),
-      'Mirror H','',()=>mirrorSel('h'));
-    item(ico('<path d="M3 12h18"/><path d="M8 5l4-3 4 3"/><path d="M8 19l4 3 4-3"/>'),
-      'Mirror V','',()=>mirrorSel('v'));sep();
+      'Send to Back','',()=>sendBack());
   }
   item(ico('<rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16H3a1 1 0 01-1-1V3a1 1 0 011-1h12a1 1 0 011 1v1"/>'),
     'Paste','Cmd+V',()=>pasteSel(),false,!hasClip);
   item(ico('<path d="M3 3h18v18H3z"/>'),
     'Select All','Cmd+A',()=>{S.selIds=new Set(S.shapes.map(s=>s.id));render();});
-  if(hasSel){sep();item(ico('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>'),
-    'Delete','Del',()=>{for(const id of S.selIds)delS(id);S.selIds=new Set();saveH();render();},true);}
-  // ── Room type / color palette ──
-  const selRects=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect');
-  if(selRects.length){
-    sep();
-    const scC=getScene();
-    const lbl=document.createElement('div');
-    lbl.style.cssText='font-size:9.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:2px 10px 5px';
-    lbl.textContent='Color';ctxEl.appendChild(lbl);
-    const pal=document.createElement('div');pal.style.cssText='display:flex;flex-wrap:wrap;gap:5px;padding:0 10px 6px;max-width:208px';
-    const apply=opts=>{hideCtx();for(const id of famExpand(selRects.map(s=>s.id)))updS(id,opts);saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();};
-    const mkChip=(fill,stroke,title,onClick)=>{
-      const chip=document.createElement('button');if(title)chip.title=title;
-      chip.style.cssText=`width:22px;height:22px;border-radius:6px;cursor:pointer;border:1.5px solid ${stroke};background:${fill};transition:transform .1s`;
-      chip.onmouseenter=()=>chip.style.transform='scale(1.14)';chip.onmouseleave=()=>chip.style.transform='';
-      chip.onclick=onClick;pal.appendChild(chip);
-    };
-    // Color only — picking a swatch never changes the room-type name label.
-    if(scC){for(const[key,def]of Object.entries(scC.types))mkChip(def.fill,def.stroke,def.name,()=>apply({fill:def.fill,stroke:def.stroke}));}
-    else{for(const c of GEN_COLORS)mkChip(c.fill,c.stroke,'',()=>apply({fill:c.fill,stroke:c.stroke}));}
-    ctxEl.appendChild(pal);
-  }
   const re=cwrap.getBoundingClientRect(),ex=e.clientX-re.left,ey=e.clientY-re.top;
   ctxEl.style.left=Math.min(ex,cW()-180)+'px';ctxEl.style.top=Math.min(ey,cH()-200)+'px';
   ctxEl.style.display='block';
@@ -1842,11 +2250,12 @@ const fbEl=document.getElementById('floatbar'),fpEl=document.getElementById('flo
 fbEl.addEventListener('mousedown',e=>e.stopPropagation());
 fpEl.addEventListener('mousedown',e=>e.stopPropagation());
 const _fbIco=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-function buildFloatBar(){
-  const btn=(ico,title,fn,danger)=>{const b=document.createElement('button');b.className='fb-btn'+(danger?' danger':'');
-    b.title=title;b.innerHTML=_fbIco(ico);b.onclick=e=>{e.stopPropagation();fn();};return b;};
-  const sep=()=>{const d=document.createElement('div');d.className='fb-sep';return d;};
-  fbEl.innerHTML='';
+const _fbBtn=(ico,title,fn,danger)=>{const b=document.createElement('button');b.className='fb-btn'+(danger?' danger':'');
+  b.title=title;b.innerHTML=_fbIco(ico);b.onclick=e=>{e.stopPropagation();fn();};return b;};
+const _fbSep=()=>{const d=document.createElement('div');d.className='fb-sep';return d;};
+// single-selection bar: rename / duplicate / rotate / mirror / color / delete
+function buildSingleBar(){
+  fbEl.innerHTML='';const btn=_fbBtn,sep=_fbSep;
   fbEl.appendChild(btn('<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/>','Rename',()=>{const id=[...S.selIds][0];if(id!=null)startNameEdit(id);}));
   fbEl.appendChild(btn('<rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16H3a1 1 0 01-1-1V3a1 1 0 011-1h12a1 1 0 011 1v1"/>','Duplicate',()=>{copySel();pasteSel();}));
   fbEl.appendChild(sep());
@@ -1856,13 +2265,61 @@ function buildFloatBar(){
   fbEl.appendChild(sep());
   fbEl.appendChild(btn('<path d="M12 2.6S5.5 9 5.5 14a6.5 6.5 0 0013 0c0-5-6.5-11.4-6.5-11.4z"/>','Color',()=>toggleFloatPal()));
   fbEl.appendChild(sep());
-  fbEl.appendChild(btn('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>','Delete',()=>{for(const id of S.selIds)delS(id);S.selIds=new Set();hideFloatBar();saveH();render();},true));
+  fbEl.appendChild(btn('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>','Delete',()=>{for(const id of editableIds())delS(id);S.selIds=new Set();hideFloatBar();saveH();render();},true));
+}
+// multi-selection bar: align + distribute + rotate / mirror / duplicate / delete
+function buildAlignBar(){
+  fbEl.innerHTML='';const btn=_fbBtn,sep=_fbSep;
+  fbEl.appendChild(btn('<path d="M4 4v16"/><rect x="7" y="7" width="11" height="3.5" rx="1"/><rect x="7" y="14" width="7" height="3.5" rx="1"/>','Align left',()=>alignSel('left')));
+  fbEl.appendChild(btn('<path d="M12 4v16"/><rect x="6.5" y="7" width="11" height="3.5" rx="1"/><rect x="8.5" y="14" width="7" height="3.5" rx="1"/>','Align center',()=>alignSel('cx')));
+  fbEl.appendChild(btn('<path d="M20 4v16"/><rect x="6" y="7" width="11" height="3.5" rx="1"/><rect x="10" y="14" width="7" height="3.5" rx="1"/>','Align right',()=>alignSel('right')));
+  fbEl.appendChild(sep());
+  fbEl.appendChild(btn('<path d="M4 4h16"/><rect x="7" y="7" width="3.5" height="11" rx="1"/><rect x="14" y="7" width="3.5" height="7" rx="1"/>','Align top',()=>alignSel('top')));
+  fbEl.appendChild(btn('<path d="M4 12h16"/><rect x="7" y="6.5" width="3.5" height="11" rx="1"/><rect x="14" y="8.5" width="3.5" height="7" rx="1"/>','Align middle',()=>alignSel('cy')));
+  fbEl.appendChild(btn('<path d="M4 20h16"/><rect x="7" y="6" width="3.5" height="11" rx="1"/><rect x="14" y="10" width="3.5" height="7" rx="1"/>','Align bottom',()=>alignSel('bottom')));
+  fbEl.appendChild(sep());
+  fbEl.appendChild(btn('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>','Rotate 90°',()=>rotateSel(1)));
+  fbEl.appendChild(btn('<path d="M12 3v18"/><path d="M5 8l-3 4 3 4"/><path d="M19 8l3 4-3 4"/>','Mirror H',()=>mirrorSel('h')));
+  fbEl.appendChild(btn('<rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16H3a1 1 0 01-1-1V3a1 1 0 011-1h12a1 1 0 011 1v1"/>','Duplicate',()=>{copySel();pasteSel();}));
+  fbEl.appendChild(sep());
+  fbEl.appendChild(btn('<path d="M12 2.6S5.5 9 5.5 14a6.5 6.5 0 0013 0c0-5-6.5-11.4-6.5-11.4z"/>','Color',()=>toggleFloatPal()));
+  fbEl.appendChild(sep());
+  fbEl.appendChild(btn('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>','Delete',()=>{for(const id of editableIds())delS(id);S.selIds=new Set();hideFloatBar();saveH();render();},true));
+}
+// move a shape (rect/poly/line) by a delta — used by alignment
+function moveShapeBy(s,dx,dy){
+  if(Math.abs(dx)<1e-9&&Math.abs(dy)<1e-9)return;
+  if(s.type==='rect'){if(s.poly)updS(s.id,{poly:s.poly.map(p=>({x:p.x+dx,y:p.y+dy}))});else updS(s.id,{x:s.x+dx,y:s.y+dy});}
+  else if(s.type==='line')updS(s.id,{pts:s.pts.map(p=>({x:p.x+dx,y:p.y+dy}))});
+}
+// align the (unlocked) selection by their bounding boxes
+function alignSel(mode){
+  const sel=editableSel().filter(s=>s.type==='rect'||s.type==='line');
+  if(sel.length<2)return;
+  const o=sel.map(s=>({s,b:bounds(s)}));
+  const cxOf=b=>(b.x+b.r)/2,cyOf=b=>(b.y+b.b)/2;
+  let target;
+  if(mode==='left')target=Math.min(...o.map(x=>x.b.x));
+  else if(mode==='right')target=Math.max(...o.map(x=>x.b.r));
+  else if(mode==='top')target=Math.min(...o.map(x=>x.b.y));
+  else if(mode==='bottom')target=Math.max(...o.map(x=>x.b.b));
+  else if(mode==='cx')target=o.reduce((a,x)=>a+cxOf(x.b),0)/o.length;
+  else if(mode==='cy')target=o.reduce((a,x)=>a+cyOf(x.b),0)/o.length;
+  for(const{s,b} of o){
+    let dx=0,dy=0;
+    if(mode==='left')dx=target-b.x;else if(mode==='right')dx=target-b.r;else if(mode==='cx')dx=target-cxOf(b);
+    else if(mode==='top')dy=target-b.y;else if(mode==='bottom')dy=target-b.b;else if(mode==='cy')dy=target-cyOf(b);
+    moveShapeBy(s,dx,dy);
+  }
+  saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();
 }
 function toggleFloatPal(){
   if(fpEl.classList.contains('show')){fpEl.classList.remove('show');return;}
   const selRects=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect');if(!selRects.length)return;
   fpEl.innerHTML='';
-  const apply=opts=>{for(const id of famExpand(selRects.map(s=>s.id)))updS(id,opts);fpEl.classList.remove('show');saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();};
+  // recompute from the live selection at click time (selection may have changed since the palette opened)
+  const apply=opts=>{const ids=[...S.selIds].filter(id=>{const s=getS(id);return s&&s.type==='rect';});
+    for(const id of famExpand(ids))updS(id,opts);fpEl.classList.remove('show');saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();};
   const chip=(fill,stroke,title,fn)=>{const c=document.createElement('button');c.className='fp-chip';if(title)c.title=title;
     c.style.background=fill;c.style.border='1.5px solid '+stroke;c.onclick=e=>{e.stopPropagation();fn();};fpEl.appendChild(c);};
   const sc=getScene();
@@ -1873,18 +2330,24 @@ function toggleFloatPal(){
 }
 function hideFloatBar(){fbEl.classList.remove('show');fpEl.classList.remove('show');}
 function updateFloatBar(){
-  if(S.selIds.size!==1||S.dragging||S.resizing||S.rotating||S.drawing||S.lineDrawing||(typeof discOpen!=='undefined'&&discOpen)){hideFloatBar();return;}
-  const s=getS([...S.selIds][0]);
-  if(!s||s.type!=='rect'){hideFloatBar();return;}
+  if(!S.selIds.size||S.dragging||S.resizing||S.rotating||S.drawing||S.lineDrawing||(typeof discOpen!=='undefined'&&discOpen)){hideFloatBar();return;}
   let cxw,byw;
-  if(s.poly){let mnX=Infinity,mxX=-Infinity,mxY=-Infinity;for(const p of s.poly){mnX=Math.min(mnX,p.x);mxX=Math.max(mxX,p.x);mxY=Math.max(mxY,p.y);}cxw=(mnX+mxX)/2;byw=mxY;}
-  else{cxw=s.x+s.w/2;byw=s.y+s.h;}
+  if(S.selIds.size===1){
+    const s=getS([...S.selIds][0]);
+    if(!s||s.type!=='rect'){hideFloatBar();return;}
+    buildSingleBar();
+    if(s.poly){let mnX=Infinity,mxX=-Infinity,mxY=-Infinity;for(const p of s.poly){mnX=Math.min(mnX,p.x);mxX=Math.max(mxX,p.x);mxY=Math.max(mxY,p.y);}cxw=(mnX+mxX)/2;byw=mxY;}
+    else{cxw=s.x+s.w/2;byw=s.y+s.h;}
+  }else{ // 2+ selected → alignment bar, positioned under the selection bounds
+    buildAlignBar();
+    const bb=selBounds();if(!bb){hideFloatBar();return;}cxw=(bb.x+bb.r)/2;byw=bb.b;
+  }
   const sp=w2s(cxw,byw);
   fbEl.style.left=sp.x+'px';fbEl.style.top=(sp.y+44)+'px';
   fbEl.classList.add('show');
   if(fpEl.classList.contains('show')){fpEl.style.left=fbEl.style.left;fpEl.style.top=(sp.y+44+34)+'px';}
 }
-buildFloatBar();
+buildSingleBar();
 
 // ─────────────────────────────────────────
 //  COPY / PASTE / Z-ORDER
@@ -1909,7 +2372,7 @@ function transformSel(fn){
   const boxFromPts=pts=>{let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
     for(const p of pts){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}
     return{minX,minY,maxX,maxY};};
-  for(const id of S.selIds){const s=getS(id);if(!s)continue;
+  for(const s of editableSel()){const id=s.id;
     if(s.type==='rect'&&!s.poly){
       const pts=rectToPoly(s).map(p=>fn(p.x,p.y,cx,cy));const bx=boxFromPts(pts);
       updS(id,{x:gSnapX(bx.minX),y:gSnapY(bx.minY),w:bx.maxX-bx.minX,h:bx.maxY-bx.minY});
@@ -1928,20 +2391,18 @@ function mirrorSel(axis){ // 'h' = flip left↔right, 'v' = flip top↔bottom
 // ─────────────────────────────────────────
 //  JOIN — merge selected rects into one united shape (union outline)
 // ─────────────────────────────────────────
-function shapesUnionLoops(shapes){
-  // Works for any axis-aligned shapes (plain rects AND already-merged polygons)
-  const polys=shapes.map(s=>s.poly?s.poly:rectToPoly(s));
+// Trace the orthogonal boundary loops of whatever region `fillFn` marks, over the
+// grid formed by every shape's x/y coordinates. Shared by union + difference.
+function _cellLoops(polys,fillFn){
   const xs=new Set(),ys=new Set();
   for(const poly of polys)for(const p of poly){xs.add(p.x);ys.add(p.y);}
   const X=[...xs].sort((a,b)=>a-b),Y=[...ys].sort((a,b)=>a-b);
   const nx=X.length-1,ny=Y.length-1;
   const filled=[];
   for(let i=0;i<nx;i++){filled[i]=[];for(let j=0;j<ny;j++){
-    const cx=(X[i]+X[i+1])/2,cy=(Y[j]+Y[j+1])/2;
-    filled[i][j]=polys.some(poly=>pointInPoly(cx,cy,poly));
+    const cx=(X[i]+X[i+1])/2,cy=(Y[j]+Y[j+1])/2;filled[i][j]=fillFn(cx,cy);
   }}
   const F=(i,j)=>i>=0&&i<nx&&j>=0&&j<ny&&filled[i][j];
-  // Directed boundary edges (filled cell kept on the right while walking)
   const edges=[];
   for(let i=0;i<nx;i++)for(let j=0;j<ny;j++){
     if(!filled[i][j])continue;
@@ -1964,6 +2425,33 @@ function shapesUnionLoops(shapes){
     if(loop.length>=4)loops.push(simplifyColinear(loop));
   }
   return loops;
+}
+function shapesUnionLoops(shapes){
+  // Works for any axis-aligned shapes (plain rects AND already-merged polygons)
+  const polys=shapes.map(s=>s.poly?s.poly:rectToPoly(s));
+  return _cellLoops(polys,(cx,cy)=>polys.some(poly=>pointInPoly(cx,cy,poly)));
+}
+// `target` minus `subtract` (the part of target NOT covered by subtract)
+function shapesDifferenceLoops(target,subtract){
+  const tp=target.poly?target.poly:rectToPoly(target),sp=subtract.poly?subtract.poly:rectToPoly(subtract);
+  return _cellLoops([tp,sp],(cx,cy)=>pointInPoly(cx,cy,tp)&&!pointInPoly(cx,cy,sp));
+}
+// do two shapes' bounding boxes actually overlap (positive area)?
+function rectsOverlap(a,b){const ba=bounds(a),bb=bounds(b);
+  return Math.min(ba.r,bb.r)-Math.max(ba.x,bb.x)>1&&Math.min(ba.b,bb.b)-Math.max(ba.y,bb.y)>1;}
+function shapeLabel(s){return s&&(s.name||s.roomType||('Rect '+s.id));}
+function polyIsRect(p){if(!p||p.length!==4)return false;const xs=[...new Set(p.map(q=>q.x))],ys=[...new Set(p.map(q=>q.y))];return xs.length===2&&ys.length===2;}
+// keep the shared area in `keepId`; clip it out of `clipId` (→ L-shape, or remove if fully covered)
+function resolveOverlap(keepId,clipId){
+  const keep=getS(keepId),clip=getS(clipId);if(!keep||!clip)return;
+  const loops=shapesDifferenceLoops(clip,keep).filter(l=>polyAreaAbs(l)>1).sort((a,b)=>polyAreaAbs(b)-polyAreaAbs(a));
+  if(!loops.length){delS(clipId);S.selIds=new Set([keepId]);saveH();render();return;} // clip fully under keep
+  const poly=loops[0];
+  if(polyIsRect(poly)){ // result is still a plain rectangle → keep it simple
+    const xs=poly.map(p=>p.x),ys=poly.map(p=>p.y);
+    updS(clipId,{poly:undefined,x:Math.min(...xs),y:Math.min(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)});
+  }else updS(clipId,{poly});
+  S.selIds=new Set([keepId,clipId]);saveH();render();
 }
 function simplifyColinear(pts){
   const out=[],n=pts.length;
@@ -2052,7 +2540,7 @@ function generalUnionLoops(shapes){
 }
 function joinSelected(){
   // Accept rects AND already-merged polys so shapes can be merged repeatedly
-  const sel=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect');
+  const sel=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect'&&!shapeLocked(s));
   if(sel.length<2)return;
   // Axis-aligned merges use the robust rasterized union; if any shape is irregular
   // (slanted edges), use the general union so the diagonal walls are preserved.
@@ -2076,6 +2564,9 @@ function joinSelected(){
     if(base.name)m.name=base.name;
     S.shapes.push(m);newIds.push(m.id);
   }
+  // carry region membership onto the merged shape(s), so a tilted wing keeps its tilt + frame after merging
+  for(const rg of S.regions){if(rg.shapeIds.some(id=>ids.has(id))){rg.shapeIds=rg.shapeIds.filter(id=>!ids.has(id)).concat(newIds);}}
+  S.regions=S.regions.filter(rg=>rg.shapeIds.length);rebuildLockedIds();
   S.selIds=new Set(newIds);
   saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();
 }
@@ -2103,10 +2594,31 @@ document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.addEventListener('cli
 // ─────────────────────────────────────────
 function applyResize(wp){
   const o=S.resShape0,h=S.resHandle;
+  // ── Tilted room: scale/edge entirely within its region frame, keeping the wing's orientation (Phase 2) ──
+  const _fr=framedRect(o);
+  if(_fr&&typeof h==='string'&&h[0]==='f'){
+    const rc=frameRect(o,_fr),sn=resizeSnapFrame(wp,o.id,_fr),sp=sn.fp;
+    let x0=rc.x,y0=rc.y,x1=rc.x+rc.w,y1=rc.y+rc.h;
+    // corner drag scales within the frame (stays a rectangle, never a parallelogram); ⇧ = lock aspect ratio
+    const aspect=(rc.w/rc.h)||1;
+    const lock=(nw,nh)=>{nw=Math.max(GRID,nw);nh=Math.max(GRID,nh);
+      if(S.shiftScale){if(nw/nh>aspect)nh=nw/aspect;else nw=nh*aspect;}return[nw,nh];};
+    if(h==='fnw'){const[nw,nh]=lock(x1-sp.x,y1-sp.y);x0=x1-nw;y0=y1-nh;}
+    else if(h==='fne'){const[nw,nh]=lock(sp.x-x0,y1-sp.y);x1=x0+nw;y0=y1-nh;}
+    else if(h==='fse'){const[nw,nh]=lock(sp.x-x0,sp.y-y0);x1=x0+nw;y1=y0+nh;}
+    else if(h==='fsw'){const[nw,nh]=lock(x1-sp.x,sp.y-y0);x0=x1-nw;y1=y0+nh;}
+    else if(h==='fen'){y0=Math.min(sp.y,y1-GRID);}
+    else if(h==='fes'){y1=Math.max(sp.y,y0+GRID);}
+    else if(h==='fee'){x1=Math.max(sp.x,x0+GRID);}
+    else if(h==='few'){x0=Math.min(sp.x,x1-GRID);}
+    const poly=[{x:x0,y:y0},{x:x1,y:y0},{x:x1,y:y1},{x:x0,y:y1}].map(p=>fromFrame(p,_fr));
+    updS(o.id,{poly});showSnap(sn.world);return;
+  }
   // ── Polygon edge drag (move a whole wall perpendicular; keeps the shape rectilinear) ──
   if(o.type==='rect'&&o.poly&&typeof h==='string'&&h.startsWith('pe')){
     const idx=parseInt(h.slice(2)),n=o.poly.length;
-    const a=o.poly[idx],b=o.poly[(idx+1)%n],sn=smartSnap(wp.x,wp.y,o.id);
+    const a=o.poly[idx],b=o.poly[(idx+1)%n],horiz=a.y===b.y;
+    const sn=resizeSnap(wp,o.id,{x:!horiz,y:horiz});
     const poly=o.poly.map(p=>({...p}));
     if(a.y===b.y){const ny=gSnapY(sn.y);poly[idx].y=ny;poly[(idx+1)%n].y=ny;}
     else{const nx=gSnapX(sn.x);poly[idx].x=nx;poly[(idx+1)%n].x=nx;}
@@ -2114,7 +2626,7 @@ function applyResize(wp){
   }
   // ── Polygon vertex drag (reshape one vertex) ──
   if(o.type==='rect'&&o.poly&&h[0]==='p'){
-    const idx=parseInt(h.slice(1));const sn=smartSnap(wp.x,wp.y,o.id);
+    const idx=parseInt(h.slice(1));const sn=resizeSnap(wp,o.id,{x:true,y:true});
     const poly=o.poly.map(p=>({...p}));poly[idx]={x:sn.x,y:sn.y};
     updS(o.id,{poly});showSnap(sn);return;
   }
@@ -2124,7 +2636,7 @@ function applyResize(wp){
     for(const p of o.poly){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}
     const w0=(maxX-minX)||1,h0=(maxY-minY)||1;
     const ax=(h==='bne'||h==='bse')?minX:maxX, ay=(h==='bse'||h==='bsw')?minY:maxY; // anchor = opposite corner
-    const sn=smartSnap(wp.x,wp.y,o.id);
+    const sn=resizeSnap(wp,o.id,{x:true,y:true});
     let sx=Math.max(GRID/w0,Math.abs(sn.x-ax)/w0), sy=Math.max(GRID/h0,Math.abs(sn.y-ay)/h0);
     if(S.shiftScale){const k=Math.max(sx,sy);sx=k;sy=k;}
     const poly=o.poly.map(p=>({x:gSnapX(ax+(p.x-ax)*sx),y:gSnapY(ay+(p.y-ay)*sy)}));
@@ -2132,7 +2644,8 @@ function applyResize(wp){
   }
   // ── Rect edge drag (drag a border line to resize just that side) ──
   if(o.type==='rect'&&!o.poly&&['en','es','ee','ew'].includes(h)){
-    const sn=smartSnap(wp.x,wp.y,o.id);
+    const vert=h==='ee'||h==='ew';
+    const sn=resizeSnap(wp,o.id,{x:vert,y:!vert});
     if(h==='en'){const bottom=o.y+o.h,ny=Math.min(sn.y,bottom-GRID);updS(o.id,{y:ny,h:bottom-ny});}
     else if(h==='es'){updS(o.id,{h:Math.max(GRID,sn.y-o.y)});}
     else if(h==='ew'){const right=o.x+o.w,nx=Math.min(sn.x,right-GRID);updS(o.id,{x:nx,w:right-nx});}
@@ -2142,7 +2655,7 @@ function applyResize(wp){
   // ── Rect corner drag ──
   if(o.type==='rect'&&['nw','ne','se','sw'].includes(h)){
     const idx={nw:0,ne:1,se:2,sw:3}[h];
-    const sn=smartSnap(wp.x,wp.y,o.id);
+    const sn=resizeSnap(wp,o.id,{x:true,y:true});
     // Alt-drag → convert to polygon and move just this corner
     if(S.deformDrag){
       const basePoly=rectToPoly(o);
@@ -2187,6 +2700,17 @@ function onDown(e){
   // Let the "+" duplicate buttons and candidate ghosts handle their own click
   if(e.target.closest('.plus-dup')||e.target.closest('.cand-g'))return;
   const wp=evtWP(e),sp=evtSP(e);
+  // Door grab-target → slide the door along its own wall (plan mode, any tool)
+  const dEl=e.target.closest('[data-doorkey]');
+  if(dEl&&S.archOn){
+    const ri=parseInt(dEl.dataset.runidx),r=S.archRuns[ri];
+    if(r&&r.door){
+      const len=r.len||1;
+      S.doorDrag={key:dEl.dataset.doorkey,idx:ri,len,ux:(r.bx-r.ax)/len,uy:(r.by-r.ay)/len,
+        dw:r.door[1]-r.door[0],ex:(r.t||6)/2};
+      e.preventDefault();return;
+    }
+  }
   if(S.tool==='pan'){S.panning=true;S.panSP=sp;S.panView0={x:S.vx,y:S.vy};updateCursor();return;}
   if(S.tool==='line'){
     const sn=smartSnap(wp.x,wp.y);showSnap(sn);
@@ -2194,6 +2718,15 @@ function onDown(e){
     e.preventDefault();return;
   }
   if(S.tool==='rect'){
+    // Region rotation handle → tilt the whole region about its centre
+    const rgEl=e.target.closest('.region-rot');
+    if(rgEl){
+      const rg=S.regions.find(r=>r.id===rgEl.dataset.rgid);if(!rg)return;
+      const c=regionCentroid(rg);
+      const polys={};for(const sid of rg.shapeIds){const s=getS(sid);if(s)polys[sid]=(s.poly?s.poly:rectToPoly(s)).map(p=>({x:p.x,y:p.y}));}
+      S.rgRotating={id:rg.id,center:c,start:Math.atan2(wp.y-c.y,wp.x-c.x),angle0:rg.angle||0,polys};
+      e.preventDefault();return;
+    }
     // Rotation handle → free-rotate the shape about its centre
     const rEl=e.target.closest('.rot-handle');
     if(rEl){
@@ -2236,17 +2769,22 @@ function onDown(e){
     const shEl=e.target.closest('[data-sid]');
     let sid=shEl?parseInt(shEl.dataset.sid):null;if(!sid)sid=hitTest(wp.x,wp.y);
     if(sid){
-      if(e.shiftKey){if(S.selIds.has(sid))S.selIds.delete(sid);else S.selIds.add(sid);render();}
-      else{if(!S.selIds.has(sid)){S.selIds=new Set([sid]);render();}
-        S.dragging=true;S.dragWP=wp;
-        S.dragShapes0=new Map([...S.selIds].map(id=>{const s=getS(id);return[id,JSON.parse(JSON.stringify(s))]}));}
+      if(e.shiftKey){if(S.selIds.has(sid))S.selIds.delete(sid);else S.selIds.add(sid);refreshCandidates();render();}
+      else{if(!S.selIds.has(sid)){S.selIds=new Set([sid]);refreshCandidates();render();}
+        if(shapeLocked(getS(sid))){e.preventDefault();return;} // locked → select only, no drag
+        const movable=editableIds();                          // never drag locked members of a multi-selection
+        if(movable.length){S.dragging=true;S.dragWP=wp;
+          S.dragShapes0=new Map(movable.map(id=>{const s=getS(id);return[id,JSON.parse(JSON.stringify(s))]}));}}
       e.preventDefault();return;
     }
     // Empty space → Shift: marquee-select the swept region; otherwise draw a new rect
     if(e.shiftKey){
       S.selBoxing=true;S.sbSP0=sp;S.sbSP1=sp;e.preventDefault();return;
     }
-    S.selIds=new Set();
+    let _ar=activeRegion(); // if a tilted region is selected, draw the new room in its frame
+    if(!_ar&&S.iso)_ar=S.regions.find(r=>r.id===S.iso.rgid); // in isolate mode, always draw into the isolated region
+    S.drawFrame=(_ar&&_ar.angle)?{angle:_ar.angle,pivot:_ar.pivot||regionCentroid(_ar),rgid:_ar.id}:null;
+    S.selIds=new Set();refreshCandidates(); // deselect → suggestions go back to whole-plan scope
     const sn=smartSnap(wp.x,wp.y);showSnap(sn);S.drawing=true;S.drawP0=sn;
     e.preventDefault();return;
   }
@@ -2271,9 +2809,53 @@ function dragSnap(dx,dy){
   }
   return{dx:bx!=null?bx:dx,dy:by!=null?by:dy,sx:bx!=null,sy:by!=null};
 }
+// the common tilt frame of the current drag, if every dragged rect shares one (else null → world snap)
+function dragFrame(){
+  let fr=null;
+  for(const[,o]of S.dragShapes0){
+    if(o.type!=='rect')continue;
+    const f=selfFrame(o);
+    if(!f.angle)return null;
+    if(!fr)fr=f;
+    else if(Math.abs(f.angle-fr.angle)>1e-3||Math.abs(f.pivot.x-fr.pivot.x)>1e-3||Math.abs(f.pivot.y-fr.pivot.y)>1e-3)return null;
+  }
+  return fr;
+}
+// drag-snap in frame coords: flush the moved group to neighbours' edges (exact for parallel rooms),
+// grid otherwise. Returns the snapped delta back in world coords.
+function dragSnapFrame(dx,dy,fr){
+  const th=16/S.zoom,NEAR=120;
+  let L=Infinity,T=Infinity,R=-Infinity,B=-Infinity,has=false;
+  for(const[,o]of S.dragShapes0){if(o.type!=='rect')continue;has=true;const r=frameRect(o,fr);
+    L=Math.min(L,r.x);T=Math.min(T,r.y);R=Math.max(R,r.x+r.w);B=Math.max(B,r.y+r.h);}
+  const dv=rotVec({x:dx,y:dy},-fr.angle);let fdx=dv.x,fdy=dv.y;
+  if(has){
+    const others=S.shapes.filter(s=>s.type==='rect'&&!S.selIds.has(s.id));
+    const mL=L+fdx,mR=R+fdx,mT=T+fdy,mB=B+fdy;
+    let bx=null,bdx=th,by=null,bdy=th;
+    for(const s of others){const r=frameRect(s,fr),sL=r.x,sR=r.x+r.w,sT=r.y,sB=r.y+r.h;
+      const yNear=mB>sT-NEAR&&mT<sB+NEAR, xNear=mR>sL-NEAR&&mL<sR+NEAR;
+      if(yNear)for(const[m,t,adj]of[[mL,sL,sL-L],[mL,sR,sR-L],[mR,sL,sL-R],[mR,sR,sR-R]]){
+        const d=Math.abs(m-t);if(d<bdx){bdx=d;bx=adj;}}
+      if(xNear)for(const[m,t,adj]of[[mT,sT,sT-T],[mT,sB,sB-T],[mB,sT,sT-B],[mB,sB,sB-B]]){
+        const d=Math.abs(m-t);if(d<bdy){bdy=d;by=adj;}}
+    }
+    fdx=bx!=null?bx:gSnapX(L+fdx)-L; // edge-flush, else grid (both in frame)
+    fdy=by!=null?by:gSnapY(T+fdy)-T;
+  }
+  const wd=rotVec({x:fdx,y:fdy},fr.angle);
+  return{dx:wd.x,dy:wd.y};
+}
 function onMove(e){
   const sp=evtSP(e),wp=s2w(sp.x,sp.y);S.curWP=wp;
   document.getElementById('s-coords').textContent=(S.sqft?pxToFt(wp.x)+', '+pxToFt(wp.y)+' ft':Math.round(wp.x)+', '+Math.round(wp.y));
+  if(S.doorDrag){
+    const d=S.doorDrag,r=S.archRuns[d.idx];if(!r){S.doorDrag=null;return;}
+    let c=(wp.x-r.ax)*d.ux+(wp.y-r.ay)*d.uy;          // project cursor onto the wall axis
+    c=Math.max(d.ex+d.dw/2,Math.min(d.len-d.ex-d.dw/2,c));
+    S.doorOverrides[d.key]=c;r.door=[c-d.dw/2,c+d.dw/2];
+    renderArch();return;
+  }
   if(S.panning){S.vx=S.panView0.x+(sp.x-S.panSP.x);S.vy=S.panView0.y+(sp.y-S.panSP.y);applyView();return;}
   if(S.rotating){
     const c=S.rotCenter;let ang=Math.atan2(wp.y-c.y,wp.x-c.x)-S.rotStart;
@@ -2285,18 +2867,49 @@ function onMove(e){
     document.getElementById('s-tool').textContent='Rotate '+deg+'°';
     render();return;
   }
-  if(S.drawing&&S.tool==='rect'){const sn=smartSnap(wp.x,wp.y);showSnap(sn);renderPreview(S.drawP0,sn);drawRulers();return;}
+  if(S.rgRotating){
+    const r=S.rgRotating,c=r.center;
+    let ang=Math.atan2(wp.y-c.y,wp.x-c.x)-r.start;
+    if(e.shiftKey){const snapped=Math.round((r.angle0+ang)/(Math.PI/12))*(Math.PI/12);ang=snapped-r.angle0;} // ⇧ → absolute 15° steps
+    const cos=Math.cos(ang),sin=Math.sin(ang);
+    for(const sid in r.polys){
+      const poly=r.polys[sid].map(p=>{const dx=p.x-c.x,dy=p.y-c.y;return{x:c.x+dx*cos-dy*sin,y:c.y+dx*sin+dy*cos};});
+      updS(parseInt(sid,10),{poly,x:undefined,y:undefined,w:undefined,h:undefined}); // each room becomes a rotated polygon
+    }
+    r.live=ang;
+    let deg=Math.round((r.angle0+ang)*180/Math.PI)%360;if(deg<0)deg+=360;
+    document.getElementById('s-tool').textContent='Tilt region '+deg+'°';
+    render();return;
+  }
+  if(S.drawing&&S.tool==='rect'){const sn=smartSnap(wp.x,wp.y);showSnap(sn);if(S.drawFrame)renderPreviewFrame(S.drawP0,sn,S.drawFrame);else renderPreview(S.drawP0,sn);drawRulers();return;}
   if(S.lineDrawing){const sn=smartSnap(wp.x,wp.y);showSnap(sn);renderLinePreview(S.linePts,sn);drawRulers();return;}
   if(S.dragging){
     let dx=wp.x-S.dragWP.x,dy=wp.y-S.dragWP.y;
-    const sn=dragSnap(dx,dy);dx=sn.dx;dy=sn.dy;   // magnetic snap: edges flush/aligned to nearby rooms
-    // when an axis snapped to a neighbour, keep that exact position (don't re-round to grid)
-    const SX=v=>sn.sx?v:gSnapX(v), SY=v=>sn.sy?v:gSnapY(v);
+    let ddx,ddy;
+    const fr=dragFrame(); // tilted room(s) → snap to adjacent rooms in their own frame
+    if(fr){const sn=dragSnapFrame(dx,dy,fr);ddx=sn.dx;ddy=sn.dy;}
+    else{
+      const sn=dragSnap(dx,dy);dx=sn.dx;dy=sn.dy;   // magnetic snap: edges flush/aligned to nearby rooms
+      // Single uniform delta for the whole group (per-vertex grid-snap would distort tilted/rotated rooms
+      // and drift multi-selections apart). Grid-align by the group's bbox min; an axis snapped to a
+      // neighbour keeps that exact position.
+      ddx=dx;ddy=dy;
+      if(!sn.sx||!sn.sy){
+        let mnx=Infinity,mny=Infinity;
+        for(const[,o]of S.dragShapes0){
+          if(o.poly)for(const p of o.poly){mnx=Math.min(mnx,p.x);mny=Math.min(mny,p.y);}
+          else if(o.type==='rect'){mnx=Math.min(mnx,o.x);mny=Math.min(mny,o.y);}
+          else if(o.type==='line')for(const p of o.pts){mnx=Math.min(mnx,p.x);mny=Math.min(mny,p.y);}
+        }
+        if(!sn.sx&&isFinite(mnx))ddx=gSnapX(mnx+dx)-mnx;
+        if(!sn.sy&&isFinite(mny))ddy=gSnapY(mny+dy)-mny;
+      }
+    }
     for(const[id,o]of S.dragShapes0){
       if(o.type==='rect'){
-        if(o.poly)updS(id,{poly:o.poly.map(p=>({x:SX(p.x+dx),y:SY(p.y+dy)}))});
-        else updS(id,{x:SX(o.x+dx),y:SY(o.y+dy)});
-      }else if(o.type==='line')updS(id,{pts:o.pts.map(p=>({x:SX(p.x+dx),y:SY(p.y+dy)}))});
+        if(o.poly)updS(id,{poly:o.poly.map(p=>({x:p.x+ddx,y:p.y+ddy}))});
+        else updS(id,{x:o.x+ddx,y:o.y+ddy});
+      }else if(o.type==='line')updS(id,{pts:o.pts.map(p=>({x:p.x+ddx,y:p.y+ddy}))});
     }
     render();return;
   }
@@ -2326,14 +2939,33 @@ function onMove(e){
   drawRulers();
 }
 function onUp(e){
+  if(S.doorDrag){S.doorDrag=null;saveH();renderArch();return;}
   if(S.panning){S.panning=false;updateCursor();return;}
   if(S.rotating){
     S.rotating=false;S.rotSid=null;S.rotPoly0=null;S.rotCenter=null;
     document.getElementById('s-tool').textContent='Rectangle';
     saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();return;
   }
+  if(S.rgRotating){
+    const r=S.rgRotating,rg=S.regions.find(x=>x.id===r.id);
+    if(rg){rg.angle=r.angle0+(r.live||0);rg.pivot={x:r.center.x,y:r.center.y};}
+    S.rgRotating=null;
+    document.getElementById('s-tool').textContent='Rectangle';
+    saveH();if(S.sceneKey)S.candidates=predictNextRooms();renderRegions();render();return;
+  }
   if(S.drawing&&S.tool==='rect'){
     const wp=evtWP(e),sn=smartSnap(wp.x,wp.y);
+    if(S.drawFrame){ // new room continues the tilted wing's orientation
+      const fr=S.drawFrame,a=toFrame(S.drawP0,fr),b=toFrame(sn,fr);
+      const fx=Math.min(a.x,b.x),fy=Math.min(a.y,b.y),fw=Math.abs(b.x-a.x),fh=Math.abs(b.y-a.y);
+      if(fw>4&&fh>4){
+        const poly=[{x:fx,y:fy},{x:fx+fw,y:fy},{x:fx+fw,y:fy+fh},{x:fx,y:fy+fh}].map(p=>fromFrame(p,fr));
+        const s=mkRect(0,0,fw,fh);s.poly=poly;if(S.panelEdit)s._detail=true;S.shapes.push(s);
+        const rg=S.regions.find(r=>r.id===fr.rgid);if(rg)rg.shapeIds.push(s.id);
+        S.selIds=new Set([s.id]);saveH();render();
+      }
+      S.drawing=false;S.drawFrame=null;lPreview.innerHTML='';lSnap.innerHTML='';return;
+    }
     const rx=Math.min(S.drawP0.x,sn.x),ry=Math.min(S.drawP0.y,sn.y);
     const rw=Math.abs(sn.x-S.drawP0.x),rh=Math.abs(sn.y-S.drawP0.y);
     if(rw>4&&rh>4){const s=mkRect(rx,ry,rw,rh);if(S.panelEdit)s._detail=true;S.shapes.push(s);S.selIds=new Set([s.id]);saveH();render();}
@@ -2356,7 +2988,7 @@ function onUp(e){
     // Sweep-select: any shape the marquee touches (intersection), added to the current selection
     for(const s of S.shapes){const bb=bounds(s);if(bb.x<wp1.x&&bb.r>wp0.x&&bb.y<wp1.y&&bb.b>wp0.y)ns2.add(s.id);}
     for(const id of ns2)S.selIds.add(id);
-    render();
+    refreshCandidates();render();
   }
 }
 
@@ -2416,14 +3048,15 @@ window.addEventListener('keydown',e=>{
   if((e.key==='k'||e.key==='K')&&!e.metaKey&&!e.ctrlKey){e.shiftKey?unlinkSelected():linkSelected();}
   if(e.key==='a'&&(e.metaKey||e.ctrlKey)){S.selIds=new Set(S.shapes.map(s=>s.id));render();e.preventDefault();}
   if((e.key==='Delete'||e.key==='Backspace')&&S.selIds.size){
-    for(const id of S.selIds)delS(id);S.selIds=new Set();saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();
+    const ids=editableIds();for(const id of ids)delS(id);S.selIds=new Set();saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();
   }
   if(e.key==='Escape'){
+    if(S.iso){exitIsolate();return;}           // leave isolate mode first
     if(S.panelEdit){exitPanelEdit();return;}   // leave panel-interior editing → apply to the family
     S.predHidden=true; // exit the dashed prediction state
     if(discOpen){closeRadialDisc();}
     else{S.lineDrawing=false;S.linePts=[];lPreview.innerHTML='';lSnap.innerHTML='';
-      S.selIds=new Set();S.drawing=false;S.deformDrag=false;render();}
+      S.selIds=new Set();S.drawing=false;S.drawFrame=null;S.deformDrag=false;render();}
   }
   if(e.key==='Enter'&&S.lineDrawing&&S.linePts.length>=2){
     const s=mkLine([...S.linePts]);if(S.panelEdit)s._detail=true;S.shapes.push(s);S.selIds=new Set([s.id]);
@@ -2438,7 +3071,7 @@ window.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='d'){copySel();pasteSel();e.preventDefault();}
   if(S.selIds.size&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
     const d=e.shiftKey?10:1;
-    for(const id of S.selIds){const s=getS(id);if(!s)continue;
+    for(const s of editableSel()){const id=s.id;
       if(s.type==='rect'&&!s.poly)updS(id,{x:s.x+(e.key==='ArrowLeft'?-d:e.key==='ArrowRight'?d:0),y:s.y+(e.key==='ArrowUp'?-d:e.key==='ArrowDown'?d:0)});
       else if(s.type==='line')updS(id,{pts:s.pts.map(p=>({x:p.x+(e.key==='ArrowLeft'?-d:e.key==='ArrowRight'?d:0),y:p.y+(e.key==='ArrowUp'?-d:e.key==='ArrowDown'?d:0)}))});
     }
@@ -2474,6 +3107,7 @@ function commitDim(){
   const v=parseFloat(dimInp.value);
   if(!isNaN(v)&&v>0){
     const{sid,dim}=dimEdit;const s=getS(sid);
+    if(shapeLocked(s)){dimOverlay.style.display='none';dimEdit=null;return;} // locked → ignore dim edits
     const pxv=S.sqft?Math.round(v/FT_SCALE/GRID)*GRID:Math.max(GRID,Math.round(v/GRID)*GRID||v);
     if(s&&s.poly){
       // Scale the polygon so its bounding-box dimension becomes pxv (anchored top-left)
@@ -2542,9 +3176,294 @@ document.getElementById('btn-plan').addEventListener('click',toggleArch);
 document.getElementById('btn-ft')?.addEventListener('click',toggleSqft);
 document.getElementById('btn-clear').addEventListener('click',()=>{
   if(!S.shapes.length)return;
-  if(confirm('Clear all?')){S.shapes=[];S.selIds=new Set();S.candidates=[];saveH();render();}
+  if(confirm('Clear all?')){
+    S.shapes=[];S.selIds=new Set();S.candidates=[];S.regions=[];S.doorOverrides={};
+    S.sceneKey=null;S.predHidden=false; // reset to a fresh canvas → the radial picker offers scenes again (re-seeds prediction)
+    rebuildLockedIds();updateSceneBadge();saveH();render();
+  }
 });
 window.addEventListener('resize',()=>applyView());
+
+// ─────────────────────────────────────────
+//  REGIONS — named groups of rooms that can be locked (faded + un-editable)
+// ─────────────────────────────────────────
+const regionBox=document.getElementById('region-box');
+function createRegionFromSel(){
+  const ids=[...S.selIds].filter(id=>{const s=getS(id);return s&&s.type==='rect';});
+  if(!ids.length)return;
+  const name=(prompt('Region name:','Region '+(S.regions.length+1))||'').trim();
+  if(!name)return;
+  for(const rg of S.regions)rg.shapeIds=rg.shapeIds.filter(id=>!ids.includes(id)); // exclusive membership
+  S.regions=S.regions.filter(rg=>rg.shapeIds.length);
+  S.regions.push({id:'rg'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,shapeIds:ids,locked:false,angle:0,pivot:null});
+  rebuildLockedIds();saveH();renderRegions();render();
+}
+// rotate every room in a region about the region centroid by `delta` radians (the wing tilts as a unit)
+function rotateRegion(id,delta){
+  const rg=S.regions.find(r=>r.id===id);if(!rg||!delta)return;
+  const c=regionCentroid(rg);rg.pivot={x:c.x,y:c.y};
+  for(const sid of rg.shapeIds){const s=getS(sid);if(!s)continue;
+    const poly=(s.poly?s.poly:rectToPoly(s)).map(p=>rotPt(p,c,delta));
+    updS(sid,{poly,x:undefined,y:undefined,w:undefined,h:undefined}); // becomes a rotated polygon
+  }
+  rg.angle=(rg.angle||0)+delta;
+  saveH();render();
+}
+function setRegionAngle(id,deg){const rg=S.regions.find(r=>r.id===id);if(!rg)return;
+  const target=deg*Math.PI/180;rotateRegion(id,target-(rg.angle||0));renderRegions();}
+function toggleRegionLock(id){const rg=S.regions.find(r=>r.id===id);if(!rg)return;rg.locked=!rg.locked;rebuildLockedIds();saveH();renderRegions();render();}
+function deleteRegion(id){S.regions=S.regions.filter(r=>r.id!==id);rebuildLockedIds();saveH();renderRegions();render();}
+function renameRegion(id,name){const rg=S.regions.find(r=>r.id===id);if(rg&&name.trim()){rg.name=name.trim();saveH();}}
+function selectRegion(id){const rg=S.regions.find(r=>r.id===id);if(!rg)return;S.selIds=new Set(rg.shapeIds.filter(getS));refreshCandidates();render();}
+// ── Isolate + zoom: focus one region, fade the rest, rotate it upright for easy editing ──
+function isoHas(id){if(!S.iso)return false;const rg=S.regions.find(r=>r.id===S.iso.rgid);return!!rg&&rg.shapeIds.includes(id);}
+function animateView(target,dur,after){ // ease pan/zoom/view-rotation to a target, then run `after`
+  const s0={vx:S.vx,vy:S.vy,zoom:S.zoom,viewRot:S.viewRot};let t0=null;
+  function step(now){
+    if(t0===null)t0=now;
+    const k=Math.min(1,(now-t0)/dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; // easeInOutQuad
+    S.vx=s0.vx+(target.vx-s0.vx)*e;S.vy=s0.vy+(target.vy-s0.vy)*e;
+    S.zoom=s0.zoom+(target.zoom-s0.zoom)*e;S.viewRot=s0.viewRot+(target.viewRot-s0.viewRot)*e;
+    applyView();
+    if(k<1)requestAnimationFrame(step);else if(after)after();
+  }
+  requestAnimationFrame(step);
+}
+function isoTarget(rg){ // pan/zoom/rotation that centres the region upright on screen
+  const t=regionTilt(rg),angle=t.angle,pivot=t.pivot,vr=-angle;
+  let x=Infinity,y=Infinity,r=-Infinity,b=-Infinity;
+  for(const id of rg.shapeIds){const s=getS(id);if(!s)continue;const poly=s.poly?s.poly:rectToPoly(s);
+    for(const p of poly){const q=rotPt(p,pivot,vr);x=Math.min(x,q.x);y=Math.min(y,q.y);r=Math.max(r,q.x);b=Math.max(b,q.y);}}
+  if(!isFinite(x))return{vx:S.vx,vy:S.vy,zoom:S.zoom,viewRot:vr};
+  const pad=70,W=cW()-RW,H=cH()-RW,bw=(r-x)+pad*2,bh=(b-y)+pad*2;
+  const zoom=Math.max(.05,Math.min(W/bw,H/bh,4)),cx=(x+r)/2,cy=(y+b)/2;
+  return{vx:W/2-cx*zoom,vy:H/2-cy*zoom,zoom,viewRot:vr};
+}
+function enterIsolate(rgid){
+  const rg=S.regions.find(r=>r.id===rgid);if(!rg||S.iso)return;
+  S.iso={rgid,prevView:{vx:S.vx,vy:S.vy,zoom:S.zoom}};
+  S.viewPivot=regionTilt(rg).pivot;
+  S.selIds=new Set(rg.shapeIds.filter(getS)); // select the wing → all frame-aware editing targets it
+  if(S.sceneKey)S.candidates=predictNextRooms();
+  render();showIsoBar(rg);
+  animateView(isoTarget(rg),420);
+}
+function exitIsolate(){
+  if(!S.iso)return;const prev=S.iso.prevView;hideIsoBar();
+  animateView({vx:prev.vx,vy:prev.vy,zoom:prev.zoom,viewRot:0},380,()=>{S.iso=null;S.viewRot=0;render();});
+}
+let isoBarEl=null;
+function showIsoBar(rg){
+  if(!isoBarEl){
+    isoBarEl=document.createElement('div');isoBarEl.id='iso-bar';
+    isoBarEl.innerHTML='<span class="iso-label"></span><button class="iso-done">Done</button>';
+    document.body.appendChild(isoBarEl);
+    isoBarEl.querySelector('.iso-done').onclick=exitIsolate;
+  }
+  isoBarEl.querySelector('.iso-label').textContent='Editing “'+rg.name+'” · upright view';
+  requestAnimationFrame(()=>isoBarEl.classList.add('show'));
+}
+function hideIsoBar(){if(isoBarEl)isoBarEl.classList.remove('show');}
+// the region whose (live) members are exactly the current selection — gets a rotate handle
+function activeRegion(){
+  if(!S.selIds.size)return null;
+  for(const rg of S.regions){const ids=rg.shapeIds.filter(getS);
+    if(ids.length>=2&&ids.length===S.selIds.size&&ids.every(id=>S.selIds.has(id)))return rg;}
+  return null;
+}
+function renderRegions(){
+  const list=document.getElementById('rg-list');list.innerHTML='';
+  if(!S.regions.length){list.innerHTML='<div class="rg-empty">No regions yet. Select rooms, then group them.</div>';}
+  for(const rg of S.regions){
+    const live=rg.shapeIds.filter(getS).length;
+    const row=document.createElement('div');row.className='rg-item'+(rg.locked?' locked':'');
+    const name=document.createElement('input');name.className='rg-name';name.value=rg.name;
+    name.onchange=()=>renameRegion(rg.id,name.value);
+    name.onkeydown=ev=>ev.stopPropagation();
+    const cnt=document.createElement('span');cnt.className='rg-cnt';cnt.textContent=live+(live===1?' room':' rooms');
+    const ang=document.createElement('input');ang.className='rg-ang';ang.type='number';ang.title='Tilt angle (°)';
+    ang.value=Math.round(((rg.angle||0)*180/Math.PI)*10)/10;ang.step='1';
+    ang.onkeydown=ev=>ev.stopPropagation();
+    ang.onchange=()=>setRegionAngle(rg.id,parseFloat(ang.value)||0);
+    const sel=document.createElement('button');sel.className='rg-ic';sel.title='Select region';sel.textContent='◎';sel.onclick=()=>selectRegion(rg.id);
+    const iso=document.createElement('button');iso.className='rg-ic';iso.title='Isolate + zoom (edit upright)';iso.textContent='⤢';iso.onclick=()=>enterIsolate(rg.id);
+    const lk=document.createElement('button');lk.className='rg-ic';lk.title=rg.locked?'Unlock':'Lock';lk.textContent=rg.locked?'🔒':'🔓';lk.onclick=()=>toggleRegionLock(rg.id);
+    const del=document.createElement('button');del.className='rg-ic';del.title='Delete region';del.textContent='✕';del.onclick=()=>deleteRegion(rg.id);
+    row.append(name,cnt,ang,sel,iso,lk,del);list.appendChild(row);
+  }
+  const create=document.getElementById('rg-create');
+  const n=[...S.selIds].filter(id=>{const s=getS(id);return s&&s.type==='rect';}).length;
+  create.disabled=n===0;create.textContent=n?`＋ Group ${n} selected room${n===1?'':'s'} into region`:'＋ Select rooms to group';
+}
+document.getElementById('btn-regions').addEventListener('click',()=>{
+  const show=!regionBox.classList.contains('show');
+  document.querySelectorAll('#scene-box.show,#facade-box.show,#type-box.show,#library-box.show').forEach(el=>el.classList.remove('show'));
+  document.getElementById('btn-library').classList.remove('on');
+  regionBox.classList.toggle('show',show);
+  document.getElementById('btn-regions').classList.toggle('on',show);
+  if(show)renderRegions();
+});
+document.getElementById('rg-create').addEventListener('click',createRegionFromSel);
+// drag a floating panel by a handle element (switches from right- to left/top-anchoring on first drag)
+function makeDraggable(box,handle){
+  handle.addEventListener('mousedown',e=>{
+    if(e.target.closest('input,button,textarea'))return;
+    e.preventDefault();
+    const r=box.getBoundingClientRect();
+    box.style.left=r.left+'px';box.style.top=r.top+'px';box.style.right='auto';box.style.bottom='auto';
+    const ox=e.clientX-r.left,oy=e.clientY-r.top;
+    const mv=ev=>{box.style.left=Math.max(4,Math.min(window.innerWidth-44,ev.clientX-ox))+'px';
+      box.style.top=Math.max(40,Math.min(window.innerHeight-32,ev.clientY-oy))+'px';};
+    const up=()=>{window.removeEventListener('mousemove',mv);window.removeEventListener('mouseup',up);};
+    window.addEventListener('mousemove',mv);window.addEventListener('mouseup',up);
+  });
+}
+makeDraggable(document.getElementById('region-box'),document.querySelector('#region-box .rg-title'));
+
+// ─────────────────────────────────────────
+//  LIBRARY — save plans locally (localStorage); open / rename / duplicate / delete
+// ─────────────────────────────────────────
+const LIB_KEY='dtd2_library';
+const libraryBox=document.getElementById('library-box');
+function libLoad(){try{return JSON.parse(localStorage.getItem(LIB_KEY)||'[]');}catch(e){return[];}}
+function libStore(arr){try{localStorage.setItem(LIB_KEY,JSON.stringify(arr));}catch(e){alert('Could not save to library (browser storage full?).');}}
+function libAdd(){
+  const name=(prompt('Save plan as:','Plan '+new Date().toLocaleDateString())||'').trim();if(!name)return;
+  const arr=libLoad();arr.unshift({id:'lib'+Date.now().toString(36),name,data:serializeDoc(),updated:Date.now()});
+  libStore(arr);renderLibrary();
+}
+function libOpen(id){const it=libLoad().find(x=>x.id===id);if(!it)return;
+  loadDoc(it.data);libraryBox.classList.remove('show');document.getElementById('btn-library').classList.remove('on');}
+function libRename(id){const arr=libLoad(),it=arr.find(x=>x.id===id);if(!it)return;
+  const n=(prompt('Rename plan:',it.name)||'').trim();if(!n)return;it.name=n;libStore(arr);renderLibrary();}
+function libDuplicate(id){const arr=libLoad(),it=arr.find(x=>x.id===id);if(!it)return;
+  arr.unshift({id:'lib'+Date.now().toString(36),name:it.name+' copy',data:JSON.parse(JSON.stringify(it.data)),updated:Date.now()});libStore(arr);renderLibrary();}
+function libDelete(id){if(!confirm('Delete this saved plan?'))return;libStore(libLoad().filter(x=>x.id!==id));renderLibrary();}
+// a small SVG snapshot of a saved plan's rooms, scaled to fit the thumbnail box
+function libThumb(data){
+  const W=56,H=40,pad=4,svg=ns('svg',{class:'lib-thumb',viewBox:`0 0 ${W} ${H}`});
+  const shapes=(data&&data.shapes)||[];
+  const polyOf=s=>s.poly?s.poly:(s.type==='rect'?[{x:s.x,y:s.y},{x:s.x+s.w,y:s.y},{x:s.x+s.w,y:s.y+s.h},{x:s.x,y:s.y+s.h}]:(s.pts||[]));
+  let x=Infinity,y=Infinity,r=-Infinity,b=-Infinity;
+  for(const s of shapes)for(const p of polyOf(s)){x=Math.min(x,p.x);y=Math.min(y,p.y);r=Math.max(r,p.x);b=Math.max(b,p.y);}
+  if(!isFinite(x))return svg;
+  const bw=(r-x)||1,bh=(b-y)||1,sc=Math.min((W-pad*2)/bw,(H-pad*2)/bh);
+  const ox=(W-bw*sc)/2-x*sc,oy=(H-bh*sc)/2-y*sc,T=p=>`${p.x*sc+ox},${p.y*sc+oy}`;
+  for(const s of shapes){
+    if(s.type==='line'){svg.appendChild(ns('polyline',{points:(s.pts||[]).map(T).join(' '),fill:'none',stroke:'#94A3B8','stroke-width':0.9}));continue;}
+    svg.appendChild(ns('polygon',{points:polyOf(s).map(T).join(' '),fill:s.fill||'#E8EDF5',stroke:s.stroke||'#94A3B8','stroke-width':0.7,opacity:0.95}));
+  }
+  return svg;
+}
+function renderLibrary(){
+  const list=document.getElementById('lib-list');list.innerHTML='';
+  const arr=libLoad();
+  if(!arr.length){list.innerHTML='<div class="lib-empty">No saved plans yet. Use “Save current plan”.</div>';return;}
+  for(const it of arr){
+    const row=document.createElement('div');row.className='lib-row';
+    const thumb=libThumb(it.data);thumb.addEventListener('click',()=>libOpen(it.id));thumb.style.cursor='pointer';
+    const nm=document.createElement('span');nm.className='lib-name';nm.textContent=it.name;nm.title='Open & edit';nm.onclick=()=>libOpen(it.id);
+    const wn=document.createElement('span');wn.className='lib-when';wn.textContent=new Date(it.updated).toLocaleDateString();
+    const dup=document.createElement('button');dup.className='lib-ic';dup.title='Duplicate';dup.textContent='⧉';dup.onclick=()=>libDuplicate(it.id);
+    const ren=document.createElement('button');ren.className='lib-ic';ren.title='Rename';ren.textContent='✎';ren.onclick=()=>libRename(it.id);
+    const del=document.createElement('button');del.className='lib-ic';del.title='Delete';del.textContent='✕';del.onclick=()=>libDelete(it.id);
+    row.append(thumb,nm,wn,dup,ren,del);list.appendChild(row);
+  }
+}
+document.getElementById('btn-library').addEventListener('click',()=>{
+  const show=!libraryBox.classList.contains('show');
+  document.querySelectorAll('#scene-box.show,#facade-box.show,#type-box.show,#region-box.show').forEach(el=>el.classList.remove('show'));
+  document.getElementById('btn-regions').classList.remove('on');
+  libraryBox.classList.toggle('show',show);document.getElementById('btn-library').classList.toggle('on',show);
+  if(show)renderLibrary();
+});
+document.getElementById('lib-save').addEventListener('click',libAdd);
+
+// ─────────────────────────────────────────
+//  AUTH + SAVE (Supabase)  — saves the whole drawing per user
+// ─────────────────────────────────────────
+const SB=(window.SUPABASE_URL&&window.SUPABASE_ANON_KEY&&window.supabase)
+  ? window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY):null;
+let CURRENT_DOC_ID=null,CURRENT_DOC_NAME=null;
+// the full document we persist (mirrors the saveH snapshot + scene)
+function serializeDoc(){return{shapes:S.shapes,regions:S.regions,doorOverrides:S.doorOverrides,
+  sceneKey:S.sceneKey,nextId:S.nextId,famDetail:S.famDetail,famNames:S.famNames};}
+function loadDoc(d){
+  if(!d)return;
+  S.shapes=d.shapes||[];S.regions=d.regions||[];S.doorOverrides=d.doorOverrides||{};
+  S.sceneKey=d.sceneKey||null;S.famDetail=d.famDetail||{};S.famNames=d.famNames||{};
+  S.nextId=d.nextId||(S.shapes.reduce((m,s)=>Math.max(m,s.id||0),0)+1);
+  S.selIds=new Set();rebuildLockedIds();
+  try{if(S.sceneKey&&typeof predictNextRooms==='function')S.candidates=predictNextRooms();}catch(e){}
+  saveH();render();if(S.archOn)fetchArch();
+}
+const authBackdrop=document.getElementById('auth-backdrop');
+const signinModal=document.getElementById('signin-modal');
+const mydrawingsModal=document.getElementById('mydrawings-modal');
+function closeAuthModals(){signinModal.classList.remove('show');mydrawingsModal.classList.remove('show');authBackdrop.classList.remove('show');}
+authBackdrop.addEventListener('click',closeAuthModals);
+function saveFeedback(msg){const b=document.getElementById('btn-save');if(!b)return;const o=b.textContent;b.textContent=msg;setTimeout(()=>{b.textContent=o;},1500);}
+
+if(!SB){
+  document.getElementById('auth-area').style.display='none'; // login not configured → hide the UI
+}else{
+  // reflect auth state in the top bar
+  function reflectUser(user){
+    document.getElementById('btn-signin').style.display=user?'none':'';
+    document.getElementById('auth-user').style.display=user?'inline-flex':'none';
+    document.getElementById('auth-email').textContent=user?user.email||'':'';
+  }
+  SB.auth.getUser().then(({data})=>reflectUser(data&&data.user));
+  SB.auth.onAuthStateChange((_e,session)=>{reflectUser(session&&session.user);if(session&&session.user)closeAuthModals();});
+
+  document.getElementById('btn-signin').addEventListener('click',()=>{
+    document.getElementById('signin-msg').textContent='';authBackdrop.classList.add('show');signinModal.classList.add('show');
+    setTimeout(()=>document.getElementById('signin-email').focus(),30);
+  });
+  document.getElementById('signin-magic').addEventListener('click',async()=>{
+    const email=document.getElementById('signin-email').value.trim();const msg=document.getElementById('signin-msg');
+    if(!email){msg.textContent='Enter your email.';return;}
+    msg.textContent='Sending…';
+    const{error}=await SB.auth.signInWithOtp({email,options:{emailRedirectTo:location.href}});
+    msg.textContent=error?('Error: '+error.message):'Check your inbox for the magic link.';
+  });
+  document.getElementById('signin-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('signin-magic').click();e.stopPropagation();});
+  document.getElementById('btn-signout').addEventListener('click',async()=>{await SB.auth.signOut();CURRENT_DOC_ID=null;CURRENT_DOC_NAME=null;});
+
+  document.getElementById('btn-save').addEventListener('click',async()=>{
+    const{data:{user}}=await SB.auth.getUser();if(!user){document.getElementById('btn-signin').click();return;}
+    const name=(prompt('Name this drawing:',CURRENT_DOC_NAME||('Plan '+new Date().toLocaleDateString()))||'').trim();
+    if(!name)return;
+    const row={name,scene_key:S.sceneKey,data:serializeDoc(),updated_at:new Date().toISOString()};
+    if(CURRENT_DOC_ID)row.id=CURRENT_DOC_ID;
+    const{data,error}=await SB.from('drawings').upsert(row).select().single();
+    if(error){alert('Save failed: '+error.message);return;}
+    CURRENT_DOC_ID=data.id;CURRENT_DOC_NAME=data.name;saveFeedback('Saved ✓');
+  });
+
+  document.getElementById('btn-mydrawings').addEventListener('click',async()=>{
+    const list=document.getElementById('md-list');list.innerHTML='<div class="md-empty">Loading…</div>';
+    authBackdrop.classList.add('show');mydrawingsModal.classList.add('show');
+    const{data,error}=await SB.from('drawings').select('id,name,scene_key,updated_at').order('updated_at',{ascending:false});
+    list.innerHTML='';
+    if(error){list.innerHTML='<div class="md-empty">Error: '+error.message+'</div>';return;}
+    if(!data||!data.length){list.innerHTML='<div class="md-empty">No saved drawings yet.</div>';return;}
+    for(const d of data){
+      const row=document.createElement('div');row.className='md-row';
+      const nm=document.createElement('span');nm.className='md-name';nm.textContent=d.name;
+      const wn=document.createElement('span');wn.className='md-when';wn.textContent=new Date(d.updated_at).toLocaleDateString();
+      const del=document.createElement('button');del.className='md-del';del.textContent='✕';del.title='Delete';
+      del.onclick=async ev=>{ev.stopPropagation();if(!confirm('Delete "'+d.name+'"?'))return;
+        const{error:e2}=await SB.from('drawings').delete().eq('id',d.id);
+        if(!e2){row.remove();if(CURRENT_DOC_ID===d.id){CURRENT_DOC_ID=null;CURRENT_DOC_NAME=null;}}};
+      row.onclick=async()=>{const{data:full,error:e3}=await SB.from('drawings').select('*').eq('id',d.id).single();
+        if(e3){alert('Load failed: '+e3.message);return;}
+        loadDoc(full.data);CURRENT_DOC_ID=full.id;CURRENT_DOC_NAME=full.name;closeAuthModals();};
+      row.append(nm,wn,del);list.appendChild(row);
+    }
+  });
+  document.getElementById('md-close').addEventListener('click',closeAuthModals);
+}
 
 // ─────────────────────────────────────────
 //  EXPLAIN / DEMO LAYER  (walks through dtd2's algorithm — live breakdown
@@ -3103,7 +4022,7 @@ function _gRefine(rooms){
 }
 async function generateDiffusion(){
   if(GEN.busy)return;GEN.busy=true;
-  const btn=document.getElementById('btn-gen');btn.textContent='…';btn.classList.add('on');
+  const btn=document.getElementById('btn-gen'),lbl=btn.querySelector('.fc-label');lbl.textContent='Generating…';btn.classList.add('on','busy');
   try{
     if(!GEN.model){const r=await fetch('/diffusion/model.json');GEN.model=await r.json();}
     const M=GEN.model,T=M.T,b=M.betas,al=b.map(x=>1-x),abar=[];let acc=1;for(let i=0;i<T;i++){acc*=al[i];abar.push(acc);}
@@ -3125,7 +4044,7 @@ async function generateDiffusion(){
     saveH();S.candidates=predictNextRooms();fitScreen();render();publishActive();if(S.archOn)fetchArch();
     document.getElementById('s-tool').textContent='Generated (diffusion core + rule-placed dining/corridor)';
   }catch(e){alert('Generate needs /diffusion/model.json — run: python diffusion/diffuse.py');}
-  finally{btn.textContent='Generate';btn.classList.remove('on');GEN.busy=false;}
+  finally{lbl.innerHTML='Diffusion <em>beta</em>';btn.classList.remove('on','busy');GEN.busy=false;}
 }
 document.getElementById('btn-gen').addEventListener('click',generateDiffusion);
 
