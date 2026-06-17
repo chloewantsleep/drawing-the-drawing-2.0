@@ -1320,6 +1320,7 @@ function findPlacements(w,h,type){
   return res.sort((a,b)=>b.posScore-a.posScore);
 }
 function predictNextRooms(){
+  if(S.sceneKey==='facade')return[]; // next-room prediction is a floor-plan tool; facades don't use it
   const sc=getScene();if(!sc)return[];
   const tr=getTypedRooms();if(!tr.length)return[];
   const cnt={};for(const r of tr)cnt[r.type]=(cnt[r.type]||0)+1;
@@ -3910,45 +3911,63 @@ const EXPLAIN={
     if(!await step('Generating walls and doors…',1800))return;
     await step('<b>Done.</b> Walls are classified into exterior/interior, doors open between rooms with high adjacency, and the connectivity net guarantees every room is reachable. Keep drawing — this panel keeps explaining alongside you.',100);
   },
-  // ── Facade demo: load a saved facade (or generate) → drive performance → rationalize → elevation ──
+  // ── Facade demo: author a curtain wall end-to-end (boundary → divide → generate →
+  //    link/edit types → match a performance target → elevation) ──
   async _demoFacade(step){
     const setv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};
     const fire=(id,ev)=>{const e=document.getElementById(id);if(e)e.dispatchEvent(new Event(ev,{bubbles:true}));};
+    const regFams=()=>{const m={};for(const s of S.shapes)if(isFacadePanel(s)&&!s._custom&&s.fam)(m[s.fam]||(m[s.fam]=[])).push(s);return m;};
     S.fcShadow=false; // start in colour; reveal the elevation look at the end
-    if(!await step('<b>Facade demo</b> — a curtain-wall workflow: generate panels → drive performance to a target → rationalize → draw the elevation.',1600))return;
-    // Step 1 — load a saved facade from the local library, else generate one
-    const lib=(typeof libLoad==='function')?libLoad():[];
-    const saved=lib.find(x=>x&&x.data&&x.data.sceneKey==='facade'&&(x.data.shapes||[]).some(s=>s.fam&&/^fac-/.test(s.fam)));
-    if(saved){
-      if(!await step(`<b>Step 1</b> — Loading your saved facade <b>“${String(saved.name||'facade').replace(/[<&]/g,'')}”</b> from the local library.`,1500))return;
-      loadDoc(saved.data);S.sceneKey='facade';S.selIds=new Set();
-    }else{
-      if(!await step('<b>Step 1</b> — Draw a building outline and fill it with a uniform glazing grid — the curtain wall.',1500))return;
-      S.sceneKey='facade';S.selIds=new Set();buildFacade();
-    }
-    S.fcShadow=false;fitScreen();render();
     if(!document.getElementById('metrics-box').classList.contains('show'))toggleMetrics();
-    if(this._abort)return;
-    // Step 2 — baseline performance
-    const m0=facadeMetrics();
-    if(!await step(`<b>Step 2</b> — The performance panel scores it live — <b>WWR ${(m0.WWR*100).toFixed(0)}%</b>, assembly U <b>${m0.Uavg.toFixed(2)}</b> W/m²K, embodied carbon <b>${(m0.carbon/1000).toFixed(1)}</b> t CO₂e.`,2400))return;
-    // Step 3 — target-driven WWR
-    setv('mx-fit','closest');setv('mx-span','brick');setv('mx-layout','band');setv('mx-obj','wwr');fire('mx-obj','change');
+    if(!await step('<b>Facade demo</b> — author a curtain wall from scratch: boundary → divide → generate → edit types → hit a performance target → elevation.',1700))return;
+    // 1 · building boundary
+    const W=1100,H=900,X=-W/2,Y=-H/2;
+    const outline=mkRect(X,Y,W,H,FC_WALL);S.shapes=[outline];S.selIds=new Set([outline.id]);S.sceneKey='facade';
+    saveH();fitScreen();render();
+    if(!await step('<b>1 · Boundary</b> — draw the building outline (a rectangle, or any merged shape). This is the gross wall the panels fill.',2000))return;
+    // 2 · guide lines → cut into zones
+    const cy1=Y+H*0.34,cy2=Y+H*0.70;
+    S.shapes.push(mkLine([{x:X-20,y:cy1},{x:X+W+20,y:cy1}]),mkLine([{x:X-20,y:cy2},{x:X+W+20,y:cy2}]));render();
+    if(!await step('<b>2 · Divide</b> — drop guide lines (the <b>L</b> tool) across the outline; they cut it into stacked zones — here three horizontal bands.',2200))return;
+    // 3 · mark areas
+    if(typeof markFacadeAreas==='function'){S.selIds=new Set([outline.id]);markFacadeAreas();
+      if(!await step('<b>3 · Mark areas</b> — each guide-bounded zone becomes a selectable region you can fill independently.',2000))return;}
+    // 4 · generate
+    S.selIds=new Set([outline.id]);buildFacade();
+    const mg=facadeMetrics();
+    if(!await step(`<b>4 · Generate</b> — fill the zones with a glazing grid; each region is its own linked <b>type</b> with a distinct material. ${mg.nP} panels · WWR ${(mg.WWR*100).toFixed(0)}%.`,2400))return;
+    // 5 · link / unlink types
+    {const f=regFams(),keys=Object.keys(f);
+     if(keys.length>=2&&typeof linkSelected==='function'){
+       S.selIds=new Set([f[keys[0]][0].id,f[keys[1]][0].id]);linkSelected();
+       if(!await step('<b>5 · Link</b> — select panels from different zones and link them into one <b>type</b> — now they resize / recolour together.',2200))return;
+       if(typeof unlinkSelected==='function'){unlinkSelected();
+         if(!await step('…and <b>unlink</b> to make them independent again.',1500))return;}}}
+    // 6 · zoom in to edit a type's interior
+    {const f=regFams(),p=(Object.values(f)[0]||[])[0];
+     if(p&&typeof enterPanelEdit==='function'){
+       enterPanelEdit(p.id);
+       if(!await step('<b>6 · Edit a type</b> — double-click a panel to zoom into its interior. Add mullions / sub-frames and per-area materials; it applies to every panel of the type.',2400))return;
+       const box=S.panelEdit&&S.panelEdit.box;
+       if(box){
+         const sub=mkRect(box.x+box.w*0.06,box.y+box.h*0.62,box.w*0.88,box.h*0.30,{fill:'#E7E5E0',stroke:'#9B8775'});sub.material='brick';sub._detail=true;S.shapes.push(sub);
+         const ml=mkLine([{x:box.x+box.w*0.5,y:box.y+box.h*0.05},{x:box.x+box.w*0.5,y:box.y+box.h*0.55}]);ml._detail=true;S.shapes.push(ml);render();
+         if(!await step('Adding a brick spandrel band + a centre mullion inside the type (size · position · material · visuals)…',1900))return;}
+       if(typeof exitPanelEdit==='function')exitPanelEdit();
+       if(!await step('Done editing — that interior is now shared by every panel of the type.',1600))return;}}
+    // 7 · group-edit a whole type
+    {const f=regFams(),k=Object.keys(f)[0];
+     if(k&&typeof famEdit==='function'){famEdit(k,'material',{value:'louver'});
+       if(!await step('<b>7 · Group edit</b> — change one type’s material (or size / colour) and every linked panel updates at once.',2200))return;}}
+    // 8 · match a performance target (solver)
+    setv('mx-fit','closest');setv('mx-span','brick');setv('mx-layout','floor');setv('mx-obj','wwr');fire('mx-obj','change');
     setv('mx-wwr','40');fire('mx-wwr','input');
-    const m1=facadeMetrics();
-    if(!await step(`<b>Step 3</b> — Set a target <b>WWR 40%</b>. The solver flips panels glazing↔spandrel from the base up until it lands on target — now <b>${(m1.WWR*100).toFixed(0)}%</b>.`,2600))return;
-    // Step 4 — floor-band layout
-    setv('mx-layout','floor');fire('mx-layout','change');
-    if(!await step('<b>Step 4</b> — Switch the spandrel <b>Layout</b> to Floor bands — whole rows convert, so the spandrel aligns to the floor lines.',2400))return;
-    // Step 5 — rationalize
-    if(typeof rationalizePanels==='function'){
-      if(!await step('<b>Step 5</b> — <b>Rationalize</b> snaps near-equal panels to shared modules (DfMA) and flags custom edge panels to fabricate.',2200))return;
-      rationalizePanels();if(this._abort)return;
-    }
-    // Step 6 — elevation look
+    const ms=facadeMetrics();
+    if(!await step(`<b>8 · Match metrics</b> — set a target (WWR 40%); the solver flips panels glazing↔spandrel along the floor lines to hit it — now <b>${(ms.WWR*100).toFixed(0)}%</b>.`,2600))return;
+    // 9 · elevation look
     S.fcShadow=true;const st=document.getElementById('fctm-shadow-state');if(st)st.textContent='on';render();
-    if(!await step('<b>Step 6</b> — <b>Elevation look</b>: monochrome, lineweight hierarchy, recessed-reveal shadows, ground line + building boundary — a presentable elevation.',2600))return;
-    await step('<b>Done.</b> It’s all data-driven — change the <b>Objective</b> (U / cost / carbon), tag orientations for per-facade targets, or export a fabrication <b>panel schedule CSV</b>. Keep editing; the panel keeps scoring.',100);
+    if(!await step('<b>9 · Elevation</b> — black &amp; white, lineweight hierarchy, recessed-reveal shadows, ground line + building boundary: a presentable elevation.',2600))return;
+    await step('<b>Done.</b> Boundary → divide → generate → link &amp; edit types → match a target → elevation — all parametric and scored live. Keep editing; the panel keeps updating.',100);
   },
   _end(){
     this.demoOn=false;const btn=document.getElementById('btn-xp-demo');
