@@ -4082,7 +4082,7 @@ function panelAreaM2(s){
 function facadeMetrics(){
   let wall=0,glz=0,opq=0,aAll=0,uAll=0,gU=0,gS=0,cost=0,carbon=0,nP=0,nC=0;const sizes={};
   for(const s of S.shapes){
-    if(s.type!=='rect'||s._area)continue;
+    if(s.type!=='rect'||s._area||s._detail)continue; // _detail = transient interior-edit sub-shapes
     if(isFacadePanel(s)){
       const A=panelAreaM2(s),pr=panelProps(s);nP++;if(s._custom)nC++;
       aAll+=A;uAll+=A*pr.U;cost+=A*pr.cost;carbon+=A*pr.carbon;
