@@ -282,6 +282,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 .mx-badge.bad{background:#FEE2E2;color:#B91C1C}
 .mx-sec{font-size:9.5px;font-weight:700;color:var(--muted2);letter-spacing:.5px;text-transform:uppercase;margin:9px 0 1px}
 #metrics-box .mx-foot{font-size:9px;color:var(--muted2);margin-top:9px;line-height:1.35}
+.mx-ctl{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);font-weight:500;margin:5px 0}
+.mx-ctl input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}
+.mx-ctl select{flex:1;border:1px solid var(--border);border-radius:5px;padding:2px 4px;font-size:11px;background:#fff;color:var(--text);outline:none}
+.mx-ctl .mx-num{font-family:'SF Mono',Menlo,monospace;font-weight:700;color:var(--text);min-width:36px;text-align:right}
+#mx-rationalize{width:100%;border:1px solid var(--border);background:#F7F6F3;color:var(--text);border-radius:6px;padding:6px;font-size:11px;font-weight:600;cursor:pointer;margin-top:4px}
+#mx-rationalize:hover{background:#EFEEEA}
 #region-box{position:absolute;top:46px;right:14px;z-index:650;display:none;
   background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-lg);
   padding:12px 13px;width:300px;height:auto;min-width:240px;min-height:150px;max-width:96%;
@@ -544,6 +550,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 
 <div id="metrics-box">
   <div class="mx-title">Facade performance<span>live — updates as you edit</span></div>
+  <div id="mx-auto">
+    <div class="mx-sec">Auto-design</div>
+    <label class="mx-ctl">Target WWR<input id="mx-wwr" type="range" min="10" max="95" step="1" value="40"><span class="mx-num" id="mx-wwr-v">40%</span></label>
+    <label class="mx-ctl">Spandrel<select id="mx-span"></select></label>
+    <button id="mx-rationalize">⊞ Rationalize panel sizes</button>
+  </div>
   <div id="mx-body"></div>
   <div class="mx-foot">Indicative values from assembly defaults (FC_PROPS). For early-design comparison, not code submission.</div>
 </div>
@@ -4125,6 +4137,46 @@ function toggleMetrics(){const box=document.getElementById('metrics-box');
   const on=box.classList.toggle('show');const it=document.getElementById('fctm-metrics');
   if(it)it.querySelector('em')&&(it.querySelector('em').textContent=on?'on':'off');
   if(on)renderMetrics();}
+// ── #4 Target-driven solver: flip panels glazing↔spandrel to hit a target WWR ──
+// Re-assigns each non-custom panel's assembly: all glazing, then convert panels to the
+// chosen spandrel material from the BOTTOM up until glazing area ≤ target·wall (so the
+// spandrel grows as a band at the base, like a typical floor-slab zone).
+function setPanelAssembly(s,matKey){
+  s.material=matKey;const M=MATERIALS[matKey];if(M)s.stroke=M.stroke;
+  s.fill=(FC_PROPS[matKey]&&FC_PROPS[matKey].glazed)?'#DCEAF2':'#E7E5E0';
+}
+function solveTargetWWR(targetPct){
+  const spEl=document.getElementById('mx-span'),spandrel=spEl?spEl.value:'brick';
+  const target=Math.max(0,Math.min(1,targetPct/100));
+  const panels=S.shapes.filter(s=>isFacadePanel(s)&&!s._custom);
+  if(!panels.length)return;
+  let wall=0;for(const s of S.shapes)if(s.type==='rect'&&!s._area&&!s._detail&&!isFacadePanel(s))wall+=panelAreaM2(s);
+  if(wall<=0)wall=panels.reduce((a,s)=>a+panelAreaM2(s),0);
+  const targetGlz=target*wall;
+  for(const s of panels)setPanelAssembly(s,'glass');      // start all-glass
+  let glz=panels.reduce((a,s)=>a+panelAreaM2(s),0);
+  const order=panels.slice().sort((a,b)=>{const ba=rectBox(a),bb=rectBox(b);return (bb.y+bb.h)-(ba.y+ba.h)||ba.x-bb.x;});
+  for(const s of order){if(glz<=targetGlz+1e-9)break;setPanelAssembly(s,spandrel);glz-=panelAreaM2(s);}
+  render();
+}
+// ── #5 Rationalize: snap near-equal panel sizes to shared modules (DfMA) ──
+// Clusters standard panel widths/heights and snaps each to its nearest module (resize about
+// centre), collapsing the number of unique panel sizes. Custom outliers are left to fabricate.
+function rationalizePanels(){
+  const std=S.shapes.filter(s=>isFacadePanel(s)&&!s._custom&&!s.poly);
+  if(std.length<2){setStatus('Generate a facade first — nothing to rationalize');return;}
+  const med=arr=>{const a=[...arr].sort((x,y)=>x-y);return a[Math.floor(a.length/2)]||0;};
+  const key=s=>Math.round(s.w)+'×'+Math.round(s.h);
+  const before=new Set(std.map(key)).size;
+  const cw=clusterVals(std.map(s=>s.w),Math.max(2,med(std.map(s=>s.w))*0.06));
+  const ch=clusterVals(std.map(s=>s.h),Math.max(2,med(std.map(s=>s.h))*0.06));
+  for(const s of std){const nw=cw[nearestIdx(cw,s.w)],nh=ch[nearestIdx(ch,s.h)];
+    const cx=s.x+s.w/2,cy=s.y+s.h/2;s.x=cx-nw/2;s.y=cy-nh/2;s.w=nw;s.h=nh;}
+  const after=new Set(std.map(key)).size;
+  const custom=S.shapes.filter(s=>isFacadePanel(s)&&s._custom).length;
+  saveH();render();publishActive();if(S.archOn)fetchArch();
+  setStatus(`Rationalized — ${before} → ${after} unique size${after>1?'s':''}${custom?`, ${custom} custom to fabricate`:''}`);
+}
 function materialOf(s){if(!s||s._custom)return null;const k=s.material||(s.fam?S.famMaterial[s.fam]:null);return(k&&MATERIALS[k]&&MATERIALS[k].hatch)?MATERIALS[k]:null;}
 // ── Elevation shadows ──
 // Architectural convention: sun from the upper-left, rays at 45° toward lower-right.
@@ -4678,6 +4730,20 @@ function syncPanelEditBar(){
   });
 })();
 document.getElementById('peb-done').addEventListener('click',exitPanelEdit);
+// Auto-design controls (target-WWR solver + rationalizer) in the performance panel
+(function initAutoDesign(){
+  const span=document.getElementById('mx-span');
+  if(span)span.innerHTML=Object.entries(FC_PROPS).filter(([k,v])=>!v.glazed&&MATERIALS[k]).map(([k])=>`<option value="${k}"${k==='brick'?' selected':''}>${MATERIALS[k].name}</option>`).join('');
+  const sl=document.getElementById('mx-wwr'),lab=document.getElementById('mx-wwr-v');
+  if(sl){
+    sl.addEventListener('mousedown',e=>e.stopPropagation());
+    sl.addEventListener('input',()=>{lab.textContent=sl.value+'%';solveTargetWWR(+sl.value);});
+    sl.addEventListener('change',()=>{publishActive();if(S.archOn)fetchArch();saveH();});
+  }
+  if(span)span.addEventListener('change',()=>{if(sl)solveTargetWWR(+sl.value);publishActive();saveH();});
+  const rb=document.getElementById('mx-rationalize');if(rb)rb.addEventListener('click',rationalizePanels);
+  const box=document.getElementById('metrics-box');if(box)box.addEventListener('mousedown',e=>e.stopPropagation());
+})();
 function openFacadeBox(){document.getElementById('facade-box').classList.add('show');document.getElementById('btn-facade').classList.add('on');openFamPanel();}
 function closeFacadeBox(){document.getElementById('facade-box').classList.remove('show');document.getElementById('btn-facade').classList.remove('on');}
 document.getElementById('btn-facade').addEventListener('click',()=>{
