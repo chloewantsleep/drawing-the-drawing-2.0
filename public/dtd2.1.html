@@ -36,6 +36,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #fctools-menu{position:fixed;left:70px;bottom:34px;z-index:560;display:none;flex-direction:column;gap:2px;
   background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:150px}
 #fctools-menu.show{display:flex}
+#demo-menu{position:fixed;z-index:560;display:none;flex-direction:column;gap:2px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:150px}
+#demo-menu.show{display:flex}
 .fctm-item{display:flex;align-items:center;justify-content:space-between;border:none;background:none;border-radius:7px;
   padding:8px 10px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text);text-align:left}
 .fctm-item:hover{background:#F2F2EF;color:var(--accent)}
@@ -547,6 +549,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <button class="fctm-item" id="fctm-types"><span>Panel types</span></button>
   <button class="fctm-item" id="fctm-shadow"><span>Elevation look</span><em id="fctm-shadow-state">on</em></button>
   <button class="fctm-item" id="fctm-metrics"><span>Performance metrics</span><em>off</em></button>
+</div>
+<div id="demo-menu">
+  <button class="fctm-item" id="dm-plan"><span>Plan demo</span><em>rooms</em></button>
+  <button class="fctm-item" id="dm-facade"><span>Facade demo</span><em>elevation</em></button>
 </div>
 
 <div id="metrics-box">
@@ -3863,9 +3869,10 @@ const EXPLAIN={
     return {wallFit:Math.round(Math.min(1,best.placeQ||0)*100)};
   },
 
-  // ── One-click demo: pick scene → GENERATE a program of rooms → walls ──
-  async demo(){
+  // ── One-click demo — dispatches to a per-mode walkthrough ('plan' | 'facade') ──
+  async demo(mode){
     if(this.demoOn){this._abort=true;return;}
+    if(mode)this.mode=mode; if(!this.mode)this.mode='plan';
     this.demoOn=true; this._abort=false;
     const btn=document.getElementById('btn-xp-demo'); btn.textContent='■ Stop'; btn.classList.add('stop');
     if(!this.open)this.toggle();
@@ -3874,32 +3881,74 @@ const EXPLAIN={
     S.shapes=[];S.selIds=new Set();S.candidates=[];S.predHidden=false;S.sceneKey=null;
     saveH();render();
     const step=async(html,ms)=>{this.narrate(html);await this.sleep(ms);return !this._abort;};
-    try{
-      if(!await step('<b>Step 1</b> — Pick a scene. Each scene has an adjacency-weight table that defines which rooms belong next to each other.',1300))return;
-      startScene('apartment');
-      const sc=getScene();
-      if(!await step('<b>Step 2</b> — Start from a <b>Living Room</b>. Every other room is <i>generated</i> by the predictor — it chooses where to place each one and how confident it is.',1700))return;
-      // target program — every room here is generated, none pre-placed
-      const program=['dining','kitchen','bedroom','bathroom','corridor'];
-      for(const type of program){
-        S.candidates=predictNextRooms();render();
-        const name=sc.types[type].name;
-        const cand=S.candidates.find(c=>c.type===type);
-        if(cand){
-          const det=cand.detail||{};
-          if(!await step(`<b>Generating ${name}</b> — the predictor ranks it <b>${cand.confidence}%</b> (type fit ${det.typeConf||0}% × wall fit ${det.wallFit||0}%) and drops it on the best-fit wall.`,1800))return;
-          acceptCandidate(S.candidates.indexOf(cand));
-        }else{
-          const d=this._genRoom(type);
-          if(!await step(`<b>Generating ${name}</b> — not the top suggestion this round, but the model still places it on its best-fit wall${d?` (wall fit <b>${d.wallFit}%</b>)`:''}.`,1800))return;
-        }
-        if(!await step(`Placed <b>${name}</b> — re-predicting…`,900))return;
+    try{ if(this.mode==='facade')await this._demoFacade(step); else await this._demoPlan(step); }
+    finally{ this._end(); }
+  },
+  // ── Plan demo: pick scene → GENERATE a program of rooms → walls ──
+  async _demoPlan(step){
+    if(!await step('<b>Step 1</b> — Pick a scene. Each scene has an adjacency-weight table that defines which rooms belong next to each other.',1300))return;
+    startScene('apartment');
+    const sc=getScene();
+    if(!await step('<b>Step 2</b> — Start from a <b>Living Room</b>. Every other room is <i>generated</i> by the predictor — it chooses where to place each one and how confident it is.',1700))return;
+    const program=['dining','kitchen','bedroom','bathroom','corridor'];
+    for(const type of program){
+      S.candidates=predictNextRooms();render();
+      const name=sc.types[type].name;
+      const cand=S.candidates.find(c=>c.type===type);
+      if(cand){
+        const det=cand.detail||{};
+        if(!await step(`<b>Generating ${name}</b> — the predictor ranks it <b>${cand.confidence}%</b> (type fit ${det.typeConf||0}% × wall fit ${det.wallFit||0}%) and drops it on the best-fit wall.`,1800))return;
+        acceptCandidate(S.candidates.indexOf(cand));
+      }else{
+        const d=this._genRoom(type);
+        if(!await step(`<b>Generating ${name}</b> — not the top suggestion this round, but the model still places it on its best-fit wall${d?` (wall fit <b>${d.wallFit}%</b>)`:''}.`,1800))return;
       }
-      if(!await step('<b>Step 3</b> — Turn on <b>Plan</b> mode. The backend <b>arch.js</b> turns these rooms into walls and doors.',1400))return;
-      if(!S.archOn)toggleArch();
-      if(!await step('Generating walls and doors…',1800))return;
-      await step('<b>Done.</b> Walls are classified into exterior/interior, doors open between rooms with high adjacency, and the connectivity net guarantees every room is reachable. Keep drawing — this panel keeps explaining alongside you.',100);
-    }finally{ this._end(); }
+      if(!await step(`Placed <b>${name}</b> — re-predicting…`,900))return;
+    }
+    if(!await step('<b>Step 3</b> — Turn on <b>Plan</b> mode. The backend <b>arch.js</b> turns these rooms into walls and doors.',1400))return;
+    if(!S.archOn)toggleArch();
+    if(!await step('Generating walls and doors…',1800))return;
+    await step('<b>Done.</b> Walls are classified into exterior/interior, doors open between rooms with high adjacency, and the connectivity net guarantees every room is reachable. Keep drawing — this panel keeps explaining alongside you.',100);
+  },
+  // ── Facade demo: load a saved facade (or generate) → drive performance → rationalize → elevation ──
+  async _demoFacade(step){
+    const setv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};
+    const fire=(id,ev)=>{const e=document.getElementById(id);if(e)e.dispatchEvent(new Event(ev,{bubbles:true}));};
+    S.fcShadow=false; // start in colour; reveal the elevation look at the end
+    if(!await step('<b>Facade demo</b> — a curtain-wall workflow: generate panels → drive performance to a target → rationalize → draw the elevation.',1600))return;
+    // Step 1 — load a saved facade from the local library, else generate one
+    const lib=(typeof libLoad==='function')?libLoad():[];
+    const saved=lib.find(x=>x&&x.data&&x.data.sceneKey==='facade'&&(x.data.shapes||[]).some(s=>s.fam&&/^fac-/.test(s.fam)));
+    if(saved){
+      if(!await step(`<b>Step 1</b> — Loading your saved facade <b>“${String(saved.name||'facade').replace(/[<&]/g,'')}”</b> from the local library.`,1500))return;
+      loadDoc(saved.data);S.sceneKey='facade';S.selIds=new Set();
+    }else{
+      if(!await step('<b>Step 1</b> — Draw a building outline and fill it with a uniform glazing grid — the curtain wall.',1500))return;
+      S.sceneKey='facade';S.selIds=new Set();buildFacade();
+    }
+    S.fcShadow=false;fitScreen();render();
+    if(!document.getElementById('metrics-box').classList.contains('show'))toggleMetrics();
+    if(this._abort)return;
+    // Step 2 — baseline performance
+    const m0=facadeMetrics();
+    if(!await step(`<b>Step 2</b> — The performance panel scores it live — <b>WWR ${(m0.WWR*100).toFixed(0)}%</b>, assembly U <b>${m0.Uavg.toFixed(2)}</b> W/m²K, embodied carbon <b>${(m0.carbon/1000).toFixed(1)}</b> t CO₂e.`,2400))return;
+    // Step 3 — target-driven WWR
+    setv('mx-fit','closest');setv('mx-span','brick');setv('mx-layout','band');setv('mx-obj','wwr');fire('mx-obj','change');
+    setv('mx-wwr','40');fire('mx-wwr','input');
+    const m1=facadeMetrics();
+    if(!await step(`<b>Step 3</b> — Set a target <b>WWR 40%</b>. The solver flips panels glazing↔spandrel from the base up until it lands on target — now <b>${(m1.WWR*100).toFixed(0)}%</b>.`,2600))return;
+    // Step 4 — floor-band layout
+    setv('mx-layout','floor');fire('mx-layout','change');
+    if(!await step('<b>Step 4</b> — Switch the spandrel <b>Layout</b> to Floor bands — whole rows convert, so the spandrel aligns to the floor lines.',2400))return;
+    // Step 5 — rationalize
+    if(typeof rationalizePanels==='function'){
+      if(!await step('<b>Step 5</b> — <b>Rationalize</b> snaps near-equal panels to shared modules (DfMA) and flags custom edge panels to fabricate.',2200))return;
+      rationalizePanels();if(this._abort)return;
+    }
+    // Step 6 — elevation look
+    S.fcShadow=true;const st=document.getElementById('fctm-shadow-state');if(st)st.textContent='on';render();
+    if(!await step('<b>Step 6</b> — <b>Elevation look</b>: monochrome, lineweight hierarchy, recessed-reveal shadows, ground line + building boundary — a presentable elevation.',2600))return;
+    await step('<b>Done.</b> It’s all data-driven — change the <b>Objective</b> (U / cost / carbon), tag orientations for per-facade targets, or export a fabrication <b>panel schedule CSV</b>. Keep editing; the panel keeps scoring.',100);
   },
   _end(){
     this.demoOn=false;const btn=document.getElementById('btn-xp-demo');
@@ -3907,7 +3956,21 @@ const EXPLAIN={
     this.refresh();
   },
 };
-document.getElementById('btn-explain').addEventListener('click',()=>EXPLAIN.toggle());
+// Bottom-left Demo chip → expand a menu (Plan demo / Facade demo)
+const _demoMenu=document.getElementById('demo-menu');
+function closeDemoMenu(){_demoMenu.classList.remove('show');document.getElementById('btn-explain').classList.remove('on');}
+document.getElementById('btn-explain').addEventListener('click',e=>{
+  e.stopPropagation();
+  const open=!_demoMenu.classList.contains('show');
+  if(open){const r=document.getElementById('btn-explain').getBoundingClientRect();
+    _demoMenu.style.left=(r.right+8)+'px';_demoMenu.style.top=Math.max(8,r.top-6)+'px';}
+  _demoMenu.classList.toggle('show',open);
+  document.getElementById('btn-explain').classList.toggle('on',open);
+});
+_demoMenu.addEventListener('mousedown',e=>e.stopPropagation());
+document.getElementById('dm-plan').addEventListener('click',()=>{closeDemoMenu();EXPLAIN.demo('plan');});
+document.getElementById('dm-facade').addEventListener('click',()=>{closeDemoMenu();EXPLAIN.demo('facade');});
+window.addEventListener('mousedown',e=>{if(_demoMenu.classList.contains('show')&&!_demoMenu.contains(e.target)&&!e.target.closest('#btn-explain'))closeDemoMenu();});
 document.getElementById('btn-xp-close').addEventListener('click',()=>EXPLAIN.toggle());
 document.getElementById('btn-xp-demo').addEventListener('click',()=>EXPLAIN.demo());
 
