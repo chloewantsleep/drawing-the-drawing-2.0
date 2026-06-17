@@ -33,6 +33,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 .tb-chip:hover,.tb-chip.on{background:var(--accent-lt);border-color:var(--accent);color:var(--accent)}
 /* circular floating tool buttons (bottom-left) — grow on hover to reveal the full name */
 #float-tools{position:fixed;left:14px;bottom:34px;z-index:55;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+#fctools-menu{position:fixed;left:70px;bottom:34px;z-index:560;display:none;flex-direction:column;gap:2px;
+  background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:150px}
+#fctools-menu.show{display:flex}
+.fctm-item{display:flex;align-items:center;justify-content:space-between;border:none;background:none;border-radius:7px;
+  padding:8px 10px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text);text-align:left}
+.fctm-item:hover{background:#F2F2EF;color:var(--accent)}
+.fctm-item.on{background:var(--accent);color:#fff}
+.fctm-item em{font-style:normal;font-size:9px;font-weight:700;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:1px 4px}
 .float-chip{display:flex;align-items:center;height:44px;padding:0;border:1px solid var(--border);
   background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-radius:999px;cursor:pointer;color:var(--text);
   overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.10);
@@ -224,6 +232,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #floatpal.show{display:flex}
 .fp-chip{width:22px;height:22px;border-radius:6px;cursor:pointer;transition:transform .1s;padding:0}
 .fp-chip:hover{transform:scale(1.14)}
+#floatpal.fp-col{flex-direction:column;align-items:stretch;gap:2px;padding:6px;min-width:138px;max-height:300px;overflow-y:auto}
+.fp-mat{display:flex;align-items:center;gap:8px;border:none;background:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px;color:var(--text);text-align:left}
+.fp-mat:hover{background:#F2F2EF}
+.fp-mat i{width:15px;height:15px;border-radius:4px;border:1px solid var(--border);flex:0 0 auto}
+.fp-op{display:flex;align-items:center;gap:8px;padding:5px 9px}
+.fp-op input{width:118px}
+.fp-op span{font-size:11px;color:var(--muted);font-family:'SF Mono',monospace;width:34px;text-align:right}
 /* ── TYPE-TO-GENERATE box ── */
 #type-box{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:650;display:none;
   background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-lg);
@@ -250,6 +265,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #scene-box .ty-ex{cursor:pointer;color:var(--accent);font-weight:600}
 #scene-box .ty-ex:hover{text-decoration:underline}
 /* ── REGIONS panel ── */
+/* ── Facade performance panel ── */
+#metrics-box{position:absolute;top:54px;left:14px;z-index:650;display:none;width:248px;
+  background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-lg);
+  padding:12px 13px;animation:ctxIn .12s cubic-bezier(.2,.8,.4,1)}
+#metrics-box.show{display:block}
+#metrics-box .mx-title{font-size:11px;font-weight:700;color:var(--text);margin-bottom:9px}
+#metrics-box .mx-title span{display:block;font-size:10px;font-weight:500;color:var(--muted);margin-top:2px}
+.mx-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;padding:3px 0;border-top:1px solid #F1F0ED}
+.mx-row:first-of-type{border-top:none}
+.mx-row .mx-k{color:var(--muted);font-weight:500}
+.mx-row .mx-v{font-weight:700;color:var(--text);font-family:'SF Mono','Menlo',monospace;white-space:nowrap}
+.mx-row .mx-u{color:var(--muted2);font-weight:500;font-size:9.5px;margin-left:3px}
+.mx-badge{font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;letter-spacing:.3px}
+.mx-badge.ok{background:#DCFCE7;color:#15803D}
+.mx-badge.bad{background:#FEE2E2;color:#B91C1C}
+.mx-sec{font-size:9.5px;font-weight:700;color:var(--muted2);letter-spacing:.5px;text-transform:uppercase;margin:9px 0 1px}
+#metrics-box .mx-foot{font-size:9px;color:var(--muted2);margin-top:9px;line-height:1.35}
 #region-box{position:absolute;top:46px;right:14px;z-index:650;display:none;
   background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-lg);
   padding:12px 13px;width:300px;height:auto;min-width:240px;min-height:150px;max-width:96%;
@@ -361,6 +393,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #panel-edit-bar .peb-done{background:#fff;color:#1a1a1a;border:none;border-radius:7px;padding:5px 14px;
   font-size:11.5px;font-weight:600;cursor:pointer}
 #panel-edit-bar .peb-done:hover{opacity:.85}
+#panel-edit-bar #peb-mat{border:1px solid #444;background:#2a2a2a;color:#eee;border-radius:6px;padding:3px 6px;font-size:11px;outline:none;cursor:pointer}
 /* ── FAMILY (panel type) manager ── */
 #fam-panel{position:absolute;top:0;right:0;width:288px;height:100%;background:#fff;
   border-left:1px solid var(--border);box-shadow:-4px 0 24px rgba(0,0,0,.06);z-index:260;
@@ -374,8 +407,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 .fam-foot{font-size:10px;color:var(--muted);line-height:1.5;padding:9px 14px;border-top:1px solid var(--border);flex-shrink:0}
 .fam-foot b{color:var(--text)}
 .fam-empty{font-size:11.5px;color:var(--muted);line-height:1.5;padding:8px 2px}
-.fam-card{border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px;background:#FBFBFA}
-.fam-top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+/* collapse the whole types panel to a thin tab on the right */
+#fam-panel{transition:transform .2s ease}
+#fam-panel.collapsed{transform:translateX(calc(100% - 30px))}
+#fam-panel.collapsed .fam-body,#fam-panel.collapsed .fam-foot,#fam-panel.collapsed #fam-head-title,#fam-panel.collapsed #fam-close{display:none}
+.fam-collapse{border:none;background:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:1px 5px;border-radius:6px}
+.fam-collapse:hover{background:#F2F2EF;color:var(--text)}
+.fam-card{border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;background:#FBFBFA}
+.fam-card .fam-top{margin-bottom:0}
+.fam-card.open .fam-top{margin-bottom:9px}
+.fam-caret{flex:0 0 auto;color:var(--muted);font-size:10px;width:10px;cursor:pointer;user-select:none}
+.fam-comp-badge{flex:0 0 auto;font-size:9.5px;font-weight:700;color:var(--accent);background:#EAF1FE;border-radius:4px;padding:1px 4px;cursor:help}
+.fam-comp{font-size:10.5px;color:var(--accent);background:#F6F9FF;border:1px solid #E3ECFB;border-radius:7px;padding:6px 8px;margin-bottom:9px;line-height:1.4}
+.fam-comp span{color:var(--muted)}
+.fam-top{display:flex;align-items:center;gap:8px;margin-bottom:9px;cursor:pointer}
 .fam-sw{width:18px;height:18px;border-radius:5px;border-width:2px;border-style:solid;flex-shrink:0}
 .fam-name{flex:1;border:none;background:none;font-size:12.5px;font-weight:600;color:var(--text);outline:none;min-width:0}
 .fam-name:focus{background:#fff;border-radius:4px;box-shadow:0 0 0 1.5px var(--accent)}
@@ -389,6 +434,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 .fam-fld input[type=number]{width:48px;border:1px solid var(--border);border-radius:5px;padding:3px 5px;
   font-family:'SF Mono',monospace;font-size:11px;text-align:right;outline:none}
 .fam-fld input[type=number]:focus{box-shadow:0 0 0 1.5px var(--accent);border-color:var(--accent)}
+.fam-fld-full{margin-bottom:9px}
+.fam-fld select{flex:0 0 auto;min-width:120px;border:1px solid var(--border);border-radius:5px;padding:3px 6px;
+  font-size:11px;color:var(--text);background:#fff;outline:none;cursor:pointer}
+.fam-fld select:focus{box-shadow:0 0 0 1.5px var(--accent);border-color:var(--accent)}
 .dim-hot{cursor:text}
 .dim-hot:hover .dim-bg{fill:#FFF3E0}
 .dim-hot:hover .dim-lbl{fill:#BF4A1E;text-decoration:underline;
@@ -480,6 +529,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
     <span class="fc-ico"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="7 5 19 12 7 19"/></svg></span>
     <span class="fc-label">Demo</span>
   </button>
+  <button class="float-chip" id="btn-fctools" title="Facade tools — dividers, areas, panel types">
+    <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="17.5" x2="21" y2="17.5"/><line x1="17.5" y1="14" x2="17.5" y2="21"/></svg></span>
+    <span class="fc-label">Facade tools</span>
+  </button>
+</div>
+<div id="fctools-menu">
+  <button class="fctm-item" id="fctm-divider"><span>Divider line</span><em>L</em></button>
+  <button class="fctm-item" id="fctm-areas"><span>Mark areas</span></button>
+  <button class="fctm-item" id="fctm-types"><span>Panel types</span></button>
+  <button class="fctm-item" id="fctm-shadow"><span>Elevation look</span><em id="fctm-shadow-state">on</em></button>
+  <button class="fctm-item" id="fctm-metrics"><span>Performance metrics</span><em>off</em></button>
+</div>
+
+<div id="metrics-box">
+  <div class="mx-title">Facade performance<span>live — updates as you edit</span></div>
+  <div id="mx-body"></div>
+  <div class="mx-foot">Indicative values from assembly defaults (FC_PROPS). For early-design comparison, not code submission.</div>
 </div>
 
 <div id="region-box">
@@ -515,6 +581,56 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 <div class="workspace">
 <div class="canvas-wrap" id="cwrap">
   <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+    <!-- Material hatches (userSpaceOnUse → scale with the drawing, like real architectural hatching). -->
+    <!-- Hatches have NO background so the panel's own fill colour shows through the lines. -->
+    <defs id="mat-defs">
+      <!-- Elevation B&W — native SVG desaturate (reliable on <g>, unlike CSS filter:grayscale).
+           Applied to #L-shapes in elevation mode; greys colours AND material hatch patterns. -->
+      <filter id="elev-gray" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <feColorMatrix type="saturate" values="0"/>
+      </filter>
+      <pattern id="hatch-louver" patternUnits="userSpaceOnUse" width="7" height="7">
+        <line x1="1.5" y1="0" x2="1.5" y2="7" stroke="#6E6E68" stroke-width="0.9"/>
+        <line x1="4.5" y1="0" x2="4.5" y2="7" stroke="#9A9A93" stroke-width="0.6"/>
+      </pattern>
+      <pattern id="hatch-metal" patternUnits="userSpaceOnUse" width="8" height="8">
+        <path d="M0 8 L8 0 M0 0 L8 8" fill="none" stroke="#76787C" stroke-width="0.7"/>
+      </pattern>
+      <pattern id="hatch-mesh" patternUnits="userSpaceOnUse" width="4.5" height="4.5">
+        <path d="M0 4.5 L4.5 0 M0 0 L4.5 4.5" fill="none" stroke="#7E7E78" stroke-width="0.5"/>
+      </pattern>
+      <pattern id="hatch-glass" patternUnits="userSpaceOnUse" width="9" height="9">
+        <line x1="0" y1="9" x2="9" y2="0" stroke="#6E97AC" stroke-width="0.7"/>
+      </pattern>
+      <pattern id="hatch-brick" patternUnits="userSpaceOnUse" width="16" height="10">
+        <g stroke="#9B8775" stroke-width="0.7" fill="none">
+          <line x1="0" y1="0" x2="16" y2="0"/>
+          <line x1="0" y1="5" x2="16" y2="5"/>
+          <line x1="8" y1="0" x2="8" y2="5"/>
+          <line x1="0" y1="5" x2="0" y2="10"/>
+          <line x1="16" y1="5" x2="16" y2="10"/>
+        </g>
+      </pattern>
+      <pattern id="hatch-tile" patternUnits="userSpaceOnUse" width="9" height="9">
+        <path d="M0 0H9V9" fill="none" stroke="#8E8E88" stroke-width="0.7"/>
+      </pattern>
+      <pattern id="hatch-concrete" patternUnits="userSpaceOnUse" width="10" height="10">
+        <g fill="#8A8A85">
+          <circle cx="2.5" cy="2.5" r="0.7"/>
+          <circle cx="7.5" cy="6.5" r="0.7"/>
+          <circle cx="5" cy="9" r="0.6"/>
+        </g>
+      </pattern>
+      <pattern id="hatch-stone" patternUnits="userSpaceOnUse" width="22" height="13">
+        <g stroke="#998F80" stroke-width="0.75" fill="none">
+          <line x1="0" y1="0" x2="22" y2="0"/>
+          <line x1="0" y1="6.5" x2="22" y2="6.5"/>
+          <line x1="11" y1="0" x2="11" y2="6.5"/>
+          <line x1="0" y1="6.5" x2="0" y2="13"/>
+          <line x1="22" y1="6.5" x2="22" y2="13"/>
+        </g>
+      </pattern>
+    </defs>
     <g id="L-grid"></g>
     <g id="L-world">
       <rect x="-200000" y="-200000" width="400000" height="400000" fill="white"/>
@@ -545,13 +661,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <div id="panel-edit-bar">
     <span class="peb-dot"></span>
     <span id="peb-label">Editing panel interior</span>
-    <span class="peb-hint">draw mullions / sub-frames · move · mirror · rotate — applies to the whole type</span>
+    <span class="peb-hint">draw rects (<b>R</b>) to subdivide · select an area → set its material · applies to the whole type</span>
+    <span id="peb-mat-wrap" style="display:none;align-items:center;gap:6px">
+      <span class="peb-hint" style="color:#bbb">Area material</span>
+      <select id="peb-mat"></select>
+    </span>
     <button class="peb-done" id="peb-done">Done</button>
   </div>
   <div id="fam-panel">
-    <div class="fam-head"><span>Panel types</span><button class="fam-x" id="fam-close" title="Close">×</button></div>
+    <div class="fam-head"><button class="fam-collapse" id="fam-collapse" title="Collapse to the right">⟩</button><span id="fam-head-title">Panel types</span><button class="fam-x" id="fam-close" title="Close">×</button></div>
     <div class="fam-body" id="fam-body"></div>
-    <div class="fam-foot">Edit a type → every panel in it updates. Select panels on canvas, press <b>K</b> to link a new type.</div>
+    <div class="fam-foot">Edit a type → every panel in it updates. To copy a type onto other panels, select one panel → <b>Format painter</b> (floating bar) → click the targets. Double-click a panel to subdivide it.</div>
   </div>
   <div id="facade-box">
     <div class="fc-title">Curtain-wall glazing</div>
@@ -563,8 +683,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
       <span><i style="background:#FFE4D5;border-color:#EA580C"></i>custom (outlier)</span>
     </div>
     <div class="fc-actions"><button class="fc-gen" id="fc-gen">Generate ↵</button>
-      <button class="fc-gen" id="fc-types" style="background:#fff;color:var(--accent);border:1px solid var(--accent)">Panel types</button>
-      <span class="fc-hint">fills the <b>selected outline</b> with a glazing grid; <b>Panel types</b> opens the linked-panel editor · <b>Esc</b> closes</span></div>
+      <span class="fc-hint">Fills the <b>selected outline</b> with a glazing grid. <b>Esc</b> closes. Dividers · areas · panel types live in the <b>Facade tools</b> button (bottom-left).</span></div>
   </div>
   <div id="op-hint"></div>
   <div id="pred-detail"></div>
@@ -753,9 +872,12 @@ const S={
   viewRot:0,viewPivot:{x:0,y:0}, // temporary canvas rotation (isolate mode renders a tilted region upright)
   iso:null,        // {rgid,prevView,animating} while a region is isolated for focused editing
   famSeq:1, // next panel-family id (linked panels resize/recolor together)
+  fcSeq:1,  // next facade-building id — namespaces each building's panel types so multiple facades coexist
   famNames:{}, // optional display names per family id
   famDetail:{}, // fam id → normalized internal sub-shapes (mullions / sub-frames), shared by the whole family
+  famMaterial:{}, // fam id → material key (MATERIALS) — drives the panel's hatch fill
   panelEdit:null, // {fam, baseId, box} while editing a panel's interior
+  fcShadow:true,  // facade: draw recessed-reveal shadows so the elevation reads with depth
 };
 
 // ─────────────────────────────────────────
@@ -809,8 +931,8 @@ function w2s(wx,wy){let x=wx,y=wy;
   return{x:x*S.zoom+S.vx+RW,y:y*S.zoom+S.vy+RW}}
 function evtSP(e){const r=cwrap.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
 function evtWP(e){const sp=evtSP(e);return s2w(sp.x,sp.y)}
-function gSnapX(x){return S.snapOn?Math.round(x/GRID)*GRID:x}
-function gSnapY(y){return S.snapOn?Math.round(y/GRID)*GRID:y}
+function gSnapX(x){return(S.snapOn&&!S.panelEdit)?Math.round(x/GRID)*GRID:x}
+function gSnapY(y){return(S.snapOn&&!S.panelEdit)?Math.round(y/GRID)*GRID:y}
 function getScene(){return S.sceneKey?SCENES[S.sceneKey]:null}
 function pxToFt(px){return(px*FT_SCALE).toFixed(1)}
 function dimStr(px){return S.sqft?pxToFt(px)+" ft":Math.round(px)+"";}
@@ -845,7 +967,10 @@ function smartSnap(wx,wy,excl=null){
   const th=SNAP_THRESH/S.zoom;
   let best=null,bd=th;
   for(const p of snapCandidates(excl)){const d=Math.hypot(p.x-wx,p.y-wy);if(d<bd){bd=d;best=p;}}
-  return best||{x:gSnapX(wx),y:gSnapY(wy),t:'grid'};
+  if(best)return best;
+  // inside a zoomed panel, don't snap to the coarse world grid — it blocks small subdivisions
+  if(S.panelEdit)return{x:wx,y:wy,t:'free'};
+  return{x:gSnapX(wx),y:gSnapY(wy),t:'grid'};
 }
 function showSnap(pt){
   lSnap.innerHTML='';if(!pt)return;
@@ -896,7 +1021,7 @@ function resizeSnap(wp,excl,ax){
 // ─────────────────────────────────────────
 function saveH(){
   S.hist=S.hist.slice(0,S.histIdx+1);
-  S.hist.push(JSON.stringify({shapes:S.shapes,nextId:S.nextId,famDetail:S.famDetail,famNames:S.famNames,regions:S.regions,doorOverrides:S.doorOverrides}));
+  S.hist.push(JSON.stringify({shapes:S.shapes,nextId:S.nextId,famDetail:S.famDetail,famNames:S.famNames,famMaterial:S.famMaterial,regions:S.regions,doorOverrides:S.doorOverrides}));
   S.histIdx=S.hist.length-1;
   if(S.hist.length>80){S.hist.shift();S.histIdx--;}
   scheduleArch(); // layout changed → refresh the generated plan
@@ -906,7 +1031,7 @@ function undo(){
   if(S.histIdx<=0)return;
   const d=JSON.parse(S.hist[--S.histIdx]);
   S.shapes=d.shapes;S.nextId=d.nextId;S.selIds=new Set();
-  if(d.famDetail)S.famDetail=d.famDetail;if(d.famNames)S.famNames=d.famNames;
+  if(d.famDetail)S.famDetail=d.famDetail;if(d.famNames)S.famNames=d.famNames;S.famMaterial=d.famMaterial||{};
   S.regions=d.regions||[];S.doorOverrides=d.doorOverrides||{};rebuildLockedIds();
   if(S.sceneKey)S.candidates=predictNextRooms();
   scheduleArch();render();
@@ -914,7 +1039,7 @@ function undo(){
 function redo(){
   if(S.histIdx>=S.hist.length-1)return;
   const d=JSON.parse(S.hist[++S.histIdx]);
-  S.shapes=d.shapes;S.nextId=d.nextId;if(d.famDetail)S.famDetail=d.famDetail;if(d.famNames)S.famNames=d.famNames;
+  S.shapes=d.shapes;S.nextId=d.nextId;if(d.famDetail)S.famDetail=d.famDetail;if(d.famNames)S.famNames=d.famNames;S.famMaterial=d.famMaterial||{};
   S.regions=d.regions||[];S.doorOverrides=d.doorOverrides||{};rebuildLockedIds();scheduleArch();render();
 }
 
@@ -1358,6 +1483,19 @@ function shapeStyle(s,isSel,isHov){
   // outline too (selection/hover are shown by a thicker stroke + the handles).
   if(shapeLocked(s)) // locked → fade the fill and grey the outline so the region reads as "done"
     return{fill:hexToRgba(bf,baseA*0.4),stroke:'#9CA3AF','stroke-width':sw*(isSel?2:1)};
+  // Facade panels honour their own opacity (so 100% = solid); in elevation mode the
+  // building outline gets a heavy line and the panel frames a light one. Colour is left
+  // intact — the grayscale filter on #L-shapes turns the whole thing black & white.
+  if(s.type==='rect'&&!s._area&&S.sceneKey==='facade'){
+    const isFac=isFacadePanel(s);
+    // elevation: uncategorized (outlier) panels read as dashed, no infill, no shadow
+    if(elevationOn()&&s._custom)
+      return{fill:'none',stroke:bs,'stroke-width':(0.8/S.zoom)*(isSel?1.8:isHov?1.3:1),'stroke-dasharray':`${4/S.zoom} ${3/S.zoom}`};
+    const a=isFac?facadeFillAlpha(s,baseA):(elevationOn()?1:baseA);
+    const fa=isSel?Math.min(1,a+.1):isHov?Math.min(1,a+.05):a;
+    const lw=elevationOn()?((isFac?0.8:2.2)/S.zoom):sw;
+    return{fill:hexToRgba(bf,fa),stroke:bs,'stroke-width':lw*(isSel?1.8:isHov?1.3:1)};
+  }
   return{fill,stroke:bs,'stroke-width':sw*(isSel?2:isHov?1.4:1)};
 }
 function shapeAreaStr(s){
@@ -1399,16 +1537,26 @@ function renderShapeEl(s){
   if(isNew)spawnedIds.add(s.id);
   const g=ns('g',{'data-sid':s.id,style:'cursor:move'});
   if(isNew)g.classList.add('shape-spring');
+  if(s.opacity!=null&&s.opacity<1&&!isFacadePanel(s))g.setAttribute('opacity',s.opacity); // per-shape transparency (floating-bar slider); facade panels bake opacity into the fill so 100% reads solid
 
   if(s.type==='rect'){
     const sc=getScene(),def=s.roomType&&sc?sc.types[s.roomType]:null;
     const areaTxt=shapeAreaStr(s);
-    const roomName=s.name||(def?def.name:null);          // custom name overrides room-type name
+    // custom name wins; a panel shows its TYPE name (not the raw "window" room type); else the room-type name
+    const roomName=s.name||(s.fam?famDisplayName(s.fam):(def?def.name:null));
     const lblCol=s.stroke||(def?def.stroke:'#64748B');
     if(s.poly){
       // Freeform polygon
       const pts=s.poly.map(p=>`${p.x},${p.y}`).join(' ');
-      g.appendChild(ns('polygon',{points:pts,...st}));
+      const matP=materialOf(s);
+      if(matP){
+        const fa=isFacadePanel(s)?facadeFillAlpha(s,isSel?.96:isHov?.9:.82):(isSel?.96:isHov?.9:.82);
+        g.appendChild(ns('polygon',{points:pts,fill:hexToRgba(s.fill||'#F2F2EF',fa),stroke:'none'}));
+        g.appendChild(ns('polygon',{points:pts,fill:`url(#${matP.hatch})`,stroke:'none',style:'pointer-events:none'}));
+        g.appendChild(ns('polygon',{points:pts,fill:'none',stroke:st.stroke,'stroke-width':st['stroke-width'],style:'pointer-events:none'}));
+      }else{
+        g.appendChild(ns('polygon',{points:pts,...st}));
+      }
       g.appendChild(ns('polygon',{points:pts,fill:'transparent',stroke:'transparent','stroke-width':10*inv,'data-sid':s.id}));
       const lp=polyLabelPoint(s.poly),cx=lp.x,cy=lp.y;
       const fs=11*inv;
@@ -1417,7 +1565,18 @@ function renderShapeEl(s){
       const ta=ns('text',{x:cx,y:roomName?cy+fs*.62:cy,'text-anchor':'middle','dominant-baseline':'middle',fill:lblCol,'font-size':fs*.8,'font-family':"'SF Mono','Fira Code',monospace",style:'pointer-events:none',opacity:'.62'});
       ta.textContent=areaTxt;g.appendChild(ta);
     }else{
-      g.appendChild(ns('rect',{x:s.x,y:s.y,width:s.w,height:s.h,...st,rx:0}));
+      const mat=materialOf(s); // material panel → recolourable infill + hatch lines on top + the type's border
+      if(mat){
+        const fa=isFacadePanel(s)?facadeFillAlpha(s,isSel?.96:isHov?.9:.82):(isSel?.96:isHov?.9:.82);
+        g.appendChild(ns('rect',{x:s.x,y:s.y,width:s.w,height:s.h,fill:hexToRgba(s.fill||'#F2F2EF',fa),stroke:'none'}));
+        g.appendChild(ns('rect',{x:s.x,y:s.y,width:s.w,height:s.h,fill:`url(#${mat.hatch})`,stroke:'none',style:'pointer-events:none'}));
+        g.appendChild(ns('rect',{x:s.x,y:s.y,width:s.w,height:s.h,fill:'none',stroke:st.stroke,'stroke-width':st['stroke-width'],style:'pointer-events:none'}));
+      }else{
+        g.appendChild(ns('rect',{x:s.x,y:s.y,width:s.w,height:s.h,...st,rx:0}));
+      }
+      // recessed-reveal shadow — sits over the panel fill so the opening reads with depth
+      const shPts=facadeShadowPts(s);
+      if(shPts)g.appendChild(ns('polygon',{points:shPts,fill:FC_SHADOW.fill,opacity:FC_SHADOW.op,stroke:'none',style:'pointer-events:none'}));
       drawWalls(g,s,inv);
       g.appendChild(ns('rect',{x:s.x,y:s.y,width:s.w,height:s.h,fill:'transparent',stroke:'transparent','stroke-width':10*inv,'data-sid':s.id}));
       const cx=s.x+s.w/2,cy=s.y+s.h/2;
@@ -1442,8 +1601,11 @@ function renderShapeEl(s){
       }
     }
   }else if(s.type==='line'){
+    // guide / divider lines read as thin red dash-dot construction lines
     const pts=s.pts.map(p=>`${p.x},${p.y}`).join(' ');
-    g.appendChild(ns('polyline',{points:pts,fill:'none',stroke:st.stroke,'stroke-width':st['stroke-width'],'stroke-linecap':'round','stroke-linejoin':'round'}));
+    const lw=(isSel?1.0:0.6)*inv;
+    g.appendChild(ns('polyline',{points:pts,fill:'none',stroke:'#DC2626','stroke-width':lw,
+      'stroke-dasharray':`${5*inv} ${2.4*inv} ${0.6*inv} ${2.4*inv}`,'stroke-linecap':'round','stroke-linejoin':'round'}));
     g.appendChild(ns('polyline',{points:pts,fill:'none',stroke:'transparent','stroke-width':12/S.zoom,'stroke-linecap':'round','data-sid':s.id}));
   }
   return g;
@@ -1870,10 +2032,10 @@ function renderPreviewFrame(p0,p1,fr){
 function renderLinePreview(pts,cur){
   lPreview.innerHTML='';if(!pts.length)return;
   const inv=1/S.zoom,all=[...pts,cur].map(p=>`${p.x},${p.y}`).join(' ');
-  lPreview.appendChild(ns('polyline',{points:all,fill:'none',stroke:C_SEL,'stroke-width':1.5*inv,'stroke-linecap':'round','stroke-dasharray':`${6*inv} ${3*inv}`,class:'preview-dash'}));
+  lPreview.appendChild(ns('polyline',{points:all,fill:'none',stroke:'#DC2626','stroke-width':0.9*inv,'stroke-linecap':'round','stroke-dasharray':`${5*inv} ${2.4*inv} ${0.6*inv} ${2.4*inv}`}));
   const last=pts[pts.length-1];
-  addDimLbl(lPreview,(last.x+cur.x)/2,(last.y+cur.y)/2-14*inv,dimStr(Math.round(Math.hypot(cur.x-last.x,cur.y-last.y))),C_SEL,10*inv,inv);
-  for(const p of pts)lPreview.appendChild(ns('circle',{cx:p.x,cy:p.y,r:2.5*inv,fill:C_SEL}));
+  addDimLbl(lPreview,(last.x+cur.x)/2,(last.y+cur.y)/2-14*inv,dimStr(Math.round(Math.hypot(cur.x-last.x,cur.y-last.y))),'#DC2626',10*inv,inv);
+  for(const p of pts)lPreview.appendChild(ns('circle',{cx:p.x,cy:p.y,r:2.5*inv,fill:'#DC2626'}));
 }
 function renderSelBox(sp0,sp1){
   lSelBox.innerHTML='';
@@ -2153,12 +2315,16 @@ function renderArch(){
 //  RENDER
 // ─────────────────────────────────────────
 function render(){
+  // Elevation mode → desaturate the whole shapes layer to black & white (native SVG filter)
+  if(elevationOn())lShapes.setAttribute('filter','url(#elev-gray)');else lShapes.removeAttribute('filter');
   lShapes.innerHTML='';lDims.innerHTML='';lHandles.innerHTML='';
   for(const s of S.shapes){
     const el=renderShapeEl(s);
     if(S.iso&&!isoHas(s.id)){el.style.opacity=0.12;el.style.pointerEvents='none';} // dim everything outside the isolated region
     lShapes.appendChild(el);
   }
+  renderElevationFrame(); // ground line + building boundary, on top of the panels
+  renderMetrics();        // live facade-performance panel (no-op unless shown)
   renderPanelDetails();
   if(S.selIds.size===1){
     const s=getS([...S.selIds][0]);
@@ -2167,6 +2333,7 @@ function render(){
   renderArch();
   renderCandidatesLayer();
   renderFamilyHints();
+  if(typeof syncPanelEditBar==='function')syncPanelEditBar();
   document.getElementById('s-count').textContent=S.shapes.length+(S.shapes.length===1?' shape':' shapes');
   if(typeof EXPLAIN!=='undefined')EXPLAIN.refresh();
   if(typeof renderRegions==='function'&&document.getElementById('region-box').classList.contains('show'))renderRegions();
@@ -2253,38 +2420,61 @@ const _fbIco=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const _fbBtn=(ico,title,fn,danger)=>{const b=document.createElement('button');b.className='fb-btn'+(danger?' danger':'');
   b.title=title;b.innerHTML=_fbIco(ico);b.onclick=e=>{e.stopPropagation();fn();};return b;};
 const _fbSep=()=>{const d=document.createElement('div');d.className='fb-sep';return d;};
-// single-selection bar: rename / duplicate / rotate / mirror / color / delete
+const _ICO_DUP='<rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16H3a1 1 0 01-1-1V3a1 1 0 011-1h12a1 1 0 011 1v1"/>';
+const _ICO_ROT='<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>';
+const _ICO_MIRH='<path d="M12 3v18"/><path d="M5 8l-3 4 3 4"/><path d="M19 8l3 4-3 4"/>';
+const _ICO_MIRV='<path d="M3 12h18"/><path d="M8 5l4-3 4 3"/><path d="M8 19l4 3 4-3"/>';
+const _ICO_COLOR='<path d="M12 2.6S5.5 9 5.5 14a6.5 6.5 0 0013 0c0-5-6.5-11.4-6.5-11.4z"/>';
+const _ICO_MAT='<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>';
+const _ICO_OP='<circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 000-18z" fill="currentColor" stroke="none"/>';
+const _ICO_PAINT='<path d="M19 3l2 2-8.5 8.5-3 1 1-3z"/><path d="M5.5 13.5c-1.4 1-1.8 4-2.5 5 1.8 0 4-.4 5-2"/>';
+const _ICO_ALIGN='<path d="M4 4v16"/><rect x="7" y="7" width="11" height="3.5" rx="1"/><rect x="7" y="14" width="7" height="3.5" rx="1"/>';
+const _ICO_BACK='<path d="M15 18l-6-6 6-6"/>';
+const _ICO_DEL='<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>';
+// shared tail: color / material / opacity / delete
+function _commonTail(){const btn=_fbBtn,sep=_fbSep;
+  fbEl.appendChild(sep());
+  fbEl.appendChild(btn(_ICO_COLOR,'Fill colour',()=>toggleColorPal()));
+  fbEl.appendChild(btn(_ICO_MAT,'Material / hatch',()=>toggleMatPal()));
+  fbEl.appendChild(btn(_ICO_OP,'Opacity',()=>toggleOpacityPal()));
+  fbEl.appendChild(sep());
+  fbEl.appendChild(btn(_ICO_DEL,'Delete',()=>{for(const id of editableIds())delS(id);S.selIds=new Set();hideFloatBar();saveH();render();},true));
+}
+// single-selection bar: rename / duplicate / rotate / mirror / color / material / opacity / delete
 function buildSingleBar(){
   fbEl.innerHTML='';const btn=_fbBtn,sep=_fbSep;
   fbEl.appendChild(btn('<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/>','Rename',()=>{const id=[...S.selIds][0];if(id!=null)startNameEdit(id);}));
-  fbEl.appendChild(btn('<rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16H3a1 1 0 01-1-1V3a1 1 0 011-1h12a1 1 0 011 1v1"/>','Duplicate',()=>{copySel();pasteSel();}));
+  fbEl.appendChild(btn(_ICO_DUP,'Duplicate',()=>{copySel();pasteSel();}));
   fbEl.appendChild(sep());
-  fbEl.appendChild(btn('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>','Rotate 90°',()=>rotateSel(1)));
-  fbEl.appendChild(btn('<path d="M12 3v18"/><path d="M5 8l-3 4 3 4"/><path d="M19 8l3 4-3 4"/>','Mirror H',()=>mirrorSel('h')));
-  fbEl.appendChild(btn('<path d="M3 12h18"/><path d="M8 5l4-3 4 3"/><path d="M8 19l4 3 4-3"/>','Mirror V',()=>mirrorSel('v')));
+  fbEl.appendChild(btn(_ICO_ROT,'Rotate 90°',()=>rotateSel(1)));
+  fbEl.appendChild(btn(_ICO_MIRH,'Mirror H',()=>mirrorSel('h')));
+  fbEl.appendChild(btn(_ICO_MIRV,'Mirror V',()=>mirrorSel('v')));
   fbEl.appendChild(sep());
-  fbEl.appendChild(btn('<path d="M12 2.6S5.5 9 5.5 14a6.5 6.5 0 0013 0c0-5-6.5-11.4-6.5-11.4z"/>','Color',()=>toggleFloatPal()));
-  fbEl.appendChild(sep());
-  fbEl.appendChild(btn('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>','Delete',()=>{for(const id of editableIds())delS(id);S.selIds=new Set();hideFloatBar();saveH();render();},true));
+  fbEl.appendChild(btn(_ICO_PAINT,'Format painter — copy this panel\'s type onto others',()=>startFormatPainter()));
+  _commonTail();
 }
-// multi-selection bar: align + distribute + rotate / mirror / duplicate / delete
+// multi-selection bar: a single Align button expands to the alignment options; else tools
+let _alignOpen=false;
 function buildAlignBar(){
   fbEl.innerHTML='';const btn=_fbBtn,sep=_fbSep;
-  fbEl.appendChild(btn('<path d="M4 4v16"/><rect x="7" y="7" width="11" height="3.5" rx="1"/><rect x="7" y="14" width="7" height="3.5" rx="1"/>','Align left',()=>alignSel('left')));
-  fbEl.appendChild(btn('<path d="M12 4v16"/><rect x="6.5" y="7" width="11" height="3.5" rx="1"/><rect x="8.5" y="14" width="7" height="3.5" rx="1"/>','Align center',()=>alignSel('cx')));
-  fbEl.appendChild(btn('<path d="M20 4v16"/><rect x="6" y="7" width="11" height="3.5" rx="1"/><rect x="10" y="14" width="7" height="3.5" rx="1"/>','Align right',()=>alignSel('right')));
+  if(_alignOpen){ // expanded alignment options + back
+    fbEl.appendChild(btn(_ICO_BACK,'Back',()=>{_alignOpen=false;buildAlignBar();}));
+    fbEl.appendChild(sep());
+    fbEl.appendChild(btn('<path d="M4 4v16"/><rect x="7" y="7" width="11" height="3.5" rx="1"/><rect x="7" y="14" width="7" height="3.5" rx="1"/>','Align left',()=>alignSel('left')));
+    fbEl.appendChild(btn('<path d="M12 4v16"/><rect x="6.5" y="7" width="11" height="3.5" rx="1"/><rect x="8.5" y="14" width="7" height="3.5" rx="1"/>','Align center',()=>alignSel('cx')));
+    fbEl.appendChild(btn('<path d="M20 4v16"/><rect x="6" y="7" width="11" height="3.5" rx="1"/><rect x="10" y="14" width="7" height="3.5" rx="1"/>','Align right',()=>alignSel('right')));
+    fbEl.appendChild(sep());
+    fbEl.appendChild(btn('<path d="M4 4h16"/><rect x="7" y="7" width="3.5" height="11" rx="1"/><rect x="14" y="7" width="3.5" height="7" rx="1"/>','Align top',()=>alignSel('top')));
+    fbEl.appendChild(btn('<path d="M4 12h16"/><rect x="7" y="6.5" width="3.5" height="11" rx="1"/><rect x="14" y="8.5" width="3.5" height="7" rx="1"/>','Align middle',()=>alignSel('cy')));
+    fbEl.appendChild(btn('<path d="M4 20h16"/><rect x="7" y="6" width="3.5" height="11" rx="1"/><rect x="14" y="10" width="3.5" height="7" rx="1"/>','Align bottom',()=>alignSel('bottom')));
+    return;
+  }
+  fbEl.appendChild(btn(_ICO_ALIGN,'Align…',()=>{_alignOpen=true;buildAlignBar();}));
   fbEl.appendChild(sep());
-  fbEl.appendChild(btn('<path d="M4 4h16"/><rect x="7" y="7" width="3.5" height="11" rx="1"/><rect x="14" y="7" width="3.5" height="7" rx="1"/>','Align top',()=>alignSel('top')));
-  fbEl.appendChild(btn('<path d="M4 12h16"/><rect x="7" y="6.5" width="3.5" height="11" rx="1"/><rect x="14" y="8.5" width="3.5" height="7" rx="1"/>','Align middle',()=>alignSel('cy')));
-  fbEl.appendChild(btn('<path d="M4 20h16"/><rect x="7" y="6" width="3.5" height="11" rx="1"/><rect x="14" y="10" width="3.5" height="7" rx="1"/>','Align bottom',()=>alignSel('bottom')));
-  fbEl.appendChild(sep());
-  fbEl.appendChild(btn('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>','Rotate 90°',()=>rotateSel(1)));
-  fbEl.appendChild(btn('<path d="M12 3v18"/><path d="M5 8l-3 4 3 4"/><path d="M19 8l3 4-3 4"/>','Mirror H',()=>mirrorSel('h')));
-  fbEl.appendChild(btn('<rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16H3a1 1 0 01-1-1V3a1 1 0 011-1h12a1 1 0 011 1v1"/>','Duplicate',()=>{copySel();pasteSel();}));
-  fbEl.appendChild(sep());
-  fbEl.appendChild(btn('<path d="M12 2.6S5.5 9 5.5 14a6.5 6.5 0 0013 0c0-5-6.5-11.4-6.5-11.4z"/>','Color',()=>toggleFloatPal()));
-  fbEl.appendChild(sep());
-  fbEl.appendChild(btn('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>','Delete',()=>{for(const id of editableIds())delS(id);S.selIds=new Set();hideFloatBar();saveH();render();},true));
+  fbEl.appendChild(btn(_ICO_ROT,'Rotate 90°',()=>rotateSel(1)));
+  fbEl.appendChild(btn(_ICO_MIRH,'Mirror H',()=>mirrorSel('h')));
+  fbEl.appendChild(btn(_ICO_DUP,'Duplicate',()=>{copySel();pasteSel();}));
+  _commonTail();
 }
 // move a shape (rect/poly/line) by a delta — used by alignment
 function moveShapeBy(s,dx,dy){
@@ -2313,22 +2503,59 @@ function alignSel(mode){
   }
   saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();
 }
-function toggleFloatPal(){
-  if(fpEl.classList.contains('show')){fpEl.classList.remove('show');return;}
-  const selRects=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect');if(!selRects.length)return;
-  fpEl.innerHTML='';
-  // recompute from the live selection at click time (selection may have changed since the palette opened)
-  const apply=opts=>{const ids=[...S.selIds].filter(id=>{const s=getS(id);return s&&s.type==='rect';});
-    for(const id of famExpand(ids))updS(id,opts);fpEl.classList.remove('show');saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();};
-  const chip=(fill,stroke,title,fn)=>{const c=document.createElement('button');c.className='fp-chip';if(title)c.title=title;
-    c.style.background=fill;c.style.border='1.5px solid '+stroke;c.onclick=e=>{e.stopPropagation();fn();};fpEl.appendChild(c);};
-  const sc=getScene();
-  if(sc)for(const[,def]of Object.entries(sc.types))chip(def.fill,def.stroke,def.name,()=>apply({fill:def.fill,stroke:def.stroke}));
-  else for(const c of GEN_COLORS)chip(c.fill,c.stroke,'',()=>apply({fill:c.fill,stroke:c.stroke}));
-  fpEl.style.left=fbEl.style.left;fpEl.style.top=(parseFloat(fbEl.style.top)+34)+'px';
-  fpEl.classList.add('show');
+function _palPos(){fpEl.style.left=fbEl.style.left;fpEl.style.top=(parseFloat(fbEl.style.top)+34)+'px';}
+function _palToggle(kind,fill){
+  if(fpEl.classList.contains('show')&&fpEl.dataset.kind===kind){fpEl.classList.remove('show');return;}
+  fpEl.innerHTML='';fpEl.dataset.kind=kind;fill();_palPos();fpEl.classList.add('show');
 }
-function hideFloatBar(){fbEl.classList.remove('show');fpEl.classList.remove('show');}
+// Fill colour swatches (skips orange outliers via famEdit-style filtering is not needed: applies to selection's family)
+function toggleColorPal(){
+  const selRects=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect');if(!selRects.length)return;
+  _palToggle('color',()=>{fpEl.className='';
+    const apply=opts=>{const ids=[...S.selIds].filter(id=>{const s=getS(id);return s&&s.type==='rect';});
+      for(const id of famExpand(ids)){const s=getS(id);if(s&&!s._custom)updS(id,opts);} // keep orange outliers
+      fpEl.classList.remove('show');saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();};
+    const chip=(fill,stroke,title,fn)=>{const c=document.createElement('button');c.className='fp-chip';if(title)c.title=title;
+      c.style.background=fill;c.style.border='1.5px solid '+stroke;c.onclick=e=>{e.stopPropagation();fn();};fpEl.appendChild(c);};
+    const sc=getScene();
+    if(sc)for(const[,def]of Object.entries(sc.types))chip(def.fill,def.stroke,def.name,()=>apply({fill:def.fill,stroke:def.stroke}));
+    else for(const c of GEN_COLORS)chip(c.fill,c.stroke,'',()=>apply({fill:c.fill,stroke:c.stroke}));
+  });
+}
+// Material / hatch — applies to the SHAPE directly (works even on an unlinked panel) and,
+// if the panel belongs to a type, to that type too. This is how you assign material after unlinking.
+function toggleMatPal(){
+  const sel=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect');if(!sel.length)return;
+  _palToggle('material',()=>{fpEl.className='fp-col';
+    for(const[k,m]of Object.entries(MATERIALS)){
+      const b=document.createElement('button');b.className='fp-mat';
+      b.innerHTML=`<i style="background:${m.hatch?m.stroke:'#fff'}"></i>${m.name}`;
+      b.onclick=e=>{e.stopPropagation();
+        for(const id of [...S.selIds]){const s=getS(id);if(!s||s.type!=='rect')continue;
+          if(k==='none'){delete s.material;if(s.fam)delete S.famMaterial[s.fam];}
+          else{s.material=k;if(s.fam)S.famMaterial[s.fam]=k;}}
+        fpEl.classList.remove('show');saveH();render();};
+      fpEl.appendChild(b);
+    }
+  });
+}
+// Opacity slider — applies to the whole linked type (or just the sub-shape in panel-edit)
+function toggleOpacityPal(){
+  const sel=[...S.selIds].map(getS).filter(Boolean);if(!sel.length)return;
+  _palToggle('opacity',()=>{fpEl.className='fp-col';
+    const cur=Math.round((sel[0].opacity!=null?sel[0].opacity:1)*100);
+    const wrap=document.createElement('div');wrap.className='fp-op';
+    wrap.innerHTML=`<input type="range" min="10" max="100" step="5" value="${cur}"><span>${cur}%</span>`;
+    const inp=wrap.querySelector('input'),lab=wrap.querySelector('span');
+    inp.onmousedown=e=>e.stopPropagation();
+    inp.oninput=e=>{e.stopPropagation();const v=+inp.value;lab.textContent=v+'%';
+      for(const id of famExpand([...S.selIds])){const s=getS(id);if(s)s.opacity=v/100;}render();};
+    inp.onchange=()=>saveH();
+    fpEl.appendChild(wrap);
+  });
+}
+function toggleFloatPal(){toggleColorPal();} // back-compat alias
+function hideFloatBar(){fbEl.classList.remove('show');fpEl.classList.remove('show');_alignOpen=false;}
 function updateFloatBar(){
   if(!S.selIds.size||S.dragging||S.resizing||S.rotating||S.drawing||S.lineDrawing||(typeof discOpen!=='undefined'&&discOpen)){hideFloatBar();return;}
   let cxw,byw;
@@ -2562,6 +2789,14 @@ function joinSelected(){
     if(axisRect){m.x=minX;m.y=minY;m.w=maxX-minX;m.h=maxY-minY;}
     else m.poly=loop.map(p=>({x:p.x,y:p.y}));
     if(base.name)m.name=base.name;
+    // preserve the panel identity so a merged panel stays a panel of its type (material,
+    // metrics, linkage) rather than reverting to a plain shape / the building outline
+    if(base.fam)m.fam=base.fam;
+    if(base.material)m.material=base.material;
+    if(base._fcid!=null)m._fcid=base._fcid;
+    if(base._custom)m._custom=true;
+    if(base.strokeW!=null)m.strokeW=base.strokeW;
+    if(base.opacity!=null)m.opacity=base.opacity;
     S.shapes.push(m);newIds.push(m.id);
   }
   // carry region membership onto the merged shape(s), so a tilted wing keeps its tilt + frame after merging
@@ -2574,14 +2809,21 @@ function joinSelected(){
 // ─────────────────────────────────────────
 //  TOOL
 // ─────────────────────────────────────────
+// constrain a point to be horizontal/vertical from an anchor (⇧ while drawing a line)
+function orthoFrom(anchor,pt){const dx=pt.x-anchor.x,dy=pt.y-anchor.y;
+  return Math.abs(dx)>=Math.abs(dy)?{x:pt.x,y:anchor.y,t:'ortho'}:{x:anchor.x,y:pt.y,t:'ortho'};}
 function setTool(t){
   if(S.lineDrawing){S.lineDrawing=false;S.linePts=[];lPreview.innerHTML='';}
   S.tool=t;
+  if(t==='line')setStatus('Divider tool — click points · ⇧ orthogonal · double-click/Enter to finish · Esc to exit');
+  const fcd=document.getElementById('fctm-divider');if(fcd)fcd.classList.toggle('on',t==='line');
+  const bd=document.getElementById('btn-fctools');if(bd)bd.classList.toggle('on',t==='line');
   document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
   document.getElementById('s-tool').textContent={rect:'Rectangle',line:'Line',pan:'Pan',select:'Rectangle'}[t]||t;
   updateCursor();
 }
 function updateCursor(){
+  if(typeof _fmtSrc!=='undefined'&&_fmtSrc){cwrap.style.cursor='copy';return;} // format painter active
   if(S.panning){cwrap.style.cursor='grabbing';return;}
   if(S.tool==='rect'||S.tool==='line')cwrap.style.cursor='default';
   else if(S.tool==='pan')cwrap.style.cursor='grab';
@@ -2713,9 +2955,18 @@ function onDown(e){
   }
   if(S.tool==='pan'){S.panning=true;S.panSP=sp;S.panView0={x:S.vx,y:S.vy};updateCursor();return;}
   if(S.tool==='line'){
-    const sn=smartSnap(wp.x,wp.y);showSnap(sn);
+    let sn=smartSnap(wp.x,wp.y);
+    if(e.shiftKey&&S.lineDrawing&&S.linePts.length)sn=orthoFrom(S.linePts[S.linePts.length-1],sn); // ⇧ → orthogonal
+    showSnap(sn);
     if(!S.lineDrawing){S.lineDrawing=true;S.linePts=[{x:sn.x,y:sn.y}];}else S.linePts.push({x:sn.x,y:sn.y});
     e.preventDefault();return;
+  }
+  // Format painter: click a panel to apply the captured type; click empty space to stop
+  if(_fmtSrc){
+    const el=e.target.closest('[data-sid]');let sid=el?parseInt(el.dataset.sid):hitTest(wp.x,wp.y);
+    const tgt=sid?getS(sid):null;
+    if(tgt&&tgt.type==='rect'&&!tgt._area){applyFormat(sid);saveH();render();e.preventDefault();return;}
+    stopFormatPainter();e.preventDefault();return;
   }
   if(S.tool==='rect'){
     // Region rotation handle → tilt the whole region about its centre
@@ -2768,13 +3019,17 @@ function onDown(e){
     // Existing shape → select + drag
     const shEl=e.target.closest('[data-sid]');
     let sid=shEl?parseInt(shEl.dataset.sid):null;if(!sid)sid=hitTest(wp.x,wp.y);
+    if(S.panelEdit&&sid){const ss=getS(sid);if(!ss||!ss._detail)sid=null;} // in panel edit only sub-shapes are grabbable; else click draws
     if(sid){
       if(e.shiftKey){if(S.selIds.has(sid))S.selIds.delete(sid);else S.selIds.add(sid);refreshCandidates();render();}
       else{if(!S.selIds.has(sid)){S.selIds=new Set([sid]);refreshCandidates();render();}
         if(shapeLocked(getS(sid))){e.preventDefault();return;} // locked → select only, no drag
         const movable=editableIds();                          // never drag locked members of a multi-selection
-        if(movable.length){S.dragging=true;S.dragWP=wp;
-          S.dragShapes0=new Map(movable.map(id=>{const s=getS(id);return[id,JSON.parse(JSON.stringify(s))]}));}}
+        // Linked panels move together: pull in every family sibling so the whole type
+        // translates by the same delta (keeps the grid's relative spacing).
+        const moveIds=[...famExpand(movable)].filter(id=>{const s=getS(id);return s&&!shapeLocked(s);});
+        if(moveIds.length){S.dragging=true;S.dragMoved=false;S.dragWP=wp;
+          S.dragShapes0=new Map(moveIds.map(id=>{const s=getS(id);return[id,JSON.parse(JSON.stringify(s))]}));}}
       e.preventDefault();return;
     }
     // Empty space → Shift: marquee-select the swept region; otherwise draw a new rect
@@ -2789,23 +3044,30 @@ function onDown(e){
     e.preventDefault();return;
   }
 }
-// While dragging a room, snap its edges flush/aligned to nearby rooms (returns adjusted dx,dy)
+// While dragging, snap the group's edges to OTHER panels' edges and to guide lines only
+// (no grid) — anywhere else moves freely so it doesn't feel sticky. Returns adjusted dx,dy.
 function dragSnap(dx,dy){
   const th=16/S.zoom,NEAR=120;
   let L=Infinity,T=Infinity,R=-Infinity,B=-Infinity,has=false;
   for(const[,o]of S.dragShapes0){if(o.type!=='rect')continue;has=true;const b=rectBox(o);
     L=Math.min(L,b.x);T=Math.min(T,b.y);R=Math.max(R,b.x+b.w);B=Math.max(B,b.y+b.h);}
   if(!has)return{dx,dy};
-  const others=S.shapes.filter(s=>s.type==='rect'&&!S.selIds.has(s.id));
-  if(!others.length)return{dx,dy};
   const mL=L+dx,mR=R+dx,mT=T+dy,mB=B+dy;
   let bx=null,bdx=th,by=null,bdy=th;
+  const others=S.shapes.filter(s=>s.type==='rect'&&!S.dragShapes0.has(s.id));
   for(const s of others){const b=rectBox(s),sL=b.x,sR=b.x+b.w,sT=b.y,sB=b.y+b.h;
     const yNear=mB>sT-NEAR&&mT<sB+NEAR, xNear=mR>sL-NEAR&&mL<sR+NEAR;
     if(yNear)for(const[m,t,adj]of[[mL,sL,sL-L],[mL,sR,sR-L],[mR,sL,sL-R],[mR,sR,sR-R]]){
       const d=Math.abs(m-t);if(d<bdx){bdx=d;bx=adj;}}
     if(xNear)for(const[m,t,adj]of[[mT,sT,sT-T],[mT,sB,sB-T],[mB,sT,sT-B],[mB,sB,sB-B]]){
       const d=Math.abs(m-t);if(d<bdy){bdy=d;by=adj;}}
+  }
+  // guide lines: vertical segments give x targets, horizontal segments give y targets
+  for(const s of S.shapes){if(s.type!=='line'||!s.pts)continue;
+    for(let i=0;i<s.pts.length-1;i++){const a=s.pts[i],c=s.pts[i+1];
+      if(Math.abs(a.x-c.x)<2){const gx=a.x;for(const[m,adj]of[[mL,gx-L],[mR,gx-R]]){const d=Math.abs(m-gx);if(d<bdx){bdx=d;bx=adj;}}}
+      else if(Math.abs(a.y-c.y)<2){const gy=a.y;for(const[m,adj]of[[mT,gy-T],[mB,gy-B]]){const d=Math.abs(m-gy);if(d<bdy){bdy=d;by=adj;}}}
+    }
   }
   return{dx:bx!=null?bx:dx,dy:by!=null?by:dy,sx:bx!=null,sy:by!=null};
 }
@@ -2830,7 +3092,7 @@ function dragSnapFrame(dx,dy,fr){
     L=Math.min(L,r.x);T=Math.min(T,r.y);R=Math.max(R,r.x+r.w);B=Math.max(B,r.y+r.h);}
   const dv=rotVec({x:dx,y:dy},-fr.angle);let fdx=dv.x,fdy=dv.y;
   if(has){
-    const others=S.shapes.filter(s=>s.type==='rect'&&!S.selIds.has(s.id));
+    const others=S.shapes.filter(s=>s.type==='rect'&&!S.dragShapes0.has(s.id));
     const mL=L+fdx,mR=R+fdx,mT=T+fdy,mB=B+fdy;
     let bx=null,bdx=th,by=null,bdy=th;
     for(const s of others){const r=frameRect(s,fr),sL=r.x,sR=r.x+r.w,sT=r.y,sB=r.y+r.h;
@@ -2882,29 +3144,17 @@ function onMove(e){
     render();return;
   }
   if(S.drawing&&S.tool==='rect'){const sn=smartSnap(wp.x,wp.y);showSnap(sn);if(S.drawFrame)renderPreviewFrame(S.drawP0,sn,S.drawFrame);else renderPreview(S.drawP0,sn);drawRulers();return;}
-  if(S.lineDrawing){const sn=smartSnap(wp.x,wp.y);showSnap(sn);renderLinePreview(S.linePts,sn);drawRulers();return;}
+  if(S.lineDrawing){let sn=smartSnap(wp.x,wp.y);if(e.shiftKey&&S.linePts.length)sn=orthoFrom(S.linePts[S.linePts.length-1],sn);showSnap(sn);renderLinePreview(S.linePts,sn);drawRulers();return;}
   if(S.dragging){
     let dx=wp.x-S.dragWP.x,dy=wp.y-S.dragWP.y;
     let ddx,ddy;
     const fr=dragFrame(); // tilted room(s) → snap to adjacent rooms in their own frame
     if(fr){const sn=dragSnapFrame(dx,dy,fr);ddx=sn.dx;ddy=sn.dy;}
     else{
-      const sn=dragSnap(dx,dy);dx=sn.dx;dy=sn.dy;   // magnetic snap: edges flush/aligned to nearby rooms
-      // Single uniform delta for the whole group (per-vertex grid-snap would distort tilted/rotated rooms
-      // and drift multi-selections apart). Grid-align by the group's bbox min; an axis snapped to a
-      // neighbour keeps that exact position.
-      ddx=dx;ddy=dy;
-      if(!sn.sx||!sn.sy){
-        let mnx=Infinity,mny=Infinity;
-        for(const[,o]of S.dragShapes0){
-          if(o.poly)for(const p of o.poly){mnx=Math.min(mnx,p.x);mny=Math.min(mny,p.y);}
-          else if(o.type==='rect'){mnx=Math.min(mnx,o.x);mny=Math.min(mny,o.y);}
-          else if(o.type==='line')for(const p of o.pts){mnx=Math.min(mnx,p.x);mny=Math.min(mny,p.y);}
-        }
-        if(!sn.sx&&isFinite(mnx))ddx=gSnapX(mnx+dx)-mnx;
-        if(!sn.sy&&isFinite(mny))ddy=gSnapY(mny+dy)-mny;
-      }
+      // snap the group's edges to other panels + guide lines; anywhere else moves freely (no grid → not sticky)
+      const sn=dragSnap(dx,dy);ddx=sn.dx;ddy=sn.dy;
     }
+    if(Math.abs(ddx)>0.01||Math.abs(ddy)>0.01)S.dragMoved=true; // distinguish a real drag from a plain click
     for(const[id,o]of S.dragShapes0){
       if(o.type==='rect'){
         if(o.poly)updS(id,{poly:o.poly.map(p=>({x:p.x+ddx,y:p.y+ddy}))});
@@ -2971,7 +3221,9 @@ function onUp(e){
     if(rw>4&&rh>4){const s=mkRect(rx,ry,rw,rh);if(S.panelEdit)s._detail=true;S.shapes.push(s);S.selIds=new Set([s.id]);saveH();render();}
     S.drawing=false;lPreview.innerHTML='';lSnap.innerHTML='';return;
   }
-  if(S.dragging){S.dragging=false;hideHint();saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();return;}
+  if(S.dragging){const moved=S.dragMoved;S.dragging=false;S.dragMoved=false;hideHint();
+    if(moved){saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();} // a plain click leaves history + DOM untouched (keeps dblclick reliable)
+    return;}
   if(S.resizing){
     const ec=S.edgeClick;
     S.resizing=false;S.resHandle=null;S.deformDrag=false;S.shiftScale=false;S.edgeClick=null;hideHint();
@@ -3008,8 +3260,12 @@ cwrap.addEventListener('dblclick',e=>{
     const wp=evtWP(e);const shEl=e.target.closest('[data-sid]');
     let sid=shEl?parseInt(shEl.dataset.sid):hitTest(wp.x,wp.y);
     if(sid){const s=getS(sid);if(s&&s.type==='rect'){
-      // a panel (has a family) → edit its interior; otherwise rename
-      if(s.fam&&!S.panelEdit){enterPanelEdit(sid);e.preventDefault();return;}
+      // facade panel (or any panel with a type) → edit its interior; otherwise rename.
+      // in the facade scene a loose rect gets its own type on the fly so editing always works.
+      // merged (poly) shapes may enter edit too, but ONLY if they're a panel — never the building outline.
+      if(!S.panelEdit&&(s.fam||S.sceneKey==='facade')&&(!s.poly||isFacadePanel(s))){
+        if(!s.fam)updS(sid,{fam:'fam'+(S.famSeq++)});
+        enterPanelEdit(sid);e.preventDefault();return;}
       S.selIds=new Set([sid]);render();startNameEdit(sid);e.preventDefault();}}
   }
 });
@@ -3051,12 +3307,16 @@ window.addEventListener('keydown',e=>{
     const ids=editableIds();for(const id of ids)delS(id);S.selIds=new Set();saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();
   }
   if(e.key==='Escape'){
+    if(_fmtSrc){stopFormatPainter();return;}    // leave format painter
     if(S.iso){exitIsolate();return;}           // leave isolate mode first
     if(S.panelEdit){exitPanelEdit();return;}   // leave panel-interior editing → apply to the family
+    if(S.lineDrawing){ // first Esc: cancel the in-progress polyline but stay in the divider tool
+      S.lineDrawing=false;S.linePts=[];lPreview.innerHTML='';lSnap.innerHTML='';
+      setStatus('Divider tool — click to start · Esc again to exit');render();return;}
+    if(S.tool==='line'){setTool('rect');setStatus('Select / draw');render();return;} // exit the divider tool
     S.predHidden=true; // exit the dashed prediction state
     if(discOpen){closeRadialDisc();}
-    else{S.lineDrawing=false;S.linePts=[];lPreview.innerHTML='';lSnap.innerHTML='';
-      S.selIds=new Set();S.drawing=false;S.drawFrame=null;S.deformDrag=false;render();}
+    else{S.selIds=new Set();S.drawing=false;S.drawFrame=null;S.deformDrag=false;render();}
   }
   if(e.key==='Enter'&&S.lineDrawing&&S.linePts.length>=2){
     const s=mkLine([...S.linePts]);if(S.panelEdit)s._detail=true;S.shapes.push(s);S.selIds=new Set([s.id]);
@@ -3070,10 +3330,13 @@ window.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='v'){pasteSel();e.preventDefault();}
   if((e.metaKey||e.ctrlKey)&&e.key==='d'){copySel();pasteSel();e.preventDefault();}
   if(S.selIds.size&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
-    const d=e.shiftKey?10:1;
-    for(const s of editableSel()){const id=s.id;
-      if(s.type==='rect'&&!s.poly)updS(id,{x:s.x+(e.key==='ArrowLeft'?-d:e.key==='ArrowRight'?d:0),y:s.y+(e.key==='ArrowUp'?-d:e.key==='ArrowDown'?d:0)});
-      else if(s.type==='line')updS(id,{pts:s.pts.map(p=>({x:p.x+(e.key==='ArrowLeft'?-d:e.key==='ArrowRight'?d:0),y:p.y+(e.key==='ArrowUp'?-d:e.key==='ArrowDown'?d:0)}))});
+    const d=e.shiftKey?10:1,mx=e.key==='ArrowLeft'?-d:e.key==='ArrowRight'?d:0,my=e.key==='ArrowUp'?-d:e.key==='ArrowDown'?d:0;
+    // linked panels move together (same as dragging with the mouse) → keyboard & mouse stay consistent
+    const ids=[...famExpand(editableIds())].filter(id=>{const s=getS(id);return s&&!shapeLocked(s);});
+    for(const id of ids){const s=getS(id);if(!s)continue;
+      if(s.type==='rect'&&!s.poly)updS(id,{x:s.x+mx,y:s.y+my});
+      else if(s.poly)updS(id,{poly:s.poly.map(p=>({x:p.x+mx,y:p.y+my}))});
+      else if(s.type==='line')updS(id,{pts:s.pts.map(p=>({x:p.x+mx,y:p.y+my}))});
     }
     render();e.preventDefault();
   }
@@ -3387,11 +3650,11 @@ const SB=(window.SUPABASE_URL&&window.SUPABASE_ANON_KEY&&window.supabase)
 let CURRENT_DOC_ID=null,CURRENT_DOC_NAME=null;
 // the full document we persist (mirrors the saveH snapshot + scene)
 function serializeDoc(){return{shapes:S.shapes,regions:S.regions,doorOverrides:S.doorOverrides,
-  sceneKey:S.sceneKey,nextId:S.nextId,famDetail:S.famDetail,famNames:S.famNames};}
+  sceneKey:S.sceneKey,nextId:S.nextId,famDetail:S.famDetail,famNames:S.famNames,famMaterial:S.famMaterial};}
 function loadDoc(d){
   if(!d)return;
   S.shapes=d.shapes||[];S.regions=d.regions||[];S.doorOverrides=d.doorOverrides||{};
-  S.sceneKey=d.sceneKey||null;S.famDetail=d.famDetail||{};S.famNames=d.famNames||{};
+  S.sceneKey=d.sceneKey||null;S.famDetail=d.famDetail||{};S.famNames=d.famNames||{};S.famMaterial=d.famMaterial||{};
   S.nextId=d.nextId||(S.shapes.reduce((m,s)=>Math.max(m,s.id||0),0)+1);
   S.selIds=new Set();rebuildLockedIds();
   try{if(S.sceneKey&&typeof predictNextRooms==='function')S.candidates=predictNextRooms();}catch(e){}
@@ -3775,6 +4038,156 @@ const FC={cols:6,rows:5,gap:4};
 const FC_WALL={fill:'#F0F0EC',stroke:'#8A8A86'};       // outline reads as the mullion wall
 const FC_STD ={fill:'#BAE6FD',stroke:'#0EA5E9'};       // standard glazing panel
 const FC_CUST={fill:'#FFE4D5',stroke:'#EA580C'};       // custom (outlier) panel — needs fabrication
+// Preset facade materials — each maps to a <pattern> hatch in the SVG <defs>.
+// Picked per panel-type in the Panel-types panel; null hatch = plain colour fill.
+const MATERIALS={
+  none:    {name:'None',          hatch:null,        stroke:'#94A3B8'},
+  glass:   {name:'Glazing',       hatch:'hatch-glass',   stroke:'#5C93AE'},
+  louver:  {name:'Louvers',       hatch:'hatch-louver',  stroke:'#7E7E78'},
+  metal:   {name:'Metal panel',   hatch:'hatch-metal',   stroke:'#7C7E82'},
+  mesh:    {name:'Mesh',          hatch:'hatch-mesh',    stroke:'#82847F'},
+  brick:   {name:'Brick',         hatch:'hatch-brick',   stroke:'#A38E7C'},
+  stone:   {name:'Stone',         hatch:'hatch-stone',   stroke:'#9C9081'},
+  tile:    {name:'Tile',          hatch:'hatch-tile',    stroke:'#8C8C86'},
+  concrete:{name:'Concrete',      hatch:'hatch-concrete',stroke:'#8A8A85'},
+};
+// default material rotation when a facade is split into regions (so zones read distinctly)
+const MAT_CYCLE=['glass','brick','louver','concrete','tile','metal','stone'];
+// ── Facade-consultant assembly properties (indicative, order-of-magnitude, editable) ──
+//   U     thermal transmittance  W/m²·K        SHGC  solar heat-gain coefficient
+//   cost  supply+install  $/m²                 carbon embodied  kgCO₂e/m²
+//   glazed  whether the assembly counts as window area (drives WWR)
+const FC_PROPS={
+  glazing: {U:1.8,  SHGC:0.40, cost:750, carbon:50,  glazed:true },  // default = Standard glazing
+  glass:   {U:1.8,  SHGC:0.40, cost:750, carbon:50,  glazed:true },
+  none:    {U:1.8,  SHGC:0.40, cost:700, carbon:48,  glazed:true },
+  louver:  {U:2.6,  SHGC:0.15, cost:520, carbon:65,  glazed:false},
+  metal:   {U:0.45, SHGC:0,    cost:480, carbon:85,  glazed:false},
+  mesh:    {U:3.0,  SHGC:0.25, cost:320, carbon:42,  glazed:false},
+  brick:   {U:0.35, SHGC:0,    cost:360, carbon:95,  glazed:false},
+  stone:   {U:0.55, SHGC:0,    cost:820, carbon:155, glazed:false},
+  tile:    {U:0.50, SHGC:0,    cost:260, carbon:55,  glazed:false},
+  concrete:{U:0.60, SHGC:0,    cost:210, carbon:130, glazed:false},
+};
+const FC_LIMITS={WWR:0.40, Uwin:2.20}; // ASHRAE 90.1-ish defaults (climate-dependent; editable)
+function panelMatKey(s){return s._custom?'glazing':(s.material||(s.fam?S.famMaterial[s.fam]:null)||'glazing');}
+function panelProps(s){return FC_PROPS[panelMatKey(s)]||FC_PROPS.glazing;}
+function panelAreaM2(s){
+  let apx;
+  if(s.poly){apx=0;const p=s.poly;for(let i=0,j=p.length-1;i<p.length;j=i++)apx+=(p[j].x+p[i].x)*(p[j].y-p[i].y);apx=Math.abs(apx/2);}
+  else apx=(s.w||0)*(s.h||0);
+  return apx*FT_SCALE*FT_SCALE*0.092903; // px² → ft² → m²
+}
+// Aggregate live facade metrics over every panel + building outline on the canvas.
+function facadeMetrics(){
+  let wall=0,glz=0,opq=0,aAll=0,uAll=0,gU=0,gS=0,cost=0,carbon=0,nP=0,nC=0;const sizes={};
+  for(const s of S.shapes){
+    if(s.type!=='rect'||s._area)continue;
+    if(isFacadePanel(s)){
+      const A=panelAreaM2(s),pr=panelProps(s);nP++;if(s._custom)nC++;
+      aAll+=A;uAll+=A*pr.U;cost+=A*pr.cost;carbon+=A*pr.carbon;
+      if(pr.glazed){glz+=A;gU+=A*pr.U;gS+=A*pr.SHGC;}else opq+=A;
+      if(!s._custom){const k=Math.round(s.w)+'x'+Math.round(s.h);sizes[k]=(sizes[k]||0)+1;}
+    }else wall+=panelAreaM2(s);            // building outline → gross wall area
+  }
+  if(wall<=0)wall=glz+opq;                 // no explicit outline → fall back to cladding extent
+  return{wall,glz,opq,WWR:wall>0?glz/wall:0,Uavg:aAll>0?uAll/aAll:0,Uwin:glz>0?gU/glz:0,
+    SHGC:glz>0?gS/glz:0,cost,carbon,nP,nC,uniq:Object.keys(sizes).length,stdPct:nP>0?(nP-nC)/nP:0};
+}
+function renderMetrics(){
+  const box=document.getElementById('metrics-box');if(!box||!box.classList.contains('show'))return;
+  const body=document.getElementById('mx-body');if(!body)return;
+  const m=facadeMetrics();
+  if(!m.nP){body.innerHTML='<div class="mx-row"><span class="mx-k">No facade panels yet — Generate one.</span></div>';return;}
+  const badge=ok=>`<span class="mx-badge ${ok?'ok':'bad'}">${ok?'PASS':'OVER'}</span>`;
+  const row=(k,inner)=>`<div class="mx-row"><span class="mx-k">${k}</span><span class="mx-v">${inner}</span></div>`;
+  const u=t=>`<span class="mx-u">${t}</span>`;
+  const wwrOk=m.WWR<=FC_LIMITS.WWR,uwOk=m.Uwin<=FC_LIMITS.Uwin;
+  const dollars=m.cost>=1e6?'$'+(m.cost/1e6).toFixed(2)+'M':'$'+Math.round(m.cost/1000)+'k';
+  body.innerHTML=
+    '<div class="mx-sec">Compliance</div>'+
+    row('WWR',`${(m.WWR*100).toFixed(0)}% ${u('≤'+Math.round(FC_LIMITS.WWR*100)+'%')} ${badge(wwrOk)}`)+
+    row('Window U',`${m.Uwin.toFixed(2)}${u('W/m²K')} ${badge(uwOk)}`)+
+    '<div class="mx-sec">Envelope</div>'+
+    row('Assembly U',`${m.Uavg.toFixed(2)}${u('W/m²K')}`)+
+    row('Eff. SHGC',m.SHGC.toFixed(2))+
+    row('Glazing',`${Math.round(m.glz)}${u('m²')}`)+
+    row('Opaque',`${Math.round(m.opq)}${u('m²')}`)+
+    row('Gross wall',`${Math.round(m.wall)}${u('m²')}`)+
+    '<div class="mx-sec">Cost & carbon</div>'+
+    row('Embodied C',`${(m.carbon/1000).toFixed(1)}${u('t CO₂e')}`)+
+    row('Supply+install',dollars)+
+    '<div class="mx-sec">Fabrication</div>'+
+    row('Panels',m.nP+(m.nC?` ${u('('+m.nC+' custom)')}`:''))+
+    row('Unique sizes',`${m.uniq} ${u(Math.round(m.stdPct*100)+'% std')}`);
+}
+function toggleMetrics(){const box=document.getElementById('metrics-box');
+  const on=box.classList.toggle('show');const it=document.getElementById('fctm-metrics');
+  if(it)it.querySelector('em')&&(it.querySelector('em').textContent=on?'on':'off');
+  if(on)renderMetrics();}
+function materialOf(s){if(!s||s._custom)return null;const k=s.material||(s.fam?S.famMaterial[s.fam]:null);return(k&&MATERIALS[k]&&MATERIALS[k].hatch)?MATERIALS[k]:null;}
+// ── Elevation shadows ──
+// Architectural convention: sun from the upper-left, rays at 45° toward lower-right.
+// A window/glazing panel is RECESSED into the wall, so the front opening edges cast a
+// hard-edged shadow onto the glass behind — the head (top) and the left jamb. We draw
+// that as an L-shaped band on the panel's top + left interior. Reveal depth scales with
+// the panel but is clamped, so small panes and big shopfronts both read sensibly.
+const FC_SHADOW={depth:0.16,min:2.5,max:15,fill:'#23231F',op:0.24};
+function isFacadePanel(s){
+  // merged panels keep their type (fac- fam) / roomType, so a poly panel still counts as a
+  // panel — NOT the building outline (which has neither a fac- fam nor the 'window' roomType)
+  return S.sceneKey==='facade'&&!s._area&&s.type==='rect'
+    &&((s.fam&&/^fac-/.test(s.fam))||s.roomType==='window');
+}
+// L-shaped reveal-shadow polygon (top band + left band) for a recessed facade panel.
+function facadeShadowPts(s){
+  if(!S.fcShadow||!isFacadePanel(s)||s._custom||s.poly)return null; // flat markers / merged polys → no reveal depth
+  const d=Math.max(FC_SHADOW.min,Math.min(FC_SHADOW.max,Math.min(s.w,s.h)*FC_SHADOW.depth));
+  if(d<=0||d>=Math.min(s.w,s.h)/2)return null;
+  const x=s.x,y=s.y,w=s.w,h=s.h;
+  return `${x},${y} ${x+w},${y} ${x+w},${y+d} ${x+d},${y+d} ${x+d},${y+h} ${x},${y+h}`;
+}
+// Elevation look — bundled with the reveal-shadow toggle: monochrome (a grayscale
+// filter on the shapes layer) + a sensible lineweight hierarchy (heavy outline,
+// light panel frames). Reads like a real architectural elevation.
+function elevationOn(){return S.fcShadow&&S.sceneKey==='facade';}
+// Facade panels render at their TRUE opacity — the slider's 100% means solid, not the
+// scene's default 0.5/0.82 plan-translucency. `base` is the look when untouched (null).
+function facadeFillAlpha(s,base){return s.opacity!=null?s.opacity:base;}
+// Per-building fam namespacing so multiple facades on the canvas keep independent panel
+// types. kind ∈ 'std' | 'r<n>' | 'uncat'. fcOf parses the building id back out.
+function fcFam(fcid,kind){return `fac-b${fcid}-${kind}`;}
+function fcOf(fam){const m=/^fac-b(\d+)-/.exec(fam||'');return m?+m[1]:null;}
+// Drop fam material/name/detail entries that no longer have any panel (keeps the
+// Panel-types list clean after regenerating or deleting a facade).
+function pruneFamMeta(){
+  const live=new Set(S.shapes.filter(s=>s.fam).map(s=>s.fam));
+  for(const tbl of [S.famMaterial,S.famNames,S.famDetail])
+    for(const k of Object.keys(tbl))if(/^fac-/.test(k)&&!live.has(k))delete tbl[k];
+}
+// Draw the elevation's ground line + building boundary as render-only overlays (not editable
+// shapes — they track the facade's bounding box automatically). Appended last so they sit on
+// top, inside #L-shapes so they pick up the B&W filter (black stays black).
+function renderElevationFrame(){
+  if(!elevationOn())return;
+  // The hand-drawn building geometry = facade rects that aren't panels/areas (rect OR
+  // irregular poly). These define the boundary; their bbox gives the ground-line span.
+  const outlines=[];let mnx=Infinity,mxx=-Infinity,mxy=-Infinity;
+  for(const s of S.shapes){
+    if(s.type!=='rect'||s._area||isFacadePanel(s))continue;
+    outlines.push(s);const b=rectBox(s);
+    mnx=Math.min(mnx,b.x);mxx=Math.max(mxx,b.x+b.w);mxy=Math.max(mxy,b.y+b.h);
+  }
+  if(!outlines.length||!isFinite(mnx))return;
+  const inv=1/S.zoom,W=mxx-mnx,ext=Math.max(40,W*0.1),C='#141412';
+  // building boundary — trace the actual drawn outline (poly or rect), heavy line
+  for(const o of outlines){
+    if(o.poly)lShapes.appendChild(ns('polygon',{points:o.poly.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:C,'stroke-width':2.4*inv,'stroke-linejoin':'miter',style:'pointer-events:none'}));
+    else lShapes.appendChild(ns('rect',{x:o.x,y:o.y,width:o.w,height:o.h,fill:'none',stroke:C,'stroke-width':2.4*inv,'stroke-linejoin':'miter',style:'pointer-events:none'}));
+  }
+  // ground line — heaviest, overshooting both ends (grade datum)
+  lShapes.appendChild(ns('line',{x1:mnx-ext,y1:mxy,x2:mxx+ext,y2:mxy,stroke:C,'stroke-width':3.6*inv,'stroke-linecap':'square',style:'pointer-events:none'}));
+}
 // Clip an axis-aligned cell to a polygon → array of covered sub-rectangles.
 // Exact for rectilinear (L-shaped) outlines; approximate for slanted edges.
 function clipCellAA(x0,y0,x1,y1,poly){
@@ -3787,66 +4200,251 @@ function clipCellAA(x0,y0,x1,y1,poly){
   }
   return out;
 }
-// Grid the outline polygon into glazing panels {x,y,w,h,custom}.
-function facadeGlazing(poly,opt){
+// Do segments ab and cd intersect? Includes proper crossings AND collinear/endpoint
+// overlap, so a guide line lying ALONG a cell boundary still counts as a cut.
+function _segHit(a,b,c,d){
+  const E=1e-6;
+  const cr=(o,p,q)=>(p.x-o.x)*(q.y-o.y)-(p.y-o.y)*(q.x-o.x);
+  const on=(o,q,p)=>Math.min(o.x,p.x)-E<=q.x&&q.x<=Math.max(o.x,p.x)+E&&Math.min(o.y,p.y)-E<=q.y&&q.y<=Math.max(o.y,p.y)+E;
+  const d1=cr(c,d,a),d2=cr(c,d,b),d3=cr(a,b,c),d4=cr(a,b,d);
+  if(((d1>E&&d2<-E)||(d1<-E&&d2>E))&&((d3>E&&d4<-E)||(d3<-E&&d4>E)))return true;
+  if(Math.abs(d1)<=E&&on(c,a,d))return true;
+  if(Math.abs(d2)<=E&&on(c,b,d))return true;
+  if(Math.abs(d3)<=E&&on(a,c,b))return true;
+  if(Math.abs(d4)<=E&&on(a,d,b))return true;
+  return false;
+}
+// Grid the outline into glazing panels and, where GUIDE lines cross between cells,
+// cut the cell-adjacency so the panels flood-fill into separate REGIONS. `guides`
+// is a list of [p0,p1] world segments (the user's auxiliary lines). Returns
+// {panels:[{x,y,w,h,custom,region}], regionCount}.
+function facadeGlazing(poly,opt,guides){
+  guides=guides||[];
   const cols=Math.max(1,Math.min(20,opt.cols)),rows=Math.max(1,Math.min(20,opt.rows)),gap=Math.max(0,Math.min(16,opt.gap));
   let mnX=Infinity,mnY=Infinity,mxX=-Infinity,mxY=-Infinity;
   for(const p of poly){mnX=Math.min(mnX,p.x);mnY=Math.min(mnY,p.y);mxX=Math.max(mxX,p.x);mxY=Math.max(mxY,p.y);}
-  const cw=(mxX-mnX)/cols,ch=(mxY-mnY)/rows,panels=[];
-  const inset=p=>({x:p.x+gap/2,y:p.y+gap/2,w:p.w-gap,h:p.h-gap,custom:p.custom});
+  const cw=(mxX-mnX)/cols,ch=(mxY-mnY)/rows;
+  const inset=p=>({x:p.x+gap/2,y:p.y+gap/2,w:p.w-gap,h:p.h-gap,custom:p.custom,region:p.region});
+  // 1. raw inside-cells (keyed by grid coords for neighbour lookup)
+  const cells=[],idx=new Map();
   for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
     const x0=mnX+c*cw,y0=mnY+r*ch,x1=x0+cw,y1=y0+ch;
-    // sample points inset toward the cell centre so edge cells flush with the
-    // outline boundary still read as "fully inside" (boundary points are ambiguous)
     const lx=x0+cw*0.12,rx=x1-cw*0.12,ty=y0+ch*0.12,by=y1-ch*0.12;
     const corners=[[lx,ty],[rx,ty],[rx,by],[lx,by],[(x0+x1)/2,(y0+y1)/2]];
     const ins=corners.map(p=>pointInPoly(p[0],p[1],poly));
-    if(ins.every(v=>!v))continue;                      // cell fully outside → no panel
-    if(ins.every(Boolean)){panels.push(inset({x:x0,y:y0,w:cw,h:ch,custom:false}));}
-    else for(const pc of clipCellAA(x0,y0,x1,y1,poly)){  // boundary-cut → custom outlier(s)
-      if(pc.w>3&&pc.h>3)panels.push(inset({...pc,custom:true}));
-    }
+    if(ins.every(v=>!v))continue;                              // fully outside
+    let subs;
+    if(ins.every(Boolean))subs=[{x:x0,y:y0,w:cw,h:ch,custom:false}];
+    else subs=clipCellAA(x0,y0,x1,y1,poly).filter(pc=>pc.w>3&&pc.h>3).map(pc=>({...pc,custom:true}));
+    if(!subs.length)continue;
+    idx.set(c+'_'+r,cells.length);
+    cells.push({c,r,x0,y0,x1,y1,subs});
   }
-  // any non-uniform-size standard panel (edge remainder) is also a custom outlier
+  // 2. union adjacent cells unless a guide line cuts across their shared edge
+  const parent=cells.map((_,i)=>i);
+  const find=i=>{while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i];}return i;};
+  const uni=(a,b)=>{const ra=find(a),rb=find(b);if(ra!==rb)parent[ra]=rb;};
+  // Sever the dual-graph adjacency when a guide passes BETWEEN two cells — tested on the
+  // segment joining their centres (robust to guides not aligned to the grid; arbitrary
+  // polylines produce a stair-stepped region edge). Shrunk at both ends so a guide merely
+  // grazing a cell centre doesn't falsely cut.
+  const ctr=cl=>({x:(cl.x0+cl.x1)/2,y:(cl.y0+cl.y1)/2});
+  const cut=(p,q)=>{
+    const a={x:p.x+(q.x-p.x)*0.15,y:p.y+(q.y-p.y)*0.15},b={x:q.x-(q.x-p.x)*0.15,y:q.y-(q.y-p.y)*0.15};
+    for(const g of guides)if(_segHit(a,b,g[0],g[1]))return true;
+    return false;
+  };
+  for(const cell of cells){const{c,r}=cell,i=idx.get(c+'_'+r),ci=ctr(cell);
+    const right=idx.get((c+1)+'_'+r);
+    if(right!=null&&!cut(ci,ctr(cells[right])))uni(i,right);
+    const down=idx.get(c+'_'+(r+1));
+    if(down!=null&&!cut(ci,ctr(cells[down])))uni(i,down);
+  }
+  // 3. stable region indices — ordered by each component's top-left-most cell
+  const roots=[...new Set(cells.map((_,i)=>find(i)))];
+  roots.sort((a,b)=>{const ca=cells[a],cb=cells[b];return(ca.r-cb.r)||(ca.c-cb.c);});
+  const regionOf=new Map(roots.map((rt,i)=>[rt,i]));
+  // 4. emit inset panels + raw (contiguous, pre-inset) cell rects, both carrying their region id
+  const panels=[],regionCells=[];
+  for(let i=0;i<cells.length;i++){const region=regionOf.get(find(i));
+    for(const sub of cells[i].subs){panels.push(inset({...sub,region}));regionCells.push({x:sub.x,y:sub.y,w:sub.w,h:sub.h,region});}}
+  // edge-remainder panels (non-modal size) are flagged custom — used only single-region
   const sizes={};panels.forEach(p=>{if(!p.custom){const k=Math.round(p.w)+'x'+Math.round(p.h);sizes[k]=(sizes[k]||0)+1;}});
   const std=Object.entries(sizes).sort((a,b)=>b[1]-a[1])[0];
   if(std)panels.forEach(p=>{if(!p.custom&&(Math.round(p.w)+'x'+Math.round(p.h))!==std[0])p.custom=true;});
-  return panels;
+  return{panels,regionCount:roots.length,regionCells};
 }
 function buildFacade(){
   const opt={cols:FC.cols,rows:FC.rows,gap:FC.gap};
-  // outline = the selected shape (rect OR irregular poly); else a default rectangle
-  const sel=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect');
-  let poly;
-  if(sel.length===1){const o=sel[0];poly=o.poly?o.poly.map(p=>({x:p.x,y:p.y})):rectToPoly(o);updS(o.id,FC_WALL);}
-  else{const box={x:-opt.cols*55,y:-opt.rows*60,w:opt.cols*110,h:opt.rows*120};
-    poly=rectToPoly(box);S.shapes.push(mkRect(box.x,box.y,box.w,box.h,FC_WALL));}
+  const isRegionType=f=>/^fac-(b\d+-)?(r\d+|std)$/.test(f||''); // a fillable region type (NOT the uncategorized bucket)
+  // ── Targeted re-grid: if region panels are selected, regenerate ONLY their region(s)
+  //    (same type + material) within each region's current bounding box, leaving the
+  //    rest of the wall untouched. Pick a region by clicking any one of its panels. ──
+  const selFams=new Set([...S.selIds].map(getS).filter(s=>s&&isRegionType(s.fam)).map(s=>s.fam));
+  if(selFams.size){
+    let total=0;
+    for(const fam of selFams){
+      const members=S.shapes.filter(s=>s.type==='rect'&&s.fam===fam&&!s.poly);
+      if(!members.length)continue;
+      const rep=members.find(m=>!m._custom)||members[0],pad=opt.gap/2; // the region's standard look
+      let mnx=Infinity,mny=Infinity,mxx=-Infinity,mxy=-Infinity;
+      for(const m of members){const b=rectBox(m);mnx=Math.min(mnx,b.x);mny=Math.min(mny,b.y);mxx=Math.max(mxx,b.x+b.w);mxy=Math.max(mxy,b.y+b.h);}
+      const box={x:mnx-pad,y:mny-pad,w:(mxx-mnx)+2*pad,h:(mxy-mny)+2*pad};
+      const fcid=fcOf(fam),uncatFam=fcid!=null?fcFam(fcid,'uncat'):'fac-uncat';
+      // drop this region's old panels + any of THIS building's uncategorized panels in the box
+      S.shapes=S.shapes.filter(s=>{if(s.type!=='rect'||!s.fam)return true;
+        if(s.fam===fam)return false;
+        if(s.fam===uncatFam){const b=rectBox(s),cx=b.x+b.w/2,cy=b.y+b.h/2;return!(cx>=box.x&&cx<=box.x+box.w&&cy>=box.y&&cy<=box.y+box.h);}
+        return true;});
+      for(const p of facadeGlazing(rectToPoly(box),opt,[]).panels){
+        // fill uniform standard panels; boundary-cut ones become Uncategorized (own type, not linked here)
+        if(p.custom){const nc=mkRect(p.x,p.y,p.w,p.h,{fill:FC_CUST.fill,stroke:FC_CUST.stroke,roomType:'window'});nc.fam=uncatFam;nc._fcid=fcid;nc._custom=true;S.shapes.push(nc);}
+        else{const nc=mkRect(p.x,p.y,p.w,p.h,{fill:rep.fill,stroke:rep.stroke,roomType:'window'});nc.fam=fam;nc._fcid=fcid;S.shapes.push(nc);}
+        total++;}
+    }
+    S.selIds=new Set();pruneFamMeta();saveH();render();publishActive();if(S.archOn)fetchArch();refreshFam();
+    setStatus(`Re-gridded ${selFams.size} region${selFams.size>1?'s':''} — ${total} panels`);return;
+  }
+  // ── Fill ONE marked area (from "Mark areas"): selected area markers → each becomes its own region type ──
+  const selAreas=[...S.selIds].map(getS).filter(s=>s&&s._area);
+  if(selAreas.length){
+    let total=0;
+    for(const a of selAreas){
+      const poly=a.poly?a.poly.map(p=>({x:p.x,y:p.y})):rectToPoly(a);
+      const fcid=a._fcid!=null?a._fcid:S.fcSeq++;                          // the building this area belongs to
+      let idx=0;while(S.shapes.some(s=>s.fam===fcFam(fcid,'r'+idx)))idx++; // next free region type in that building
+      const fam=fcFam(fcid,'r'+idx),matKey=MAT_CYCLE[idx%MAT_CYCLE.length];
+      if(!S.famMaterial[fam])S.famMaterial[fam]=matKey;
+      delS(a.id);                                                          // consume the marker
+      for(const p of facadeGlazing(poly,opt,[]).panels){                   // no guides → single region
+        if(p.custom){const nc=mkRect(p.x,p.y,p.w,p.h,{fill:FC_CUST.fill,stroke:FC_CUST.stroke,roomType:'window'});nc.fam=fcFam(fcid,'uncat');nc._fcid=fcid;nc._custom=true;S.shapes.push(nc);}
+        else{const nc=mkRect(p.x,p.y,p.w,p.h,{fill:'#F4F4F2',stroke:MATERIALS[matKey].stroke,roomType:'window'});nc.fam=fam;nc._fcid=fcid;S.shapes.push(nc);}
+        total++;}
+    }
+    S.sceneKey='facade';S.predHidden=true;S.candidates=[];
+    S.selIds=new Set();pruneFamMeta();saveH();render();publishActive();if(S.archOn)fetchArch();refreshFam();
+    setStatus(`Filled ${selAreas.length} area${selAreas.length>1?'s':''} — ${total} panels`);return;
+  }
+  // outline(s) = the selected shapes (rect OR irregular poly), EXCLUDING facade panels/areas.
+  // Each becomes an INDEPENDENT building so several facades can coexist on the canvas; with
+  // nothing selected we drop a default rectangle.
+  const sel=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect'&&!s._area&&!(s.fam&&/^fac-/.test(s.fam)));
+  let outlines;
+  if(sel.length)outlines=sel;
+  else if(!S.selIds.size){const box={x:-opt.cols*55,y:-opt.rows*60,w:opt.cols*110,h:opt.rows*120};
+    outlines=[mkRect(box.x,box.y,box.w,box.h,FC_WALL)];S.shapes.push(outlines[0]);}
+  else{setStatus('Select the building outline(s) to generate, or one region panel to re-grid it');return;}
+  // guide lines (any line shape) become cut lines that split an outline into regions
+  const guides=[];
+  for(const s of S.shapes){if(s.type!=='line'||!s.pts||s.pts.length<2)continue;
+    for(let i=0;i<s.pts.length-1;i++)guides.push([s.pts[i],s.pts[i+1]]);}
   S.sceneKey='facade';S.predHidden=true;S.candidates=[];
-  const panels=facadeGlazing(poly,opt);let custom=0;
-  for(const p of panels){const col=p.custom?FC_CUST:FC_STD;if(p.custom)custom++;
-    // default families: all standard panels are one linked type, customs another
-    const nc=mkRect(p.x,p.y,p.w,p.h,{fill:col.fill,stroke:col.stroke,roomType:'window'});
-    nc.fam=p.custom?'fac-custom':'fac-std';S.shapes.push(nc);}
+  let totPanels=0,totCustom=0,totRegions=0,anyMulti=false;
+  for(const o of outlines){
+    const poly=o.poly?o.poly.map(p=>({x:p.x,y:p.y})):rectToPoly(o);
+    if(o._fcid==null)o._fcid=S.fcSeq++;            // stable id for this building (kept across regen)
+    const fcid=o._fcid;updS(o.id,FC_WALL);
+    // clear ONLY the panels / area markers that fall inside THIS outline — other facades untouched
+    S.shapes=S.shapes.filter(s=>{
+      if(s.type!=='rect'||(!s._area&&!(s.fam&&/^fac-/.test(s.fam))))return true;
+      const b=rectBox(s);return!pointInPoly(b.x+b.w/2,b.y+b.h/2,poly);});
+    const{panels,regionCount}=facadeGlazing(poly,opt,guides);
+    const multi=regionCount>1;anyMulti=anyMulti||multi;totRegions+=regionCount;
+    for(const p of panels){
+      let fam,col;
+      if(p.custom){fam=fcFam(fcid,'uncat');col=FC_CUST;totCustom++;}        // boundary-cut → Uncategorized
+      else if(multi){fam=fcFam(fcid,'r'+p.region);                          // each region its own linked type…
+        const matKey=MAT_CYCLE[p.region%MAT_CYCLE.length];                  // …seeded with a distinct material
+        if(!S.famMaterial[fam])S.famMaterial[fam]=matKey;
+        col={fill:'#F4F4F2',stroke:MATERIALS[matKey].stroke};
+      }else{col=FC_STD;fam=fcFam(fcid,'std');}                              // single region → standard glazing
+      const nc=mkRect(p.x,p.y,p.w,p.h,{fill:col.fill,stroke:col.stroke,roomType:'window'});
+      nc.fam=fam;nc._fcid=fcid;if(p.custom)nc._custom=true;S.shapes.push(nc);
+      totPanels++;}
+  }
+  pruneFamMeta(); // drop material/name entries orphaned by regions that shrank or buildings that changed
+  // lift the guide lines above the panels so the red dash-dot dividers stay visible
+  const lines=S.shapes.filter(s=>s.type==='line');
+  if(anyMulti&&lines.length){
+    for(const ln of lines)ln._divider=true;
+    S.shapes=S.shapes.filter(s=>s.type!=='line').concat(lines);
+  }
   S.selIds=new Set();saveH();fitScreen();render();publishActive();if(S.archOn)fetchArch();refreshFam();
-  document.getElementById('s-tool').textContent=`Curtain wall — ${panels.length} panels (${custom} custom)`;
+  document.getElementById('s-tool').textContent=anyMulti
+    ?`Curtain wall — ${totPanels} panels across ${totRegions} regions (${totCustom} to customise)`
+    :`Curtain wall — ${totPanels} panels (${totCustom} custom)`;
+}
+// Mark the guide-divided sub-areas as selectable overlays → pick one, then Generate fills just it.
+function markFacadeAreas(){
+  const opt={cols:FC.cols,rows:FC.rows,gap:FC.gap};
+  const sel=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect'&&!s._area&&!(s.fam&&/^fac-/.test(s.fam)));
+  if(sel.length!==1){setStatus('Select the building outline first, then Mark areas');return;}
+  const o=sel[0],poly=o.poly?o.poly.map(p=>({x:p.x,y:p.y})):rectToPoly(o);
+  if(o._fcid==null)o._fcid=S.fcSeq++;   // tag the building so each filled area joins the right namespace
+  const guides=[];
+  for(const s of S.shapes){if(s.type!=='line'||!s.pts||s.pts.length<2)continue;
+    for(let i=0;i<s.pts.length-1;i++)guides.push([s.pts[i],s.pts[i+1]]);}
+  const{regionCount,regionCells}=facadeGlazing(poly,opt,guides);
+  if(regionCount<2){setStatus('Draw guide lines (L) across the outline first to divide it into areas');return;}
+  // group cells by region, then UNION them into a polygon → the area follows the (possibly
+  // irregular) building boundary instead of snapping to a bounding rectangle
+  const byR={};for(const c of regionCells)(byR[c.region]||(byR[c.region]=[])).push(c);
+  S.shapes=S.shapes.filter(s=>!s._area);   // clear old markers
+  let n=0;
+  for(const r of Object.keys(byR)){
+    const loops=shapesUnionLoops(byR[r].map(c=>({x:c.x,y:c.y,w:c.w,h:c.h})))
+      .filter(l=>l.length>=3).sort((a,b)=>polyAreaAbs(b)-polyAreaAbs(a));
+    if(!loops.length)continue;
+    const a=mkRect(0,0,1,1,{fill:'#1D6AF5',stroke:'#1D6AF5'});
+    a.poly=loops[0].map(p=>({x:p.x,y:p.y}));a._area=true;a._fcid=o._fcid;a.opacity=0.16;a.name='Area '+(++n);S.shapes.push(a);
+  }
+  S.sceneKey='facade';S.selIds=new Set();saveH();render();
+  setStatus(`${n} areas — click one (or several), then Generate to fill just that area`);
 }
 // ── Panel families: link selected panels into one "type" (shared size + color);
 //    resizing/recoloring any member updates the whole family (Revit-like). ──
 function setStatus(t){const el=document.getElementById('s-tool');if(el)el.textContent=t;}
 function linkSelected(){
   const rects=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect'&&!s.poly);
-  if(rects.length<2){setStatus('Select 2+ panels to link as one type');return;}
+  if(rects.length<1){setStatus('Select a panel (or 2+) to make a type');return;}
   const fam='fam'+(S.famSeq++),base=rects[0];
-  for(const s of rects){const cx=s.x+s.w/2,cy=s.y+s.h/2;
+  // 2+ panels → unify their size into one linked type; a single panel just becomes its own type
+  if(rects.length>1)for(const s of rects){const cx=s.x+s.w/2,cy=s.y+s.h/2;
     updS(s.id,{fam,w:base.w,h:base.h,x:cx-base.w/2,y:cy-base.h/2,fill:base.fill,stroke:base.stroke});}
-  saveH();render();refreshFam();setStatus(`Linked ${rects.length} panels — drag one to resize all`);
+  else updS(base.id,{fam});
+  // surface the new type: open the Panel types panel if it's closed
+  const p=document.getElementById('fam-panel');if(p&&!p.classList.contains('show'))toggleFamPanel();
+  saveH();render();refreshFam();
+  setStatus(rects.length>1?`Linked ${rects.length} panels into a type`:'Made a new type — see Panel types');
 }
 function unlinkSelected(){
   const rects=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect'&&s.fam);
   if(!rects.length){setStatus('No linked panels selected');return;}
-  for(const s of rects)updS(s.id,{fam:null});
-  saveH();render();refreshFam();setStatus(`Unlinked ${rects.length} panels`);
+  // Detach into its OWN new type, COPYING the interior edits + material so unlinking never
+  // wipes the panel's composition (it just stops being linked to its old siblings).
+  for(const s of rects){const nf='fam'+(S.famSeq++),old=s.fam;
+    if(S.famDetail[old])S.famDetail[nf]=JSON.parse(JSON.stringify(S.famDetail[old]));
+    if(S.famMaterial[old])S.famMaterial[nf]=S.famMaterial[old];
+    updS(s.id,{fam:nf});}
+  saveH();render();refreshFam();setStatus(`Unlinked ${rects.length} panel${rects.length>1?'s':''} — kept their edits as a new type`);
 }
+// ── Format painter (Bluebeam-style): copy one panel's TYPE onto others by clicking them ──
+let _fmtSrc=null;
+function startFormatPainter(){
+  const id=[...S.selIds][0],s=id!=null?getS(id):null;
+  if(!s||s.type!=='rect'){setStatus('Select one panel first, then Format painter');return;}
+  let fam=s.fam;
+  if(!fam){fam='fam'+(S.famSeq++);updS(s.id,{fam});if(s.material)S.famMaterial[fam]=s.material;} // source becomes a real type
+  _fmtSrc={id:s.id,fam,fill:s.fill,stroke:s.stroke,strokeW:s.strokeW,opacity:s.opacity};
+  hideFloatBar();S.selIds=new Set();cwrap.style.cursor='copy';
+  setStatus('Format painter — click panels to apply this type · Esc to stop');render();
+}
+function applyFormat(id){
+  const src=_fmtSrc;if(!src)return;
+  updS(id,{fam:src.fam,fill:src.fill,stroke:src.stroke,strokeW:src.strokeW,opacity:src.opacity!=null?src.opacity:1});
+  const u=getS(id);if(u){if(u.material)delete u.material;if(u._custom)delete u._custom;} // inherit the type's material; no longer an outlier
+}
+function stopFormatPainter(msg){_fmtSrc=null;cwrap.style.cursor='';if(msg!==false)setStatus(msg||'Format painter off');render();refreshFam();}
 // Propagate a member's SHAPE (size AND polygon/irregular frame) to its family
 // siblings. Each sibling keeps its OWN position — only the shape is shared — and
 // the dragged edge is anchored consistently (bottom-edge drag grows from each top).
@@ -3867,9 +4465,10 @@ function syncFamily(id){
 }
 // every shape sharing a fam with any of `ids`
 function famExpand(ids){
-  const fams=new Set();for(const id of ids){const s=getS(id);if(s&&s.fam)fams.add(s.fam);}
+  // fac-uncat (the Uncategorized bucket) is a label, not a linked move group → don't pull siblings
+  const fams=new Set();for(const id of ids){const s=getS(id);if(s&&s.fam&&!/(^|-)uncat$/.test(s.fam))fams.add(s.fam);}
   const out=new Set(ids);
-  if(fams.size)for(const t of S.shapes)if(fams.has(t.fam))out.add(t.id);
+  if(fams.size)for(const t of S.shapes)if(t.fam&&fams.has(t.fam))out.add(t.id);
   return out;
 }
 
@@ -3879,15 +4478,58 @@ function famGroups(){const g=new Map();
   return g;}
 function famDisplayName(fam){
   if(S.famNames[fam])return S.famNames[fam];
-  if(fam==='fac-std')return 'Standard glazing';
-  if(fam==='fac-custom')return 'Custom (outlier)';
+  if(/(^|-)uncat$/.test(fam)||fam==='fac-custom')return 'Uncategorized';
+  if(/(^|-)std$/.test(fam)&&/^fac-/.test(fam))return 'Standard glazing';
+  const rm=/(^|-)r(\d+)$/.exec(fam);
+  if(rm&&/^fac-/.test(fam)){const mk=S.famMaterial[fam];return(mk&&MATERIALS[mk]&&mk!=='none')?MATERIALS[mk].name:'Region '+(+rm[2]+1);}
   return 'Type '+fam.replace(/^fam/,'');}
 function famHex(c){if(/^#[0-9a-f]{6}$/i.test(c))return c;
   if(/^#[0-9a-f]{3}$/i.test(c))return '#'+c.slice(1).split('').map(x=>x+x).join('');return '#888888';}
+// distinct materials used INSIDE a type's subdivision (so the card shows the real composition, not just the base)
+function famSubMaterials(fam){
+  const tmpl=S.famDetail[fam];if(!tmpl||!tmpl.length)return [];
+  const out=[],add=k=>{if(k&&MATERIALS[k]&&k!=='none'){const nm=MATERIALS[k].name;if(!out.includes(nm))out.push(nm);}};
+  // distinct materials assigned to sub-areas…
+  let override=false,bare=false;
+  for(const d of tmpl){if(d.type!=='rect')continue;if(d.material){override=true;add(d.material);}else bare=true;}
+  // …plus the type's BASE material, which still shows through any un-assigned sub-area
+  if(override&&bare)add(S.famMaterial[fam]);
+  return out;
+}
+// group near-equal values (panel centres → grid columns/rows)
+function clusterVals(vals,tol){
+  const sorted=[...vals].sort((a,b)=>a-b),groups=[];
+  for(const v of sorted){const last=groups[groups.length-1];
+    if(last&&v-last.mean<=tol){last.items.push(v);last.mean=last.items.reduce((a,b)=>a+b,0)/last.items.length;}
+    else groups.push({items:[v],mean:v});}
+  return groups.map(g=>g.mean);
+}
+function nearestIdx(arr,v){let bi=0,bd=Infinity;for(let i=0;i<arr.length;i++){const d=Math.abs(arr[i]-v);if(d<bd){bd=d;bi=i;}}return bi;}
+// re-lay a linked type's panels on their existing grid with a new edge-to-edge gap
+function famSetSpacing(fam,gap){
+  const std=(famGroups().get(fam)||[]).filter(m=>!m._custom);if(std.length<2)return;
+  const w=std[0].w,h=std[0].h;
+  const cols=clusterVals(std.map(m=>m.x+m.w/2),Math.max(2,w*0.5));
+  const rows=clusterVals(std.map(m=>m.y+m.h/2),Math.max(2,h*0.5));
+  const minX=Math.min(...std.map(m=>m.x)),minY=Math.min(...std.map(m=>m.y));
+  for(const m of std){const ci=nearestIdx(cols,m.x+m.w/2),ri=nearestIdx(rows,m.y+m.h/2);
+    const nx=minX+ci*(w+gap),ny=minY+ri*(h+gap),dx=nx-m.x,dy=ny-m.y;
+    if(m.poly)updS(m.id,{x:nx,y:ny,poly:m.poly.map(p=>({x:p.x+dx,y:p.y+dy}))});
+    else updS(m.id,{x:nx,y:ny});}
+  render();
+}
+function famCurrentGap(members){
+  const std=members.filter(m=>!m._custom);if(std.length<2)return 0;
+  const w=std[0].w,cols=clusterVals(std.map(m=>m.x+m.w/2),Math.max(2,w*0.5));
+  return cols.length>=2?Math.max(0,Math.round(cols[1]-cols[0]-w)):0;
+}
 function famEdit(fam,prop,inp){
   const members=famGroups().get(fam);if(!members)return;
-  if(prop==='fill'||prop==='stroke'){for(const m of members)updS(m.id,{[prop]:inp.value});}
-  else if(prop==='strokeW'){const v=Math.max(0,Math.min(8,parseFloat(inp.value)||0));for(const m of members)updS(m.id,{strokeW:v});}
+  if(prop==='material'){const k=inp.value;if(k==='none')delete S.famMaterial[fam];else S.famMaterial[fam]=k;render();return;}
+  if(prop==='gap'){famSetSpacing(fam,Math.max(0,Math.min(200,parseFloat(inp.value)||0)));return;}
+  const paint=members.filter(m=>!m._custom);                  // keep the orange outlier highlight — recolour only standard panels
+  if(prop==='fill'||prop==='stroke'){for(const m of paint)updS(m.id,{[prop]:inp.value});}
+  else if(prop==='strokeW'){const v=Math.max(0,Math.min(8,parseFloat(inp.value)||0));for(const m of paint)updS(m.id,{strokeW:v});}
   else if(prop==='w'||prop==='h'){const v=Math.max(4,parseFloat(inp.value)||4);
     for(const m of members){const b=rectBox(m),nw=prop==='w'?v:b.w,nh=prop==='h'?v:b.h,nx=b.x+b.w/2-nw/2,ny=b.y+b.h/2-nh/2;
       if(m.poly)updS(m.id,{x:nx,y:ny,w:nw,h:nh,poly:m.poly.map(p=>({x:nx+((p.x-b.x)/(b.w||1))*nw,y:ny+((p.y-b.y)/(b.h||1))*nh}))});
@@ -3897,40 +4539,61 @@ function famEdit(fam,prop,inp){
 function buildFamPanel(){
   const body=document.getElementById('fam-body');if(!body)return;
   const groups=famGroups();
-  if(!groups.size){body.innerHTML='<div class="fam-empty">No panel types yet. Generate a facade, or select panels on the canvas and press <b>K</b> to link them into a type.</div>';return;}
+  if(!groups.size){body.innerHTML='<div class="fam-empty">No panel types yet. Generate a facade, or select a panel and use the <b>Format painter</b> on the floating bar to stamp its type onto others.</div>';return;}
   body.innerHTML='';
   for(const[fam,members]of groups){
-    const rep=members[0],fill=rep.fill||'#DBEAFE',stroke=rep.stroke||'#64748B',sw=rep.strokeW||1.5;
-    const card=document.createElement('div');card.className='fam-card';
+    const rep=members.find(m=>!m._custom)||members[0],fill=rep.fill||'#DBEAFE',stroke=rep.stroke||'#64748B',sw=rep.strokeW||1.5;
+    const open=_famOpen.has(fam);
+    const subs=famSubMaterials(fam);            // distinct materials inside the subdivision (if any)
+    const card=document.createElement('div');card.className='fam-card'+(open?' open':'');
     card.innerHTML=
-      `<div class="fam-top"><span class="fam-sw" style="background:${fill};border-color:${stroke}"></span>`+
+      `<div class="fam-top"><span class="fam-caret">${open?'▾':'▸'}</span><span class="fam-sw" style="background:${fill};border-color:${stroke}"></span>`+
       `<input class="fam-name" value="${famDisplayName(fam).replace(/"/g,'&quot;')}"/>`+
+      (subs.length?`<span class="fam-comp-badge" title="${subs.join(', ')}">⊞${subs.length}</span>`:'')+
       `<span class="fam-cnt">${members.length}×</span><button class="fam-pick">select</button></div>`+
+      (open?
+      (subs.length?`<div class="fam-comp">Composition: ${subs.join(' · ')}<span> — double-click a panel to edit</span></div>`:'')+
+      `<label class="fam-fld fam-fld-full">${subs.length?'Base material':'Material'}`+
+        `<select class="fam-mat" data-p="material">`+
+          Object.entries(MATERIALS).map(([k,m])=>`<option value="${k}"${(S.famMaterial[fam]||'none')===k?' selected':''}>${m.name}</option>`).join('')+
+        `</select></label>`+
       `<div class="fam-grid">`+
         `<label class="fam-fld">Fill<input type="color" data-p="fill" value="${famHex(fill)}"></label>`+
         `<label class="fam-fld">Border<input type="color" data-p="stroke" value="${famHex(stroke)}"></label>`+
         `<label class="fam-fld">Border w<input type="number" data-p="strokeW" min="0" max="8" step="0.5" value="${sw}"></label>`+
-        `<label class="fam-fld"></label>`+
+        `<label class="fam-fld">Spacing<input type="number" data-p="gap" min="0" step="1" value="${famCurrentGap(members)}"></label>`+
         `<label class="fam-fld">Width<input type="number" data-p="w" min="4" step="1" value="${Math.round(rep.w||0)}"></label>`+
         `<label class="fam-fld">Height<input type="number" data-p="h" min="4" step="1" value="${Math.round(rep.h||0)}"></label>`+
-      `</div>`;
+      `</div>`:'');
+    // click the header (caret / swatch / empty area) toggles the card open/closed — Rhino-layer style
+    card.querySelector('.fam-top').addEventListener('click',e=>{
+      if(e.target.closest('.fam-name')||e.target.closest('.fam-pick'))return;
+      if(_famOpen.has(fam))_famOpen.delete(fam);else _famOpen.add(fam);buildFamPanel();});
     card.querySelector('.fam-name').addEventListener('change',e=>{S.famNames[fam]=e.target.value;});
-    card.querySelector('.fam-pick').addEventListener('click',()=>{S.selIds=new Set(members.map(m=>m.id));render();});
-    card.querySelectorAll('input[data-p]').forEach(inp=>{
+    card.querySelector('.fam-pick').addEventListener('click',e=>{e.stopPropagation();S.selIds=new Set(members.map(m=>m.id));render();});
+    card.querySelectorAll('[data-p]').forEach(inp=>{
       inp.addEventListener('input',()=>famEdit(fam,inp.dataset.p,inp));
-      inp.addEventListener('change',()=>saveH());});
+      inp.addEventListener('change',()=>{famEdit(fam,inp.dataset.p,inp);saveH();});});
     body.appendChild(card);
   }
 }
+const _famOpen=new Set(); // which type cards are expanded (collapsed list = no scrolling)
 function refreshFam(){const p=document.getElementById('fam-panel');
   if(p&&p.classList.contains('show')&&!p.contains(document.activeElement))buildFamPanel();}
 function toggleFamPanel(){const p=document.getElementById('fam-panel');
   const open=p.classList.toggle('show');
   const ft=document.getElementById('fc-types');if(ft)ft.classList.toggle('on',open);
   if(open)buildFamPanel();}
-// "Panel types" now lives inside the Facade panel (click Facade → Panel types)
-document.getElementById('fc-types').addEventListener('click',toggleFamPanel);
+function openFamPanel(){const p=document.getElementById('fam-panel');if(!p.classList.contains('show')){p.classList.add('show');const ft=document.getElementById('fc-types');if(ft)ft.classList.add('on');buildFamPanel();}}
+// Panel types open from the Facade-tools popup (bottom-left) or auto-open with the Facade panel
 document.getElementById('fam-close').addEventListener('click',toggleFamPanel);
+document.getElementById('fam-collapse').addEventListener('click',e=>{e.stopPropagation();
+  const p=document.getElementById('fam-panel'),c=p.classList.toggle('collapsed');
+  document.getElementById('fam-collapse').textContent=c?'⟨':'⟩';});
+// clicking the collapsed strip re-opens it
+document.getElementById('fam-panel').addEventListener('click',e=>{
+  const p=document.getElementById('fam-panel');
+  if(p.classList.contains('collapsed')&&!e.target.closest('#fam-collapse')){p.classList.remove('collapsed');document.getElementById('fam-collapse').textContent='⟩';}});
 document.getElementById('fam-panel').addEventListener('mousedown',e=>e.stopPropagation());
 
 // ── Panel interior editor: double-click a panel → draw its sub-shapes; on Done
@@ -3949,9 +4612,10 @@ function enterPanelEdit(id){
     let s;
     if(d.type==='line'){s=mkLine(d.pts.map(p=>({x:box.x+p.u*box.w,y:box.y+p.v*box.h})));s.stroke=d.stroke;}
     else if(d.type==='poly'){s=mkRect(0,0,1,1,{fill:d.fill,stroke:d.stroke});s.poly=d.pts.map(p=>({x:box.x+p.u*box.w,y:box.y+p.v*box.h}));}
-    else{s=mkRect(box.x+d.u*box.w,box.y+d.v*box.h,d.uw*box.w,d.vh*box.h,{fill:d.fill,stroke:d.stroke});}
-    s.strokeW=d.strokeW||1.5;s._detail=true;S.shapes.push(s);
+    else{s=mkRect(box.x+d.u*box.w,box.y+d.v*box.h,d.uw*box.w,d.vh*box.h,{fill:d.fill,stroke:d.stroke});if(d.material)s.material=d.material;}
+    s.strokeW=d.strokeW||1.5;if(d.opacity!=null)s.opacity=d.opacity;s._detail=true;S.shapes.push(s);
   }
+  S.tool='rect';updateCursor&&updateCursor();   // ready to draw subdivisions immediately (R also works)
   document.getElementById('panel-edit-bar').classList.add('show');
   document.getElementById('peb-label').textContent='Editing panel type: '+famDisplayName(base.fam);
   zoomToBox(box);render();return true;
@@ -3960,9 +4624,9 @@ function exitPanelEdit(){
   if(!S.panelEdit)return;const{fam,box}=S.panelEdit;
   const tmpl=[];
   for(const s of S.shapes.filter(s=>s._detail)){
-    if(s.poly)tmpl.push({type:'poly',pts:s.poly.map(p=>({u:(p.x-box.x)/box.w,v:(p.y-box.y)/box.h})),fill:s.fill,stroke:s.stroke,strokeW:s.strokeW});
-    else if(s.type==='rect')tmpl.push({type:'rect',u:(s.x-box.x)/box.w,v:(s.y-box.y)/box.h,uw:s.w/box.w,vh:s.h/box.h,fill:s.fill,stroke:s.stroke,strokeW:s.strokeW});
-    else if(s.type==='line')tmpl.push({type:'line',pts:s.pts.map(p=>({u:(p.x-box.x)/box.w,v:(p.y-box.y)/box.h})),stroke:s.stroke,strokeW:s.strokeW});
+    if(s.poly)tmpl.push({type:'poly',pts:s.poly.map(p=>({u:(p.x-box.x)/box.w,v:(p.y-box.y)/box.h})),fill:s.fill,stroke:s.stroke,strokeW:s.strokeW,opacity:s.opacity});
+    else if(s.type==='rect')tmpl.push({type:'rect',u:(s.x-box.x)/box.w,v:(s.y-box.y)/box.h,uw:s.w/box.w,vh:s.h/box.h,fill:s.fill,stroke:s.stroke,strokeW:s.strokeW,material:s.material,opacity:s.opacity});
+    else if(s.type==='line')tmpl.push({type:'line',pts:s.pts.map(p=>({u:(p.x-box.x)/box.w,v:(p.y-box.y)/box.h})),stroke:s.stroke,strokeW:s.strokeW,opacity:s.opacity});
   }
   S.famDetail[fam]=tmpl;
   S.shapes=S.shapes.filter(s=>!s._detail);
@@ -3978,16 +4642,43 @@ function renderPanelDetails(){
     if(S.panelEdit&&s.fam===S.panelEdit.fam)continue; // edited family is shown via the materialized shapes
     const tmpl=S.famDetail[s.fam];if(!tmpl||!tmpl.length)continue;
     const b=rectBox(s);
+    // decoration is mapped to the panel's bbox; for a merged (poly) panel, clip it to the
+    // actual outline so interior subdivisions don't spill past the irregular edges
+    const gd=ns('g');
+    if(s.poly){const cid='pclip-'+s.id;const cp=ns('clipPath',{id:cid});
+      cp.appendChild(ns('polygon',{points:s.poly.map(p=>`${p.x},${p.y}`).join(' ')}));
+      lShapes.appendChild(cp);gd.setAttribute('clip-path',`url(#${cid})`);}
     for(const d of tmpl){
-      const sw=(d.strokeW||1.5)*inv,sc=d.stroke||'#64748B';
+      const sw=(d.strokeW||1.5)*inv,sc=d.stroke||'#64748B',op=(d.opacity!=null&&d.opacity<1)?{opacity:d.opacity}:{};
       if(d.type==='line'||d.type==='poly'){const pts=d.pts.map(p=>`${b.x+p.u*b.w},${b.y+p.v*b.h}`).join(' ');
-        lShapes.appendChild(ns(d.type==='poly'?'polygon':'polyline',{points:pts,fill:'none',stroke:sc,'stroke-width':sw,'pointer-events':'none'}));}
-      else lShapes.appendChild(ns('rect',{x:b.x+d.u*b.w,y:b.y+d.v*b.h,width:d.uw*b.w,height:d.vh*b.h,fill:'none',stroke:sc,'stroke-width':sw,'pointer-events':'none'}));
+        gd.appendChild(ns(d.type==='poly'?'polygon':'polyline',{points:pts,fill:'none',stroke:sc,'stroke-width':sw,'pointer-events':'none',...op}));}
+      else{const rx=b.x+d.u*b.w,ry=b.y+d.v*b.h,rw=d.uw*b.w,rh=d.vh*b.h;
+        const m=(d.material&&MATERIALS[d.material]&&MATERIALS[d.material].hatch)?MATERIALS[d.material]:null;
+        if(m){gd.appendChild(ns('rect',{x:rx,y:ry,width:rw,height:rh,fill:hexToRgba(d.fill||'#F2F2EF',.82),stroke:'none','pointer-events':'none',...op}));
+          gd.appendChild(ns('rect',{x:rx,y:ry,width:rw,height:rh,fill:`url(#${m.hatch})`,stroke:'none','pointer-events':'none',...op}));}
+        gd.appendChild(ns('rect',{x:rx,y:ry,width:rw,height:rh,fill:'none',stroke:sc,'stroke-width':sw,'pointer-events':'none',...op}));}
     }
+    lShapes.appendChild(gd);
   }
 }
+// reflect / apply per-sub-area material while editing a panel's interior
+function syncPanelEditBar(){
+  const wrap=document.getElementById('peb-mat-wrap'),selEl=document.getElementById('peb-mat');if(!wrap||!selEl)return;
+  const sel=[...S.selIds].map(getS).filter(s=>s&&s._detail&&s.type==='rect'&&!s.poly);
+  if(S.panelEdit&&sel.length){wrap.style.display='flex';selEl.value=sel[0].material||'none';}
+  else wrap.style.display='none';
+}
+(function initPebMat(){
+  const selEl=document.getElementById('peb-mat');if(!selEl)return;
+  selEl.innerHTML=Object.entries(MATERIALS).map(([k,m])=>`<option value="${k}">${m.name}</option>`).join('');
+  selEl.addEventListener('change',()=>{
+    const k=selEl.value,sel=[...S.selIds].map(getS).filter(s=>s&&s._detail&&s.type==='rect'&&!s.poly);
+    for(const s of sel){if(k==='none')delete s.material;else s.material=k;}
+    saveH();render();
+  });
+})();
 document.getElementById('peb-done').addEventListener('click',exitPanelEdit);
-function openFacadeBox(){document.getElementById('facade-box').classList.add('show');document.getElementById('btn-facade').classList.add('on');}
+function openFacadeBox(){document.getElementById('facade-box').classList.add('show');document.getElementById('btn-facade').classList.add('on');openFamPanel();}
 function closeFacadeBox(){document.getElementById('facade-box').classList.remove('show');document.getElementById('btn-facade').classList.remove('on');}
 document.getElementById('btn-facade').addEventListener('click',()=>{
   document.getElementById('facade-box').classList.contains('show')?closeFacadeBox():openFacadeBox();
@@ -4000,6 +4691,24 @@ document.querySelectorAll('#facade-box .fc-step button').forEach(b=>b.addEventLi
 }));
 document.getElementById('fc-gen').addEventListener('click',()=>{buildFacade();closeFacadeBox();});
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('facade-box').classList.contains('show'))closeFacadeBox();});
+
+// ── Facade tools popup (bottom-left): Divider line · Mark areas · Panel types ──
+const _fctMenu=document.getElementById('fctools-menu');
+function closeFctMenu(){_fctMenu.classList.remove('show');document.getElementById('btn-fctools').classList.remove('on');}
+document.getElementById('btn-fctools').addEventListener('click',e=>{
+  e.stopPropagation();const open=_fctMenu.classList.toggle('show');
+  document.getElementById('btn-fctools').classList.toggle('on',open);});
+_fctMenu.addEventListener('mousedown',e=>e.stopPropagation());
+document.getElementById('fctm-divider').addEventListener('click',()=>{
+  if(S.tool==='line'){setTool('rect');setStatus('Select / draw');}else setTool('line');closeFctMenu();});
+document.getElementById('fctm-areas').addEventListener('click',()=>{markFacadeAreas();closeFctMenu();});
+document.getElementById('fctm-types').addEventListener('click',()=>{toggleFamPanel();closeFctMenu();});
+document.getElementById('fctm-shadow').addEventListener('click',()=>{
+  S.fcShadow=!S.fcShadow;
+  document.getElementById('fctm-shadow-state').textContent=S.fcShadow?'on':'off';
+  render();setStatus(`Elevation look ${S.fcShadow?'on — B&W + reveal shadows + lineweights':'off'}`);closeFctMenu();});
+document.getElementById('fctm-metrics').addEventListener('click',()=>{toggleMetrics();closeFctMenu();});
+window.addEventListener('mousedown',e=>{if(_fctMenu.classList.contains('show')&&!_fctMenu.contains(e.target)&&!e.target.closest('#btn-fctools'))closeFctMenu();});
 
 // ─────────────────────────────────────────
 //  GENERATE (diffusion) — run the trained DDPM, drop a refined apartment
