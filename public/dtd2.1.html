@@ -3937,7 +3937,7 @@ const EXPLAIN={
     };
     S.fcShadow=false; // start in colour; reveal the elevation look at the end
     // finer grid + bigger gap so panels are smaller and sit well inside the boundary (not packed edge-to-edge)
-    this._fc0={cols:FC.cols,rows:FC.rows,gap:FC.gap};FC.cols=9;FC.rows=8;FC.gap=22;
+    this._fc0={cols:FC.cols,rows:FC.rows,gap:FC.gap};FC.cols=7;FC.rows=6;FC.gap=20;
     if(!document.getElementById('metrics-box').classList.contains('show'))toggleMetrics();
     if(!await step('<b>Facade demo</b> — author a curtain wall from scratch: boundary → divide → generate → performance → assemblies → elevation.',1700))return;
     // 1 · irregular building boundary (so boundary-cut "Uncategorized" panels appear)
@@ -3947,14 +3947,16 @@ const EXPLAIN={
     S.shapes=[outline];S.selIds=new Set([outline.id]);S.sceneKey='facade';
     saveH();fitScreen();render();
     if(!await step('<b>1 · Boundary</b> — draw an irregular building outline (here an L-shape). Cells the grid can’t tile cleanly at the step become custom panels.',2300))return;
-    // 2 · guide lines → cut into more zones (2 horizontal + 1 vertical → several regions)
-    const cy1=Y+H*0.34,cy2=Y+H*0.62,cxv=X+W*0.42;
+    // 2 · guide lines → a deliberate, varied division: a tall left bay (unsplit), the right
+    //     split into two bands. Mixing a vertical cut with a right-only horizontal cut so not
+    //     every zone is just "halved horizontally".
+    const vx=X+W*0.42,hy=Y+H*0.52,vx2=X+W*0.72;
     S.shapes.push(
-      mkLine([{x:X-20,y:cy1},{x:X+W+20,y:cy1}]),
-      mkLine([{x:X-20,y:cy2},{x:X+W+20,y:cy2}]),
-      mkLine([{x:cxv,y:Y-20},{x:cxv,y:Y+H+20}]));
+      mkLine([{x:vx,y:Y-20},{x:vx,y:Y+H+20}]),     // full-height vertical → tall left bay (unsplit)
+      mkLine([{x:vx,y:hy},{x:X+W+20,y:hy}]),         // horizontal on the right only → upper / lower bands
+      mkLine([{x:vx2,y:Y-20},{x:vx2,y:hy}]));        // vertical on the right-upper only → two bays there
     render();
-    if(!await step('<b>2 · Divide</b> — guide lines (the <b>L</b> tool) cut the outline into several zones — each becomes its own panel type.',2100))return;
+    if(!await step('<b>2 · Divide</b> — guide lines (the <b>L</b> tool) carve the outline into varied zones: a tall left bay, the right split into bands. Each becomes its own type.',2100))return;
     // 3 · mark areas
     if(typeof markFacadeAreas==='function'){S.selIds=new Set([outline.id]);markFacadeAreas();
       if(!await step('<b>3 · Mark areas</b> — each guide-bounded zone becomes a region you can fill independently.',1900))return;}
