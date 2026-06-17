@@ -3926,69 +3926,86 @@ const EXPLAIN={
     const setv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};
     const fire=(id,ev)=>{const e=document.getElementById(id);if(e)e.dispatchEvent(new Event(ev,{bubbles:true}));};
     const regFams=()=>{const m={};for(const s of S.shapes)if(isFacadePanel(s)&&!s._custom&&s.fam)(m[s.fam]||(m[s.fam]=[])).push(s);return m;};
+    const members=fam=>S.shapes.filter(s=>s.fam===fam);
+    // a curtain-wall ASSEMBLY = a glazing pane (+ optional accent band) over a base material
+    const compose=(fam,base,accent)=>{
+      for(const s of members(fam))delete s.material;       // drop any per-panel override so the base shows
+      S.famMaterial[fam]=base;
+      const t=[{type:'rect',u:0.07,v:0.06,uw:0.86,vh:0.55,material:'glass',fill:'#DCEAF2',stroke:'#5C93AE',strokeW:1}];
+      if(accent)t.push({type:'rect',u:0.07,v:0.67,uw:0.86,vh:0.27,material:accent,fill:'#ECEBE7',stroke:(MATERIALS[accent]||{}).stroke||'#888',strokeW:1});
+      S.famDetail[fam]=t;
+    };
     S.fcShadow=false; // start in colour; reveal the elevation look at the end
     if(!document.getElementById('metrics-box').classList.contains('show'))toggleMetrics();
-    if(!await step('<b>Facade demo</b> — author a curtain wall from scratch: boundary → divide → generate → edit types → hit a performance target → elevation.',1700))return;
+    if(!await step('<b>Facade demo</b> — author a curtain wall from scratch: boundary → divide → generate → performance → assemblies → elevation.',1700))return;
     // 1 · irregular building boundary (so boundary-cut "Uncategorized" panels appear)
     const W=1200,H=820,X=-W/2,Y=-H/2;
     const outline=mkRect(X,Y,W,H,FC_WALL);
     outline.poly=[{x:X,y:Y},{x:X+W,y:Y},{x:X+W,y:Y+H*0.58},{x:X+W*0.58,y:Y+H*0.58},{x:X+W*0.58,y:Y+H},{x:X,y:Y+H}];
     S.shapes=[outline];S.selIds=new Set([outline.id]);S.sceneKey='facade';
     saveH();fitScreen();render();
-    if(!await step('<b>1 · Boundary</b> — draw an irregular building outline (here an L-shape). The grid can’t tile the stepped edge cleanly, so those cells become custom panels.',2300))return;
+    if(!await step('<b>1 · Boundary</b> — draw an irregular building outline (here an L-shape). Cells the grid can’t tile cleanly at the step become custom panels.',2300))return;
     // 2 · guide lines → cut into zones
     const cy1=Y+H*0.32,cy2=Y+H*0.58;
     S.shapes.push(mkLine([{x:X-20,y:cy1},{x:X+W+20,y:cy1}]),mkLine([{x:X-20,y:cy2},{x:X+W+20,y:cy2}]));render();
-    if(!await step('<b>2 · Divide</b> — drop guide lines (the <b>L</b> tool) across the outline; they cut it into stacked zones.',2200))return;
+    if(!await step('<b>2 · Divide</b> — guide lines (the <b>L</b> tool) cut the outline into stacked zones.',2100))return;
     // 3 · mark areas
     if(typeof markFacadeAreas==='function'){S.selIds=new Set([outline.id]);markFacadeAreas();
-      if(!await step('<b>3 · Mark areas</b> — each guide-bounded zone becomes a selectable region you can fill independently.',2000))return;}
+      if(!await step('<b>3 · Mark areas</b> — each guide-bounded zone becomes a region you can fill independently.',1900))return;}
     // 4 · generate
     S.selIds=new Set([outline.id]);buildFacade();
     const mg=facadeMetrics();
-    if(!await step(`<b>4 · Generate</b> — fill the zones with a glazing grid; each region is its own linked <b>type</b>. ${mg.nP} panels${mg.nC?` · <b>${mg.nC} Uncategorized</b> (boundary-cut, to fabricate)`:''} · WWR ${(mg.WWR*100).toFixed(0)}%.`,2700))return;
-    // 5 · link / unlink types
+    if(!await step(`<b>4 · Generate</b> — fill the zones with a glazing grid; each region is its own linked <b>type</b>. ${mg.nP} panels${mg.nC?` · <b>${mg.nC} Uncategorized</b> (boundary-cut)`:''}.`,2400))return;
+    // 5 · link / unlink types (restore the original region fams so no orphan types linger)
     {const f=regFams(),keys=Object.keys(f);
      if(keys.length>=2&&typeof linkSelected==='function'){
-       S.selIds=new Set([f[keys[0]][0].id,f[keys[1]][0].id]);linkSelected();
-       if(!await step('<b>5 · Link</b> — select panels from different zones and link them into one <b>type</b> — now they resize / recolour together.',2200))return;
-       if(typeof unlinkSelected==='function'){unlinkSelected();
-         if(!await step('…and <b>unlink</b> to make them independent again.',1500))return;}}}
-    // 6 · zoom in to edit a type's interior — pick the type with the MOST panels so the
-    //     interior change is visibly shared across many linked panels
+       const aId=f[keys[0]][0].id,bId=f[keys[1]][0].id,fa=getS(aId).fam,fb=getS(bId).fam;
+       S.selIds=new Set([aId,bId]);linkSelected();render();
+       if(!await step('<b>5 · Link</b> — link panels from different zones into one <b>type</b> — they resize / recolour together…',2000))return;
+       const A=getS(aId),B=getS(bId);if(A)A.fam=fa;if(B)B.fam=fb;S.selIds=new Set();saveH();render();
+       if(!await step('…and <b>unlink</b> back to independent.',1400))return;}}
+    // 6 · match metrics (solver) — clean spandrel, not raw brick
+    setv('mx-fit','closest');setv('mx-span','concrete');setv('mx-layout','floor');setv('mx-obj','wwr');fire('mx-obj','change');
+    setv('mx-wwr','45');fire('mx-wwr','input');
+    const ms=facadeMetrics();
+    if(!await step(`<b>6 · Match metrics</b> — set a target (WWR 45%); the solver flips panels glazing↔spandrel along the floor lines to hit it — now <b>${(ms.WWR*100).toFixed(0)}%</b>.`,2500))return;
+    // 7 · zoom-edit a type → compose a "glazing + mesh on concrete" unit (shows propagation)
     {const f=regFams();let editFam=null,n=0;for(const k in f)if(f[k].length>n){n=f[k].length;editFam=k;}
      const p=editFam&&f[editFam][0];
      if(p&&typeof enterPanelEdit==='function'){
        enterPanelEdit(p.id);
-       if(!await step(`<b>6 · Edit a type</b> — double-click a panel to zoom into its interior. This type has <b>${n}</b> linked panels — the interior you draw applies to all of them.`,2600))return;
+       if(!await step(`<b>7 · Edit a type</b> — double-click to zoom into a panel’s interior. This type has <b>${n}</b> linked panels; the assembly applies to all of them.`,2500))return;
        const box=S.panelEdit&&S.panelEdit.box;
        if(box){
-         const sub=mkRect(box.x+box.w*0.06,box.y+box.h*0.62,box.w*0.88,box.h*0.30,{fill:'#E7E5E0',stroke:'#9B8775'});sub.material='brick';sub._detail=true;S.shapes.push(sub);
-         const ml=mkLine([{x:box.x+box.w*0.5,y:box.y+box.h*0.05},{x:box.x+box.w*0.5,y:box.y+box.h*0.55}]);ml._detail=true;S.shapes.push(ml);render();
-         if(!await step('Adding a brick spandrel band + a centre mullion (size · position · material · visuals)…',1900))return;}
+         S.famMaterial[editFam]='concrete';
+         const g=mkRect(box.x+box.w*0.07,box.y+box.h*0.06,box.w*0.86,box.h*0.55,{fill:'#DCEAF2',stroke:'#5C93AE'});g.material='glass';g._detail=true;S.shapes.push(g);
+         const me=mkRect(box.x+box.w*0.07,box.y+box.h*0.67,box.w*0.86,box.h*0.27,{fill:'#ECEBE7',stroke:'#82847F'});me.material='mesh';me._detail=true;S.shapes.push(me);
+         render();
+         if(!await step('Compose a <b>glazing + mesh on concrete</b> unit — a glazing pane over a concrete frame with a mesh band.',2200))return;}
        if(typeof exitPanelEdit==='function')exitPanelEdit();
+       for(const s of members(editFam))delete s.material;   // let the concrete base show
        fitScreen();render();
-       if(!await step(`Exit — all <b>${n}</b> panels of the type pick up that interior at once.`,2500))return;}}
-    // 7 · group-edit a whole type — material, resize AND move every member together
+       if(!await step(`Exit — all <b>${n}</b> panels of the type take the assembly at once.`,2200))return;}}
+    // 8 · give the other types real assemblies too
+    {const keys=Object.keys(regFams()).filter(k=>/^fac-/.test(k)),presets=[['brick','louver'],['metal',null],['stone','metal']];
+     let i=0;for(const k of keys){if((S.famDetail[k]||[]).length)continue; // skip the one composed in step 7
+       const a=presets[i%presets.length];compose(k,a[0],a[1]);i++;}
+     render();
+     if(!await step('<b>8 · Assemblies</b> — the other types get their own units: <b>glazing + louver on brick</b>, glazing on metal. Each is one editable, linked type.',2400))return;}
+    // 9 · group edit — resize + move the whole type, then revert (so nothing spills outside the boundary)
     {const f=regFams();let gFam=null,n=0;for(const k in f)if(f[k].length>n){n=f[k].length;gFam=k;}
      if(gFam&&typeof famEdit==='function'){
        const rep=f[gFam][0],w0=Math.round(rep.w),h0=Math.round(rep.h);
-       famEdit(gFam,'material',{value:'louver'});
-       if(!await step(`<b>7 · Group edit</b> — change the type’s <b>material</b> and all ${n} linked panels update at once.`,2200))return;
-       famEdit(gFam,'w',{value:Math.round(w0*1.18)});famEdit(gFam,'h',{value:Math.round(h0*0.8)});
-       if(!await step('<b>Resize</b> the type — every panel takes the new size together.',2200))return;
-       for(const s of S.shapes)if(s.fam===gFam){if(s.poly)updS(s.id,{poly:s.poly.map(q=>({x:q.x+40,y:q.y}))});else updS(s.id,{x:s.x+40});}
-       render();
-       if(!await step('<b>Move</b> the type — the linked panels relocate as one group.',2100))return;}}
-    // 8 · match a performance target (solver)
-    setv('mx-fit','closest');setv('mx-span','brick');setv('mx-layout','floor');setv('mx-obj','wwr');fire('mx-obj','change');
-    setv('mx-wwr','40');fire('mx-wwr','input');
-    const ms=facadeMetrics();
-    if(!await step(`<b>8 · Match metrics</b> — set a target (WWR 40%); the solver flips panels glazing↔spandrel along the floor lines to hit it — now <b>${(ms.WWR*100).toFixed(0)}%</b>.`,2600))return;
-    // 9 · elevation look
-    S.fcShadow=true;const st=document.getElementById('fctm-shadow-state');if(st)st.textContent='on';render();
-    if(!await step('<b>9 · Elevation</b> — black &amp; white, lineweight hierarchy, recessed-reveal shadows, ground line + building boundary: a presentable elevation.',2600))return;
-    await step('<b>Done.</b> Boundary → divide → generate → link &amp; edit types → match a target → elevation — all parametric and scored live. Keep editing; the panel keeps updating.',100);
+       famEdit(gFam,'w',{value:Math.round(w0*1.16)});famEdit(gFam,'h',{value:Math.round(h0*0.84)});
+       if(!await step(`<b>9 · Group edit</b> — resize the type: all ${n} panels change size together.`,2000))return;
+       for(const s of members(gFam)){if(s.poly)updS(s.id,{poly:s.poly.map(q=>({x:q.x+40,y:q.y}))});else updS(s.id,{x:s.x+40});}render();
+       if(!await step('Move the type — linked panels relocate as one…',1800))return;
+       for(const s of members(gFam)){if(s.poly)updS(s.id,{poly:s.poly.map(q=>({x:q.x-40,y:q.y}))});else updS(s.id,{x:s.x-40});}
+       famEdit(gFam,'w',{value:w0});famEdit(gFam,'h',{value:h0});render();}}
+    // 10 · elevation look
+    S.fcShadow=true;const st=document.getElementById('fctm-shadow-state');if(st)st.textContent='on';fitScreen();render();
+    if(!await step('<b>10 · Elevation</b> — black &amp; white, lineweight hierarchy, recessed-reveal shadows, ground line + boundary: a presentable elevation.',2600))return;
+    await step('<b>Done.</b> Boundary → divide → generate → match a target → compose assemblies → edit types → elevation — parametric and scored live.',100);
   },
   _end(){
     this.demoOn=false;const btn=document.getElementById('btn-xp-demo');
