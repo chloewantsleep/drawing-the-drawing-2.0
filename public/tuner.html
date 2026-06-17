@@ -534,6 +534,11 @@ function predict(){
 }
 function renderPrediction(){
   if(!$('pred-list'))return;
+  if(scene==='facade'){ // facades don't use next-room prediction
+    if($('pred-rooms'))$('pred-rooms').innerHTML='';
+    $('pred-list').innerHTML='<div style="font-size:11px;color:var(--muted)">Facade has no next-room prediction — it’s a panel grid, not room adjacency.</div>';
+    return;
+  }
   const {existing,ranked}=predict();
   const rooms=$('pred-rooms');rooms.innerHTML='';
   existing.forEach(t=>{
@@ -781,6 +786,12 @@ function bbModel(){
 }
 function buildBubble(opts){
   opts=opts||{};if(!CFG||!CFG.scenes[scene])return;
+  if(scene==='facade'){ // a facade is a panel grid, not a room-adjacency graph — no bubble diagram
+    const svg=$('bb-svg');if(svg){const z=bbStageSize();svg.setAttribute('viewBox',`0 0 ${z.W} ${z.H}`);svg.innerHTML='';}
+    if($('bb-cv'))drawPlan([],$('bb-cv'));
+    if($('bb-read'))$('bb-read').textContent='Facade is a panel-grid scene — no room adjacency to graph. Use the app’s Facade tools (divide · areas · panel types).';
+    return;
+  }
   if(BUB.scene!==scene){BUB.scene=scene;BUB.reasons={};const ex=$('bb-explain');if(ex)ex.textContent='✦ Explain logic';}
   const m=bbModel();
   BUB.nodes=m.nodes;BUB.edges=m.edges;BUB.start=m.start;BUB.typeOf=m.typeOf;BUB.merged=m.merged;BUB.px={};

@@ -3936,6 +3936,8 @@ const EXPLAIN={
       S.famDetail[fam]=t;
     };
     S.fcShadow=false; // start in colour; reveal the elevation look at the end
+    // finer grid + bigger gap so panels are smaller and sit well inside the boundary (not packed edge-to-edge)
+    this._fc0={cols:FC.cols,rows:FC.rows,gap:FC.gap};FC.cols=9;FC.rows=8;FC.gap=22;
     if(!document.getElementById('metrics-box').classList.contains('show'))toggleMetrics();
     if(!await step('<b>Facade demo</b> — author a curtain wall from scratch: boundary → divide → generate → performance → assemblies → elevation.',1700))return;
     // 1 · irregular building boundary (so boundary-cut "Uncategorized" panels appear)
@@ -3945,10 +3947,14 @@ const EXPLAIN={
     S.shapes=[outline];S.selIds=new Set([outline.id]);S.sceneKey='facade';
     saveH();fitScreen();render();
     if(!await step('<b>1 · Boundary</b> — draw an irregular building outline (here an L-shape). Cells the grid can’t tile cleanly at the step become custom panels.',2300))return;
-    // 2 · guide lines → cut into zones
-    const cy1=Y+H*0.32,cy2=Y+H*0.58;
-    S.shapes.push(mkLine([{x:X-20,y:cy1},{x:X+W+20,y:cy1}]),mkLine([{x:X-20,y:cy2},{x:X+W+20,y:cy2}]));render();
-    if(!await step('<b>2 · Divide</b> — guide lines (the <b>L</b> tool) cut the outline into stacked zones.',2100))return;
+    // 2 · guide lines → cut into more zones (2 horizontal + 1 vertical → several regions)
+    const cy1=Y+H*0.34,cy2=Y+H*0.62,cxv=X+W*0.42;
+    S.shapes.push(
+      mkLine([{x:X-20,y:cy1},{x:X+W+20,y:cy1}]),
+      mkLine([{x:X-20,y:cy2},{x:X+W+20,y:cy2}]),
+      mkLine([{x:cxv,y:Y-20},{x:cxv,y:Y+H+20}]));
+    render();
+    if(!await step('<b>2 · Divide</b> — guide lines (the <b>L</b> tool) cut the outline into several zones — each becomes its own panel type.',2100))return;
     // 3 · mark areas
     if(typeof markFacadeAreas==='function'){S.selIds=new Set([outline.id]);markFacadeAreas();
       if(!await step('<b>3 · Mark areas</b> — each guide-bounded zone becomes a region you can fill independently.',1900))return;}
@@ -3987,11 +3993,12 @@ const EXPLAIN={
        fitScreen();render();
        if(!await step(`Exit — all <b>${n}</b> panels of the type take the assembly at once.`,2200))return;}}
     // 8 · give the other types real assemblies too
-    {const keys=Object.keys(regFams()).filter(k=>/^fac-/.test(k)),presets=[['brick','louver'],['metal',null],['stone','metal']];
+    {const keys=Object.keys(regFams()).filter(k=>/^fac-/.test(k)),
+       presets=[['brick','louver'],['metal',null],['stone','metal'],['concrete','louver'],['tile','mesh'],['metal','mesh']];
      let i=0;for(const k of keys){if((S.famDetail[k]||[]).length)continue; // skip the one composed in step 7
        const a=presets[i%presets.length];compose(k,a[0],a[1]);i++;}
      render();
-     if(!await step('<b>8 · Assemblies</b> — the other types get their own units: <b>glazing + louver on brick</b>, glazing on metal. Each is one editable, linked type.',2400))return;}
+     if(!await step('<b>8 · Assemblies</b> — every other type gets its own unit too: <b>glazing + louver on brick</b>, glazing on metal, glazing + mesh on tile… each an editable, linked type.',2400))return;}
     // 9 · group edit — resize + move the whole type, then revert (so nothing spills outside the boundary)
     {const f=regFams();let gFam=null,n=0;for(const k in f)if(f[k].length>n){n=f[k].length;gFam=k;}
      if(gFam&&typeof famEdit==='function'){
@@ -4011,6 +4018,7 @@ const EXPLAIN={
     this.demoOn=false;const btn=document.getElementById('btn-xp-demo');
     if(btn){btn.textContent='▶ Demo';btn.classList.remove('stop');}
     const c=document.getElementById('demo-cap');if(c)c.classList.remove('show');
+    if(this._fc0){FC.cols=this._fc0.cols;FC.rows=this._fc0.rows;FC.gap=this._fc0.gap;this._fc0=null;} // restore the facade grid defaults
     this.noPanel=false; this.refresh();
   },
 };
