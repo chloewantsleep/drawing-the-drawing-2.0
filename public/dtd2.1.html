@@ -1005,9 +1005,9 @@ function smartSnap(wx,wy,excl=null){
 }
 function showSnap(pt){
   lSnap.innerHTML='';if(!pt)return;
-  // Grid snaps don't get a marker — that yellow crosshair followed the cursor everywhere.
-  // Only the meaningful snaps (endpoint / midpoint / center) show an indicator.
-  if(pt.t==='grid')return;
+  // Free / grid placement gets no marker — that yellow crosshair followed the cursor
+  // everywhere (and flickered). Only real snaps (endpoint / midpoint / center) show one.
+  if(pt.t==='grid'||pt.t==='free')return;
   const sp=w2s(pt.x,pt.y),c=SNAP_COLORS[pt.t]||SNAP_COLORS.grid,r=13;
   lSnap.appendChild(ns('line',{x1:sp.x-r,y1:sp.y,x2:sp.x+r,y2:sp.y,stroke:c,'stroke-width':1,'stroke-dasharray':'3 2',opacity:.8}));
   lSnap.appendChild(ns('line',{x1:sp.x,y1:sp.y-r,x2:sp.x,y2:sp.y+r,stroke:c,'stroke-width':1,'stroke-dasharray':'3 2',opacity:.8}));
