@@ -592,7 +592,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <div class="rg-title">Library <span class="rg-sub">saved on this device — open to keep editing</span></div>
   <div id="lib-list"></div>
   <div class="rg-foot">
-    <button id="lib-save" class="rg-btn">＋ Save current plan to library</button>
+    <button id="lib-save" class="rg-btn">Save current plan  ⌘S</button>
   </div>
 </div>
 
@@ -3357,6 +3357,7 @@ window.addEventListener('keydown',e=>{
   else if(e.key==='Enter'&&!S.lineDrawing&&S.selIds.size>=2){
     joinSelected();e.preventDefault();
   }
+  if((e.metaKey||e.ctrlKey)&&(e.key==='s'||e.key==='S')){librarySave(e.shiftKey);e.preventDefault();return;} // ⌘S save over · ⇧⌘S save as new
   if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.shiftKey?redo():undo();e.preventDefault();}
   if((e.metaKey||e.ctrlKey)&&e.key==='c'){copySel();e.preventDefault();}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'){pasteSel();e.preventDefault();}
@@ -3633,19 +3634,27 @@ async function libList(){
   }
   return libLoad();
 }
-async function libAdd(){
-  const name=(prompt('Save plan as:','Plan '+new Date().toLocaleDateString())||'').trim();if(!name)return;
-  if(libCloud()){
-    const{error}=await SB.from('drawings').insert({name,scene_key:S.sceneKey,data:serializeDoc(),updated_at:new Date().toISOString()});
-    if(error){alert('Save failed: '+error.message);return;}
-  }else{const arr=libLoad();arr.unshift({id:'lib'+Date.now().toString(36),name,data:serializeDoc(),updated:Date.now()});libStore(arr);}
-  renderLibrary();
+let CUR_LIB={id:null,name:null,cloud:false}; // the library entry the current drawing maps to → ⌘S saves over it
+// Save the current drawing. forceNew=false overwrites the open entry (⌘S); true always creates one (⇧⌘S).
+async function librarySave(forceNew){
+  const cloud=libCloud();
+  if(!forceNew && CUR_LIB.id && CUR_LIB.cloud===cloud){          // overwrite the entry that's currently open
+    if(cloud){const{error}=await SB.from('drawings').update({data:serializeDoc(),scene_key:S.sceneKey,updated_at:new Date().toISOString()}).eq('id',CUR_LIB.id);if(error){alert('Save failed: '+error.message);return;}}
+    else{const arr=libLoad(),row=arr.find(x=>x.id===CUR_LIB.id);if(!row)return librarySave(true);row.data=serializeDoc();row.updated=Date.now();libStore(arr);}
+    setStatus('Saved over “'+CUR_LIB.name+'” ✓');renderLibrary();return;
+  }
+  const name=(prompt('Save plan as:',CUR_LIB.name||('Plan '+new Date().toLocaleDateString()))||'').trim();if(!name)return;
+  if(cloud){const{data,error}=await SB.from('drawings').insert({name,scene_key:S.sceneKey,data:serializeDoc(),updated_at:new Date().toISOString()}).select('id').single();if(error){alert('Save failed: '+error.message);return;}CUR_LIB={id:data.id,name,cloud:true};}
+  else{const id='lib'+Date.now().toString(36),arr=libLoad();arr.unshift({id,name,data:serializeDoc(),updated:Date.now()});libStore(arr);CUR_LIB={id,name,cloud:false};}
+  setStatus('Saved “'+name+'” ✓');renderLibrary();
 }
-function libOpen(it){if(!it||!it.data)return;loadDoc(it.data);libraryBox.classList.remove('show');document.getElementById('btn-library').classList.remove('on');}
+function libAdd(){return librarySave(false);}   // panel button = save (over the open entry, or new)
+function libOpen(it){if(!it||!it.data)return;loadDoc(it.data);CUR_LIB={id:it.id,name:it.name,cloud:libCloud()};libraryBox.classList.remove('show');document.getElementById('btn-library').classList.remove('on');setStatus('Opened “'+it.name+'” — ⌘S saves over it');}
 async function libRename(it){
   const n=(prompt('Rename plan:',it.name||'')||'').trim();if(!n)return;
   if(libCloud()){const{error}=await SB.from('drawings').update({name:n}).eq('id',it.id);if(error){alert(error.message);return;}}
   else{const arr=libLoad(),row=arr.find(x=>x.id===it.id);if(row){row.name=n;libStore(arr);}}
+  if(CUR_LIB.id===it.id)CUR_LIB.name=n;
   renderLibrary();
 }
 async function libDuplicate(it){
@@ -3657,6 +3666,7 @@ async function libDelete(it){
   if(!confirm('Delete “'+(it.name||'this plan')+'”?'))return;
   if(libCloud()){const{error}=await SB.from('drawings').delete().eq('id',it.id);if(error){alert(error.message);return;}}
   else{libStore(libLoad().filter(x=>x.id!==it.id));}
+  if(CUR_LIB.id===it.id)CUR_LIB={id:null,name:null,cloud:libCloud()};
   renderLibrary();
 }
 // a small SVG snapshot of a saved plan's rooms, scaled to fit the thumbnail box
@@ -3740,6 +3750,7 @@ if(!SB){
     document.getElementById('auth-user').style.display=user?'inline-flex':'none';
     document.getElementById('auth-email').textContent=user?user.email||'':'';
     LIB_USER=user||null;                                  // library now reads/writes the cloud
+    CUR_LIB={id:null,name:null,cloud:!!user};              // ids differ between cloud/local → reset the save-over target
     if(libraryBox.classList.contains('show'))renderLibrary();
   }
   SB.auth.getUser().then(({data})=>reflectUser(data&&data.user));
