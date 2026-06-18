@@ -4652,6 +4652,15 @@ function _segHit(a,b,c,d){
 // cut the cell-adjacency so the panels flood-fill into separate REGIONS. `guides`
 // is a list of [p0,p1] world segments (the user's auxiliary lines). Returns
 // {panels:[{x,y,w,h,custom,region}], regionCount}.
+// Collect the drawn divider lines as cut segments. facadeGlazing treats each as the
+// infinite line through its endpoints, so a divider partitions the grid by which side a
+// cell falls on — slope-independent, and a short/steep line still cuts fully across.
+function collectGuides(){
+  const guides=[];
+  for(const s of S.shapes){if(s.type!=='line'||!s.pts||s.pts.length<2)continue;
+    for(let i=0;i<s.pts.length-1;i++)guides.push([s.pts[i],s.pts[i+1]]);}
+  return guides;
+}
 function facadeGlazing(poly,opt,guides){
   guides=guides||[];
   const cols=Math.max(1,Math.min(20,opt.cols)),rows=Math.max(1,Math.min(20,opt.rows)),gap=Math.max(0,Math.min(16,opt.gap));
@@ -4683,11 +4692,13 @@ function facadeGlazing(poly,opt,guides){
   // polylines produce a stair-stepped region edge). Shrunk at both ends so a guide merely
   // grazing a cell centre doesn't falsely cut.
   const ctr=cl=>({x:(cl.x0+cl.x1)/2,y:(cl.y0+cl.y1)/2});
-  const cut=(p,q)=>{
-    const a={x:p.x+(q.x-p.x)*0.15,y:p.y+(q.y-p.y)*0.15},b={x:q.x-(q.x-p.x)*0.15,y:q.y-(q.y-p.y)*0.15};
-    for(const g of guides)if(_segHit(a,b,g[0],g[1]))return true;
-    return false;
-  };
+  // A guide cuts the p↔q adjacency when the two cell centres fall on OPPOSITE sides of the
+  // guide's (infinite) line. Slope-independent and works even for short / steep dividers —
+  // a centre-segment crossing test leaks when a diagonal passes through a cell's interior.
+  // side bit of a point vs a guide's infinite line (centres exactly on the line → +, a stable
+  // tie-break so a cell row sitting on the divider doesn't bridge the two sides).
+  const sideBit=(g,pt)=>{const a=g[0],b=g[1];return((b.x-a.x)*(pt.y-a.y)-(b.y-a.y)*(pt.x-a.x))>=0?1:0;};
+  const cut=(p,q)=>{for(const g of guides)if(sideBit(g,p)!==sideBit(g,q))return true;return false;};
   for(const cell of cells){const{c,r}=cell,i=idx.get(c+'_'+r),ci=ctr(cell);
     const right=idx.get((c+1)+'_'+r);
     if(right!=null&&!cut(ci,ctr(cells[right])))uni(i,right);
@@ -4769,9 +4780,7 @@ function buildFacade(){
     outlines=[mkRect(box.x,box.y,box.w,box.h,FC_WALL)];S.shapes.push(outlines[0]);}
   else{setStatus('Select the building outline(s) to generate, or one region panel to re-grid it');return;}
   // guide lines (any line shape) become cut lines that split an outline into regions
-  const guides=[];
-  for(const s of S.shapes){if(s.type!=='line'||!s.pts||s.pts.length<2)continue;
-    for(let i=0;i<s.pts.length-1;i++)guides.push([s.pts[i],s.pts[i+1]]);}
+  const guides=collectGuides();
   S.sceneKey='facade';S.predHidden=true;S.candidates=[];
   let totPanels=0,totCustom=0,totRegions=0,anyMulti=false;
   for(const o of outlines){
@@ -4820,9 +4829,7 @@ function markFacadeAreas(){
   }
   const o=sel[0],poly=o.poly?o.poly.map(p=>({x:p.x,y:p.y})):rectToPoly(o);
   if(o._fcid==null)o._fcid=S.fcSeq++;   // tag the building so each filled area joins the right namespace
-  const guides=[];
-  for(const s of S.shapes){if(s.type!=='line'||!s.pts||s.pts.length<2)continue;
-    for(let i=0;i<s.pts.length-1;i++)guides.push([s.pts[i],s.pts[i+1]]);}
+  const guides=collectGuides();
   const{regionCount,regionCells}=facadeGlazing(poly,opt,guides);
   S.shapes=S.shapes.filter(s=>!s._area);   // clear old markers
   let n=0;
