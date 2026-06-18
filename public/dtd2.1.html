@@ -965,8 +965,9 @@ function w2s(wx,wy){let x=wx,y=wy;
   return{x:x*S.zoom+S.vx+RW,y:y*S.zoom+S.vy+RW}}
 function evtSP(e){const r=cwrap.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
 function evtWP(e){const sp=evtSP(e);return s2w(sp.x,sp.y)}
-function gSnapX(x){return(S.snapOn&&!S.panelEdit)?Math.round(x/GRID)*GRID:x}
-function gSnapY(y){return(S.snapOn&&!S.panelEdit)?Math.round(y/GRID)*GRID:y}
+// Grid snapping is disabled — shapes snap to ADJACENT shapes, never to an invisible grid.
+function gSnapX(x){return x;}
+function gSnapY(y){return y;}
 function getScene(){return S.sceneKey?SCENES[S.sceneKey]:null}
 function pxToFt(px){return(px*FT_SCALE).toFixed(1)}
 function dimStr(px){return S.sqft?pxToFt(px)+" ft":Math.round(px)+"";}
@@ -997,14 +998,11 @@ function snapCandidates(excl){
   return pts;
 }
 function smartSnap(wx,wy,excl=null){
-  if(!S.snapOn)return{x:wx,y:wy,t:'grid'};   // snap removed → free, un-snapped placement
+  // snap ONLY to nearby (adjacent) shapes' corners / edges / centres — never to a grid
   const th=SNAP_THRESH/S.zoom;
   let best=null,bd=th;
   for(const p of snapCandidates(excl)){const d=Math.hypot(p.x-wx,p.y-wy);if(d<bd){bd=d;best=p;}}
-  if(best)return best;
-  // inside a zoomed panel, don't snap to the coarse world grid — it blocks small subdivisions
-  if(S.panelEdit)return{x:wx,y:wy,t:'free'};
-  return{x:gSnapX(wx),y:gSnapY(wy),t:'grid'};
+  return best||{x:wx,y:wy,t:'free'};
 }
 function showSnap(pt){
   lSnap.innerHTML='';if(!pt)return;
