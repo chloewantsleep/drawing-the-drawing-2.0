@@ -546,6 +546,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
     <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="17.5" x2="21" y2="17.5"/><line x1="17.5" y1="14" x2="17.5" y2="21"/></svg></span>
     <span class="fc-label">Facade tools</span>
   </button>
+  <button class="float-chip" id="btn-text" title="Text — click to place a label / logo">
+    <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6.5h14"/><path d="M12 6.5V19"/><path d="M8.5 19h7"/></svg></span>
+    <span class="fc-label">Text</span>
+  </button>
+  <button class="float-chip" id="btn-annot" title="Annotate — arrow + note pointing at the drawing">
+    <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l7-7"/><path d="M14 5h5v5"/><path d="M19 5l-8 8"/></svg></span>
+    <span class="fc-label">Annotate</span>
+  </button>
 </div>
 <div id="fctools-menu">
   <button class="fctm-item" id="fctm-divider"><span>Divider line</span><em>L</em></button>
@@ -1085,6 +1093,13 @@ function mkRect(x,y,w,h,opts={}){
     _new:Date.now()};
 }
 function mkLine(pts){return{id:S.nextId++,type:'line',pts,stroke:'#94A3B8',strokeW:1.5,opacity:1,_new:Date.now()}}
+// Free text label (logo / signage) + leader annotation (arrow + note) — placeable shapes.
+function mkText(x,y,text){return{id:S.nextId++,type:'text',x,y,text:text||'',size:42,color:'#1C1C1C',opacity:1,_new:Date.now()};}
+function mkAnnot(x,y,tx,ty,text){return{id:S.nextId++,type:'annot',x,y,tx,ty,text:text||'',size:16,color:'#1C1C1C',opacity:1,_new:Date.now()};}
+function editTextShape(id){const s=getS(id);if(!s||(s.type!=='text'&&s.type!=='annot'))return;
+  const cur=s.text||'',v=prompt(s.type==='text'?'Text (logo / label):':'Note:',cur);
+  if(v==null){if(!cur){delS(id);S.selIds.delete(id);render();}return;}   // cancel a brand-new empty → remove
+  s.text=v;saveH();render();}
 function getS(id){return S.shapes.find(s=>s.id===id)}
 function updS(id,p){const i=S.shapes.findIndex(s=>s.id===id);if(i>=0)S.shapes[i]={...S.shapes[i],...p}}
 function delS(id){S.shapes=S.shapes.filter(s=>s.id!==id)}
@@ -1180,6 +1195,9 @@ function bounds(s){
     return{x:s.x,y:s.y,r:s.x+s.w,b:s.y+s.h};
   }
   if(s.type==='line'){let x=Infinity,y=Infinity,r=-Infinity,b=-Infinity;for(const p of s.pts){x=Math.min(x,p.x);y=Math.min(y,p.y);r=Math.max(r,p.x);b=Math.max(b,p.y);}return{x,y,r,b};}
+  if(s.type==='text'){const tw=Math.max((s.text||' ').length*s.size*0.6,s.size);return{x:s.x,y:s.y,r:s.x+tw,b:s.y+s.size};}
+  if(s.type==='annot'){const tw=Math.max((s.text||' ').length*s.size*0.6,s.size);
+    return{x:Math.min(s.x,s.tx),y:Math.min(s.y,s.ty),r:Math.max(s.x+tw,s.tx),b:Math.max(s.y+s.size,s.ty)};}
 }
 function rectToPoly(s){return[{x:s.x,y:s.y},{x:s.x+s.w,y:s.y},{x:s.x+s.w,y:s.y+s.h},{x:s.x,y:s.y+s.h}];}
 function selBounds(){
@@ -1236,6 +1254,12 @@ function hitTest(wx,wy){
       else{if(wx>=s.x&&wx<=s.x+s.w&&wy>=s.y&&wy<=s.y+s.h)return s.id;}
     }else if(s.type==='line'){
       for(let j=0;j<s.pts.length-1;j++){if(distSeg(wx,wy,s.pts[j].x,s.pts[j].y,s.pts[j+1].x,s.pts[j+1].y)<th)return s.id;}
+    }else if(s.type==='text'){
+      const b=bounds(s);if(wx>=b.x-th&&wx<=b.r+th&&wy>=b.y-th&&wy<=b.b+th)return s.id;
+    }else if(s.type==='annot'){
+      const tw=Math.max((s.text||' ').length*s.size*0.6,s.size);
+      if(wx>=s.x-th&&wx<=s.x+tw+th&&wy>=s.y-th&&wy<=s.y+s.size+th)return s.id;          // note box
+      if(distSeg(wx,wy,s.x,s.y+s.size*0.6,s.tx,s.ty)<th+2)return s.id;                   // leader line
     }
   }
   return null;
@@ -1639,6 +1663,24 @@ function renderShapeEl(s){
     g.appendChild(ns('polyline',{points:pts,fill:'none',stroke:'#DC2626','stroke-width':lw,
       'stroke-dasharray':`${5*inv} ${2.4*inv} ${0.6*inv} ${2.4*inv}`,'stroke-linecap':'round','stroke-linejoin':'round'}));
     g.appendChild(ns('polyline',{points:pts,fill:'none',stroke:'transparent','stroke-width':12/S.zoom,'stroke-linecap':'round','data-sid':s.id}));
+  }else if(s.type==='text'){
+    const b=bounds(s);
+    if(isSel||isHov)g.appendChild(ns('rect',{x:b.x-3*inv,y:b.y-3*inv,width:(b.r-b.x)+6*inv,height:(b.b-b.y)+6*inv,fill:'none',stroke:C_SEL,'stroke-width':1*inv,'stroke-dasharray':`${4*inv} ${3*inv}`,style:'pointer-events:none'}));
+    const t=ns('text',{x:s.x,y:s.y,'dominant-baseline':'hanging','font-size':s.size,fill:s.color||'#1C1C1C','font-weight':'700','font-family':"'Helvetica Neue','Arial',sans-serif",style:'pointer-events:none;user-select:none'});
+    t.textContent=s.text||'';g.appendChild(t);
+    g.appendChild(ns('rect',{x:b.x,y:b.y,width:b.r-b.x,height:b.b-b.y,fill:'transparent','data-sid':s.id})); // hit target
+  }else if(s.type==='annot'){
+    const col=s.color||'#1C1C1C',ax=s.x,ay=s.y+s.size*0.6;
+    g.appendChild(ns('line',{x1:ax,y1:ay,x2:s.tx,y2:s.ty,stroke:col,'stroke-width':1.4*inv,style:'pointer-events:none'}));
+    const ang=Math.atan2(s.ty-ay,s.tx-ax),hl=10*inv,sp=0.42;
+    g.appendChild(ns('polygon',{points:`${s.tx},${s.ty} ${s.tx-hl*Math.cos(ang-sp)},${s.ty-hl*Math.sin(ang-sp)} ${s.tx-hl*Math.cos(ang+sp)},${s.ty-hl*Math.sin(ang+sp)}`,fill:col,style:'pointer-events:none'}));
+    const t=ns('text',{x:s.x,y:s.y,'dominant-baseline':'hanging','font-size':s.size,fill:col,'font-family':"'SF Mono','Menlo',monospace",style:'pointer-events:none;user-select:none'});
+    t.textContent=s.text||'';g.appendChild(t);
+    const b=bounds(s);
+    if(isSel||isHov)g.appendChild(ns('rect',{x:b.x-3*inv,y:b.y-3*inv,width:(b.r-b.x)+6*inv,height:(b.b-b.y)+6*inv,fill:'none',stroke:C_SEL,'stroke-width':1*inv,'stroke-dasharray':`${4*inv} ${3*inv}`,style:'pointer-events:none'}));
+    const tw=Math.max((s.text||' ').length*s.size*0.6,s.size);
+    g.appendChild(ns('rect',{x:s.x,y:s.y,width:tw,height:s.size,fill:'transparent','data-sid':s.id}));                       // note hit
+    g.appendChild(ns('line',{x1:ax,y1:ay,x2:s.tx,y2:s.ty,stroke:'transparent','stroke-width':12*inv,'data-sid':s.id}));     // leader hit
   }
   return g;
 }
@@ -2513,6 +2555,8 @@ function moveShapeBy(s,dx,dy){
   if(Math.abs(dx)<1e-9&&Math.abs(dy)<1e-9)return;
   if(s.type==='rect'){if(s.poly)updS(s.id,{poly:s.poly.map(p=>({x:p.x+dx,y:p.y+dy}))});else updS(s.id,{x:s.x+dx,y:s.y+dy});}
   else if(s.type==='line')updS(s.id,{pts:s.pts.map(p=>({x:p.x+dx,y:p.y+dy}))});
+  else if(s.type==='text')updS(s.id,{x:s.x+dx,y:s.y+dy});
+  else if(s.type==='annot')updS(s.id,{x:s.x+dx,y:s.y+dy,tx:s.tx+dx,ty:s.ty+dy});
 }
 // align the (unlocked) selection by their bounding boxes
 function alignSel(mode){
@@ -2615,7 +2659,9 @@ function copySel(){if(!S.selIds.size)return;S.clip=[...S.selIds].map(id=>JSON.pa
 function pasteSel(){
   if(!S.clip.length)return;const off=GRID*2,nids=[];
   for(const s of S.clip){const nc=JSON.parse(JSON.stringify(s));nc.id=S.nextId++;nc._new=Date.now();
-    if(nc.type==='rect'){nc.x+=off;nc.y+=off;}else if(nc.type==='line'){nc.pts=nc.pts.map(p=>({x:p.x+off,y:p.y+off}));}
+    if(nc.type==='rect'||nc.type==='text'){nc.x+=off;nc.y+=off;}
+    else if(nc.type==='annot'){nc.x+=off;nc.y+=off;nc.tx+=off;nc.ty+=off;}
+    else if(nc.type==='line'){nc.pts=nc.pts.map(p=>({x:p.x+off,y:p.y+off}));}
     S.shapes.push(nc);nids.push(nc.id);}
   S.selIds=new Set(nids);saveH();render();
 }
@@ -2851,7 +2897,9 @@ function setTool(t){
   const fcd=document.getElementById('fctm-divider');if(fcd)fcd.classList.toggle('on',t==='line');
   const bd=document.getElementById('btn-fctools');if(bd)bd.classList.toggle('on',t==='line');
   document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
-  document.getElementById('s-tool').textContent={rect:'Rectangle',line:'Line',pan:'Pan',select:'Rectangle'}[t]||t;
+  document.getElementById('btn-text')?.classList.toggle('on',t==='text');
+  document.getElementById('btn-annot')?.classList.toggle('on',t==='annot');
+  document.getElementById('s-tool').textContent={rect:'Rectangle',line:'Line',pan:'Pan',select:'Rectangle',text:'Text — click to place',annot:'Annotate — click a target'}[t]||t;
   updateCursor();
 }
 function updateCursor(){
@@ -2859,9 +2907,13 @@ function updateCursor(){
   if(S.panning){cwrap.style.cursor='grabbing';return;}
   if(S.tool==='rect'||S.tool==='line')cwrap.style.cursor='default';
   else if(S.tool==='pan')cwrap.style.cursor='grab';
+  else if(S.tool==='text')cwrap.style.cursor='text';
+  else if(S.tool==='annot')cwrap.style.cursor='crosshair';
   else cwrap.style.cursor='default';
 }
 document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
+document.getElementById('btn-text')?.addEventListener('click',()=>setTool(S.tool==='text'?'rect':'text'));
+document.getElementById('btn-annot')?.addEventListener('click',()=>setTool(S.tool==='annot'?'rect':'annot'));
 
 // ─────────────────────────────────────────
 //  RESIZE / DEFORM
@@ -2991,6 +3043,16 @@ function onDown(e){
     if(e.shiftKey&&S.lineDrawing&&S.linePts.length)sn=orthoFrom(S.linePts[S.linePts.length-1],sn); // ⇧ → orthogonal
     showSnap(sn);
     if(!S.lineDrawing){S.lineDrawing=true;S.linePts=[{x:sn.x,y:sn.y}];}else S.linePts.push({x:sn.x,y:sn.y});
+    e.preventDefault();return;
+  }
+  if(S.tool==='text'){                                   // click to place a text label / logo
+    const t=mkText(wp.x,wp.y,'');S.shapes.push(t);S.selIds=new Set([t.id]);
+    saveH();render();setTool('rect');setTimeout(()=>editTextShape(t.id),0);
+    e.preventDefault();return;
+  }
+  if(S.tool==='annot'){                                  // click a target → arrow tip there, note offset up-left
+    const a=mkAnnot(wp.x-120/S.zoom,wp.y-70/S.zoom,wp.x,wp.y,'');S.shapes.push(a);S.selIds=new Set([a.id]);
+    saveH();render();setTool('rect');setTimeout(()=>editTextShape(a.id),0);
     e.preventDefault();return;
   }
   // Format painter: click a panel to apply the captured type; click empty space to stop
@@ -3192,6 +3254,8 @@ function onMove(e){
         if(o.poly)updS(id,{poly:o.poly.map(p=>({x:p.x+ddx,y:p.y+ddy}))});
         else updS(id,{x:o.x+ddx,y:o.y+ddy});
       }else if(o.type==='line')updS(id,{pts:o.pts.map(p=>({x:p.x+ddx,y:p.y+ddy}))});
+      else if(o.type==='text')updS(id,{x:o.x+ddx,y:o.y+ddy});
+      else if(o.type==='annot')updS(id,{x:o.x+ddx,y:o.y+ddy,tx:o.tx+ddx,ty:o.ty+ddy});
     }
     render();return;
   }
@@ -3291,6 +3355,7 @@ cwrap.addEventListener('dblclick',e=>{
     if(e.target.closest('.handle')||e.target.closest('.plus-dup'))return;
     const wp=evtWP(e);const shEl=e.target.closest('[data-sid]');
     let sid=shEl?parseInt(shEl.dataset.sid):hitTest(wp.x,wp.y);
+    if(sid){const s0=getS(sid);if(s0&&(s0.type==='text'||s0.type==='annot')){editTextShape(sid);e.preventDefault();return;}}
     if(sid){const s=getS(sid);if(s&&s.type==='rect'){
       // facade panel (or any panel with a type) → edit its interior; otherwise rename.
       // in the facade scene a loose rect gets its own type on the fly so editing always works.
