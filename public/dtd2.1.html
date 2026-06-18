@@ -4661,6 +4661,20 @@ function collectGuides(){
     for(let i=0;i<s.pts.length-1;i++)guides.push([s.pts[i],s.pts[i+1]]);}
   return guides;
 }
+function guideSideBit(g,pt){const a=g[0],b=g[1];return((b.x-a.x)*(pt.y-a.y)-(b.y-a.y)*(pt.x-a.x))>=0?1:0;}
+// Clip a polygon to the half-plane of guide g on side `keepBit` (Sutherland–Hodgman against
+// one infinite line) → straight cut edges, so an area follows a slanted divider exactly
+// instead of stair-stepping along grid cells.
+function clipPolyHalfplane(poly,g,keepBit){
+  const a=g[0],b=g[1],sv=p=>(b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x);
+  const inside=p=>(sv(p)>=0?1:0)===keepBit,out=[];
+  for(let i=0;i<poly.length;i++){
+    const cur=poly[i],prev=poly[(i+poly.length-1)%poly.length],ci=inside(cur),pi=inside(prev);
+    if(ci!==pi){const sp=sv(prev),sq=sv(cur),t=sp/(sp-sq);out.push({x:prev.x+(cur.x-prev.x)*t,y:prev.y+(cur.y-prev.y)*t});}
+    if(ci)out.push({x:cur.x,y:cur.y});
+  }
+  return out;
+}
 function facadeGlazing(poly,opt,guides){
   guides=guides||[];
   const cols=Math.max(1,Math.min(20,opt.cols)),rows=Math.max(1,Math.min(20,opt.rows)),gap=Math.max(0,Math.min(16,opt.gap));
@@ -4834,15 +4848,17 @@ function markFacadeAreas(){
   S.shapes=S.shapes.filter(s=>!s._area);   // clear old markers
   let n=0;
   if(regionCount>=2){
-    // group cells by region, then UNION them into a polygon → the area follows the (possibly
-    // irregular) building boundary instead of snapping to a bounding rectangle
-    const byR={};for(const c of regionCells)(byR[c.region]||(byR[c.region]=[])).push(c);
-    for(const r of Object.keys(byR)){
-      const loops=shapesUnionLoops(byR[r].map(c=>({x:c.x,y:c.y,w:c.w,h:c.h})))
-        .filter(l=>l.length>=3).sort((a,b)=>polyAreaAbs(b)-polyAreaAbs(a));
-      if(!loops.length)continue;
+    // each region = a representative cell's side-signature across the guides. Build the area by
+    // CLIPPING the outline to those half-planes → clean straight cuts (no grid stair-stepping).
+    const repByR={};
+    for(const c of regionCells){const r=c.region,A=c.w*c.h;
+      if(!repByR[r]||A>repByR[r].A)repByR[r]={x:c.x+c.w/2,y:c.y+c.h/2,A};}  // biggest cell = robust interior point
+    for(const r of Object.keys(repByR)){
+      const rep=repByR[r];let pg=poly.map(p=>({x:p.x,y:p.y}));
+      for(const g of guides){pg=clipPolyHalfplane(pg,g,guideSideBit(g,rep));if(pg.length<3)break;}
+      if(pg.length<3||polyAreaAbs(pg)<1)continue;
       const a=mkRect(0,0,1,1,{fill:'#1D6AF5',stroke:'#1D6AF5'});
-      a.poly=loops[0].map(p=>({x:p.x,y:p.y}));a._area=true;a._fcid=o._fcid;a.opacity=0.16;a.name='Area '+(++n);S.shapes.push(a);
+      a.poly=pg;a._area=true;a._fcid=o._fcid;a.opacity=0.16;a.name='Area '+(++n);S.shapes.push(a);
     }
   }else{
     // undivided → one area covering the whole outline (so Mark areas always yields something)
