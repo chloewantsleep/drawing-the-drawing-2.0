@@ -517,8 +517,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <span id="auth-area">
     <button class="tb-chip" id="btn-signin">Sign in</button>
     <span id="auth-user" style="display:none">
-      <button class="tb-chip" id="btn-save">Save</button>
-      <button class="tb-chip" id="btn-mydrawings">My drawings</button>
       <span class="auth-email" id="auth-email"></span>
       <button class="tb-chip" id="btn-signout">Sign out</button>
     </span>
@@ -3622,20 +3620,45 @@ makeDraggable(document.getElementById('region-box'),document.querySelector('#reg
 // ─────────────────────────────────────────
 const LIB_KEY='dtd2_library';
 const libraryBox=document.getElementById('library-box');
-function libLoad(){try{return JSON.parse(localStorage.getItem(LIB_KEY)||'[]');}catch(e){return[];}}
+let LIB_USER=null; // set by the auth layer; when signed in the library reads/writes the cloud
+function libCloud(){return !!(SB&&LIB_USER);}
+function libLoad(){try{return JSON.parse(localStorage.getItem(LIB_KEY)||'[]');}catch(e){return[];}}        // local store (also used by the facade demo)
 function libStore(arr){try{localStorage.setItem(LIB_KEY,JSON.stringify(arr));}catch(e){alert('Could not save to library (browser storage full?).');}}
-function libAdd(){
-  const name=(prompt('Save plan as:','Plan '+new Date().toLocaleDateString())||'').trim();if(!name)return;
-  const arr=libLoad();arr.unshift({id:'lib'+Date.now().toString(36),name,data:serializeDoc(),updated:Date.now()});
-  libStore(arr);renderLibrary();
+// list saved plans — Supabase rows when signed in, else localStorage. Returns null on a cloud error.
+async function libList(){
+  if(libCloud()){
+    const{data,error}=await SB.from('drawings').select('id,name,data,updated_at').order('updated_at',{ascending:false});
+    if(error){console.warn('library:',error.message);return null;}
+    return(data||[]).map(r=>({id:r.id,name:r.name,data:r.data,updated:new Date(r.updated_at).getTime()}));
+  }
+  return libLoad();
 }
-function libOpen(id){const it=libLoad().find(x=>x.id===id);if(!it)return;
-  loadDoc(it.data);libraryBox.classList.remove('show');document.getElementById('btn-library').classList.remove('on');}
-function libRename(id){const arr=libLoad(),it=arr.find(x=>x.id===id);if(!it)return;
-  const n=(prompt('Rename plan:',it.name)||'').trim();if(!n)return;it.name=n;libStore(arr);renderLibrary();}
-function libDuplicate(id){const arr=libLoad(),it=arr.find(x=>x.id===id);if(!it)return;
-  arr.unshift({id:'lib'+Date.now().toString(36),name:it.name+' copy',data:JSON.parse(JSON.stringify(it.data)),updated:Date.now()});libStore(arr);renderLibrary();}
-function libDelete(id){if(!confirm('Delete this saved plan?'))return;libStore(libLoad().filter(x=>x.id!==id));renderLibrary();}
+async function libAdd(){
+  const name=(prompt('Save plan as:','Plan '+new Date().toLocaleDateString())||'').trim();if(!name)return;
+  if(libCloud()){
+    const{error}=await SB.from('drawings').insert({name,scene_key:S.sceneKey,data:serializeDoc(),updated_at:new Date().toISOString()});
+    if(error){alert('Save failed: '+error.message);return;}
+  }else{const arr=libLoad();arr.unshift({id:'lib'+Date.now().toString(36),name,data:serializeDoc(),updated:Date.now()});libStore(arr);}
+  renderLibrary();
+}
+function libOpen(it){if(!it||!it.data)return;loadDoc(it.data);libraryBox.classList.remove('show');document.getElementById('btn-library').classList.remove('on');}
+async function libRename(it){
+  const n=(prompt('Rename plan:',it.name||'')||'').trim();if(!n)return;
+  if(libCloud()){const{error}=await SB.from('drawings').update({name:n}).eq('id',it.id);if(error){alert(error.message);return;}}
+  else{const arr=libLoad(),row=arr.find(x=>x.id===it.id);if(row){row.name=n;libStore(arr);}}
+  renderLibrary();
+}
+async function libDuplicate(it){
+  if(libCloud()){const{error}=await SB.from('drawings').insert({name:(it.name||'Plan')+' copy',scene_key:(it.data&&it.data.sceneKey)||null,data:it.data,updated_at:new Date().toISOString()});if(error){alert(error.message);return;}}
+  else{const arr=libLoad();arr.unshift({id:'lib'+Date.now().toString(36),name:(it.name||'Plan')+' copy',data:JSON.parse(JSON.stringify(it.data)),updated:Date.now()});libStore(arr);}
+  renderLibrary();
+}
+async function libDelete(it){
+  if(!confirm('Delete “'+(it.name||'this plan')+'”?'))return;
+  if(libCloud()){const{error}=await SB.from('drawings').delete().eq('id',it.id);if(error){alert(error.message);return;}}
+  else{libStore(libLoad().filter(x=>x.id!==it.id));}
+  renderLibrary();
+}
 // a small SVG snapshot of a saved plan's rooms, scaled to fit the thumbnail box
 function libThumb(data){
   const W=56,H=40,pad=4,svg=ns('svg',{class:'lib-thumb',viewBox:`0 0 ${W} ${H}`});
@@ -3652,18 +3675,23 @@ function libThumb(data){
   }
   return svg;
 }
-function renderLibrary(){
-  const list=document.getElementById('lib-list');list.innerHTML='';
-  const arr=libLoad();
+async function renderLibrary(){
+  const list=document.getElementById('lib-list');if(!list)return;
+  const sub=document.querySelector('#library-box .rg-sub');
+  if(sub)sub.textContent=libCloud()?('synced to your account'+(LIB_USER&&LIB_USER.email?' · '+LIB_USER.email:'')):'saved on this device — sign in to sync across devices';
+  list.innerHTML='<div class="lib-empty">Loading…</div>';
+  const arr=await libList();
+  list.innerHTML='';
+  if(arr===null){list.innerHTML='<div class="lib-empty">Couldn’t load your cloud library — check your connection.</div>';return;}
   if(!arr.length){list.innerHTML='<div class="lib-empty">No saved plans yet. Use “Save current plan”.</div>';return;}
   for(const it of arr){
     const row=document.createElement('div');row.className='lib-row';
-    const thumb=libThumb(it.data);thumb.addEventListener('click',()=>libOpen(it.id));thumb.style.cursor='pointer';
-    const nm=document.createElement('span');nm.className='lib-name';nm.textContent=it.name;nm.title='Open & edit';nm.onclick=()=>libOpen(it.id);
+    const thumb=libThumb(it.data);thumb.addEventListener('click',()=>libOpen(it));thumb.style.cursor='pointer';
+    const nm=document.createElement('span');nm.className='lib-name';nm.textContent=it.name;nm.title='Open & edit';nm.onclick=()=>libOpen(it);
     const wn=document.createElement('span');wn.className='lib-when';wn.textContent=new Date(it.updated).toLocaleDateString();
-    const dup=document.createElement('button');dup.className='lib-ic';dup.title='Duplicate';dup.textContent='⧉';dup.onclick=()=>libDuplicate(it.id);
-    const ren=document.createElement('button');ren.className='lib-ic';ren.title='Rename';ren.textContent='✎';ren.onclick=()=>libRename(it.id);
-    const del=document.createElement('button');del.className='lib-ic';del.title='Delete';del.textContent='✕';del.onclick=()=>libDelete(it.id);
+    const dup=document.createElement('button');dup.className='lib-ic';dup.title='Duplicate';dup.textContent='⧉';dup.onclick=()=>libDuplicate(it);
+    const ren=document.createElement('button');ren.className='lib-ic';ren.title='Rename';ren.textContent='✎';ren.onclick=()=>libRename(it);
+    const del=document.createElement('button');del.className='lib-ic';del.title='Delete';del.textContent='✕';del.onclick=()=>libDelete(it);
     row.append(thumb,nm,wn,dup,ren,del);list.appendChild(row);
   }
 }
@@ -3711,6 +3739,8 @@ if(!SB){
     document.getElementById('btn-signin').style.display=user?'none':'';
     document.getElementById('auth-user').style.display=user?'inline-flex':'none';
     document.getElementById('auth-email').textContent=user?user.email||'':'';
+    LIB_USER=user||null;                                  // library now reads/writes the cloud
+    if(libraryBox.classList.contains('show'))renderLibrary();
   }
   SB.auth.getUser().then(({data})=>reflectUser(data&&data.user));
   SB.auth.onAuthStateChange((_e,session)=>{reflectUser(session&&session.user);if(session&&session.user)closeAuthModals();});
@@ -3727,41 +3757,7 @@ if(!SB){
     msg.textContent=error?('Error: '+error.message):'Check your inbox for the magic link.';
   });
   document.getElementById('signin-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('signin-magic').click();e.stopPropagation();});
-  document.getElementById('btn-signout').addEventListener('click',async()=>{await SB.auth.signOut();CURRENT_DOC_ID=null;CURRENT_DOC_NAME=null;});
-
-  document.getElementById('btn-save').addEventListener('click',async()=>{
-    const{data:{user}}=await SB.auth.getUser();if(!user){document.getElementById('btn-signin').click();return;}
-    const name=(prompt('Name this drawing:',CURRENT_DOC_NAME||('Plan '+new Date().toLocaleDateString()))||'').trim();
-    if(!name)return;
-    const row={name,scene_key:S.sceneKey,data:serializeDoc(),updated_at:new Date().toISOString()};
-    if(CURRENT_DOC_ID)row.id=CURRENT_DOC_ID;
-    const{data,error}=await SB.from('drawings').upsert(row).select().single();
-    if(error){alert('Save failed: '+error.message);return;}
-    CURRENT_DOC_ID=data.id;CURRENT_DOC_NAME=data.name;saveFeedback('Saved ✓');
-  });
-
-  document.getElementById('btn-mydrawings').addEventListener('click',async()=>{
-    const list=document.getElementById('md-list');list.innerHTML='<div class="md-empty">Loading…</div>';
-    authBackdrop.classList.add('show');mydrawingsModal.classList.add('show');
-    const{data,error}=await SB.from('drawings').select('id,name,scene_key,updated_at').order('updated_at',{ascending:false});
-    list.innerHTML='';
-    if(error){list.innerHTML='<div class="md-empty">Error: '+error.message+'</div>';return;}
-    if(!data||!data.length){list.innerHTML='<div class="md-empty">No saved drawings yet.</div>';return;}
-    for(const d of data){
-      const row=document.createElement('div');row.className='md-row';
-      const nm=document.createElement('span');nm.className='md-name';nm.textContent=d.name;
-      const wn=document.createElement('span');wn.className='md-when';wn.textContent=new Date(d.updated_at).toLocaleDateString();
-      const del=document.createElement('button');del.className='md-del';del.textContent='✕';del.title='Delete';
-      del.onclick=async ev=>{ev.stopPropagation();if(!confirm('Delete "'+d.name+'"?'))return;
-        const{error:e2}=await SB.from('drawings').delete().eq('id',d.id);
-        if(!e2){row.remove();if(CURRENT_DOC_ID===d.id){CURRENT_DOC_ID=null;CURRENT_DOC_NAME=null;}}};
-      row.onclick=async()=>{const{data:full,error:e3}=await SB.from('drawings').select('*').eq('id',d.id).single();
-        if(e3){alert('Load failed: '+e3.message);return;}
-        loadDoc(full.data);CURRENT_DOC_ID=full.id;CURRENT_DOC_NAME=full.name;closeAuthModals();};
-      row.append(nm,wn,del);list.appendChild(row);
-    }
-  });
-  document.getElementById('md-close').addEventListener('click',closeAuthModals);
+  document.getElementById('btn-signout').addEventListener('click',async()=>{await SB.auth.signOut();}); // auth change → library reverts to local
 }
 
 // ─────────────────────────────────────────
