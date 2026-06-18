@@ -302,6 +302,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 .mx-ctl input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}
 .mx-ctl select{flex:1;border:1px solid var(--border);border-radius:5px;padding:2px 4px;font-size:11px;background:#fff;color:var(--text);outline:none}
 .mx-ctl .mx-num{font-family:'SF Mono',Menlo,monospace;font-weight:700;color:var(--text);min-width:36px;text-align:right}
+#variants-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:905;display:none;
+  width:min(680px,92vw);max-height:84vh;overflow:auto;background:#fff;border:1px solid var(--border);border-radius:14px;
+  padding:16px 18px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+#variants-modal.show{display:block}
+#variants-modal .vm-title{font-size:13px;font-weight:700;margin-bottom:3px}
+#variants-modal .vm-sub{font-size:11px;color:var(--muted);margin-bottom:13px}
+#var-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.var-card{border:1px solid var(--border);border-radius:10px;padding:9px;cursor:pointer;transition:border-color .12s,box-shadow .12s;background:#FBFBFA}
+.var-card:hover{border-color:var(--accent);box-shadow:0 6px 18px rgba(29,106,245,.16)}
+.var-card svg{width:100%;height:88px;display:block;background:#fff;border-radius:6px;border:1px solid #EFEEEB}
+.var-card .vc-lbl{font-size:11px;font-weight:700;margin-top:7px;color:var(--text)}
+.var-card .vc-moves{font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.3}
+.var-card .vc-badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.var-card .vc-b{font-size:9px;font-weight:700;font-family:'SF Mono',Menlo,monospace;background:#F2F2EF;color:var(--text);border-radius:4px;padding:1px 5px}
+.vm-empty{font-size:12px;color:var(--muted);padding:20px 4px;text-align:center}
 .mx-btns{display:flex;gap:6px;margin-top:5px}
 .mx-btns button{flex:1;border:1px solid var(--border);background:#F7F6F3;color:var(--text);border-radius:6px;padding:6px 4px;font-size:10.5px;font-weight:600;cursor:pointer}
 .mx-btns button:hover{background:#EFEEEA}
@@ -559,6 +574,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
     <span class="fc-label">Markup</span>
   </button>
 </div>
+<div id="variants-modal">
+  <div class="vm-title">✦ Variations <span style="font-weight:500;color:var(--muted)">— same intent, explored differently</span></div>
+  <div class="vm-sub">Outline, locked regions &amp; window-wall ratio are held; rhythm · material · reveal depth vary. Click one to apply.</div>
+  <div id="var-grid"></div>
+</div>
 <div id="markup-menu">
   <button class="fctm-item" id="mk-annot"><span>Arrow + text</span><em>A</em></button>
   <button class="fctm-item" id="mk-cloud"><span>Revision cloud</span><em>C</em></button>
@@ -593,6 +613,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
     <label class="mx-ctl">Layout<select id="mx-layout"><option value="band" selected>Base band</option><option value="floor">Floor bands</option></select></label>
     <label class="mx-ctl">Orient<select id="mx-orient"><option value="">— all / untagged</option><option>N</option><option>S</option><option>E</option><option>W</option></select></label>
     <div class="mx-btns"><button id="mx-rationalize">⊞ Rationalize</button><button id="mx-csv">⤓ Schedule CSV</button></div>
+    <div class="mx-btns"><button id="mx-variants">✦ Variations</button></div>
   </div>
   <div id="mx-body"></div>
   <div class="mx-foot">Indicative values from assembly defaults (FC_PROPS). For early-design comparison, not code submission.</div>
@@ -933,6 +954,7 @@ const S={
   famMaterial:{}, // fam id → material key (MATERIALS) — drives the panel's hatch fill
   panelEdit:null, // {fam, baseId, box} while editing a panel's interior
   fcShadow:true,  // facade: draw recessed-reveal shadows so the elevation reads with depth
+  fcDepth:0.16,   // reveal-shadow depth ratio (varied by the variation engine)
 };
 
 // ─────────────────────────────────────────
@@ -3887,11 +3909,12 @@ const SB=(window.SUPABASE_URL&&window.SUPABASE_ANON_KEY&&window.supabase)
 let CURRENT_DOC_ID=null,CURRENT_DOC_NAME=null;
 // the full document we persist (mirrors the saveH snapshot + scene)
 function serializeDoc(){return{shapes:S.shapes,regions:S.regions,doorOverrides:S.doorOverrides,
-  sceneKey:S.sceneKey,nextId:S.nextId,famDetail:S.famDetail,famNames:S.famNames,famMaterial:S.famMaterial};}
+  sceneKey:S.sceneKey,nextId:S.nextId,famDetail:S.famDetail,famNames:S.famNames,famMaterial:S.famMaterial,fcDepth:S.fcDepth};}
 function loadDoc(d){
   if(!d)return;
   S.shapes=d.shapes||[];S.regions=d.regions||[];S.doorOverrides=d.doorOverrides||{};
   S.sceneKey=d.sceneKey||null;S.famDetail=d.famDetail||{};S.famNames=d.famNames||{};S.famMaterial=d.famMaterial||{};
+  if(d.fcDepth!=null)S.fcDepth=d.fcDepth;
   S.nextId=d.nextId||(S.shapes.reduce((m,s)=>Math.max(m,s.id||0),0)+1);
   S.selIds=new Set();rebuildLockedIds();
   try{if(S.sceneKey&&typeof predictNextRooms==='function')S.candidates=predictNextRooms();}catch(e){}
@@ -3900,7 +3923,7 @@ function loadDoc(d){
 const authBackdrop=document.getElementById('auth-backdrop');
 const signinModal=document.getElementById('signin-modal');
 const mydrawingsModal=document.getElementById('mydrawings-modal');
-function closeAuthModals(){signinModal.classList.remove('show');mydrawingsModal.classList.remove('show');authBackdrop.classList.remove('show');}
+function closeAuthModals(){signinModal.classList.remove('show');mydrawingsModal.classList.remove('show');const vm=document.getElementById('variants-modal');if(vm)vm.classList.remove('show');authBackdrop.classList.remove('show');}
 authBackdrop.addEventListener('click',closeAuthModals);
 document.getElementById('signin-cancel')?.addEventListener('click',closeAuthModals);
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&(signinModal.classList.contains('show')||mydrawingsModal.classList.contains('show')))closeAuthModals();});
@@ -4407,9 +4430,10 @@ function panelAreaM2(s){
   return apx*FT_SCALE*FT_SCALE*0.092903; // px² → ft² → m²
 }
 // Aggregate live facade metrics over every panel + building outline on the canvas.
-function facadeMetrics(){
+function facadeMetrics(shapes){
+  shapes=shapes||S.shapes;
   let wall=0,glz=0,opq=0,aAll=0,uAll=0,gU=0,gS=0,cost=0,carbon=0,nP=0,nC=0;const sizes={};
-  for(const s of S.shapes){
+  for(const s of shapes){
     if(s.type!=='rect'||s._area||s._detail)continue; // _detail = transient interior-edit sub-shapes
     if(isFacadePanel(s)){
       const A=panelAreaM2(s),pr=panelProps(s);nP++;if(s._custom)nC++;
@@ -4570,6 +4594,82 @@ function rationalizePanels(){
   saveH();render();publishActive();if(S.archOn)fetchArch();
   setStatus(`Rationalized — ${before} → ${after} unique size${after>1?'s':''}${custom?`, ${custom} custom to fabricate`:''}`);
 }
+// ─────────────────────────────────────────
+//  "YES, AND" VARIATION ENGINE — from one facade, generate N variants that keep the
+//  INTENT (outline + WWR band + locked regions) and explore the EXPRESSION (fenestration
+//  rhythm · material palette · reveal depth). Curated design "moves", each scored by
+//  facadeMetrics and gated to stay within the WWR band.
+// ─────────────────────────────────────────
+// coordinated assemblies: glazing role stays glass; spandrel role takes the palette material
+const VAR_PALETTES=[
+  {name:'Glass + mesh / concrete', spandrel:'concrete'},
+  {name:'Glass + louver / brick',  spandrel:'brick'},
+  {name:'Metal + glass',           spandrel:'metal'},
+  {name:'Stone + glass',           spandrel:'stone'},
+  {name:'Tile + glass',            spandrel:'tile'},
+];
+const VAR_RHYTHMS=['base','floor','piers','alt'];           // where the spandrel panels sit
+const VAR_DEPTHS=[{name:'shallow',v:0.08},{name:'medium',v:0.16},{name:'deep',v:0.26}];
+const _varSpandrelFill=mat=>{const M=MATERIALS[mat];return M?M.stroke:'#E7E5E0';}; // tint spandrel by material so palettes read in the thumbnail
+// the editable, intent-free part of the facade: unlocked, non-custom panels of one building
+function _varPanels(shapes){
+  return shapes.filter(s=>isFacadePanel(s)&&!s._custom&&!s.poly&&!shapeLocked(s));
+}
+// assign which of `panels` become spandrel under a rhythm pattern, holding the spandrel COUNT
+// (≈ glazing area) constant so WWR is preserved. Returns a Set of spandrel panel ids.
+function _varRhythm(panels,K,pattern){
+  if(K<=0)return new Set();
+  const cx=s=>s.x+s.w/2,cy=s=>s.y+s.h/2;
+  const cols=clusterVals(panels.map(cx),Math.max(2,(panels[0].w||40)*0.5));
+  const rows=clusterVals(panels.map(cy),Math.max(2,(panels[0].h||40)*0.5));
+  const ci=s=>nearestIdx(cols,cx(s)),ri=s=>nearestIdx(rows,cy(s));
+  let order;
+  if(pattern==='base')order=panels.slice().sort((a,b)=>cy(b)-cy(a));                       // fill from the bottom up
+  else if(pattern==='floor')order=panels.slice().sort((a,b)=>(rows.length-1-ri(a))-(rows.length-1-ri(b))||cx(a)-cx(b)); // whole rows, bottom first
+  else if(pattern==='piers')order=panels.slice().sort((a,b)=>(ci(a)%2)-(ci(b)%2)||ci(a)-ci(b)||cy(a)-cy(b)); // alternate columns → vertical piers
+  else order=panels.slice().sort((a,b)=>((ci(a)+ri(a))%2)-((ci(b)+ri(b))%2)||cy(a)-cy(b));  // 'alt' checkerboard
+  return new Set(order.slice(0,K).map(s=>s.id));
+}
+// apply a {palette, rhythm, depth} move to a deep-cloned doc; returns the doc (intent preserved)
+function _varApply(doc,move){
+  const panels=_varPanels(doc.shapes);
+  if(panels.length){
+    const K=panels.filter(s=>{const m=s.material||(doc.famMaterial||{})[s.fam];return m&&FC_PROPS[m]&&!FC_PROPS[m].glazed;}).length;
+    const spandrelIds=_varRhythm(panels,K,move.rhythm);
+    for(const s of panels){
+      if(spandrelIds.has(s.id)){s.material=move.palette.spandrel;s.fill=_varSpandrelFill(move.palette.spandrel);s.stroke=(MATERIALS[move.palette.spandrel]||{}).stroke||'#888';}
+      else{s.material='glass';s.fill='#DCEAF2';s.stroke=MATERIALS.glass.stroke;}
+    }
+  }
+  doc.fcDepth=move.depth.v;
+  return doc;
+}
+// Build up to N intent-preserving variants (diverse moves), each scored + WWR-gated.
+function facadeVariants(N){
+  N=N||6;
+  const base=JSON.parse(JSON.stringify(serializeDoc()));
+  const baseM=facadeMetrics(base.shapes),baseWWR=baseM.WWR;
+  const band=0.06;                                          // keep WWR within ±6% of the original
+  // diverse move deck: vary rhythm × palette, sprinkle depth — one or two axes at a time
+  const deck=[];
+  for(let i=0;i<VAR_RHYTHMS.length;i++)
+    deck.push({rhythm:VAR_RHYTHMS[i],palette:VAR_PALETTES[i%VAR_PALETTES.length],depth:VAR_DEPTHS[1]});
+  deck.push({rhythm:'base',palette:VAR_PALETTES[0],depth:VAR_DEPTHS[2]});   // deep reveal
+  deck.push({rhythm:'floor',palette:VAR_PALETTES[4],depth:VAR_DEPTHS[0]});  // shallow
+  const out=[];
+  for(const move of deck){
+    if(out.length>=N)break;
+    const doc=_varApply(JSON.parse(JSON.stringify(base)),move);
+    const m=facadeMetrics(doc.shapes);
+    if(Math.abs(m.WWR-baseWWR)>band)continue;              // intent gate: WWR must stay in band
+    out.push({
+      doc,metrics:m,
+      label:move.palette.name,
+      moves:`${({base:'Base spandrel',floor:'Floor bands',piers:'Vertical piers',alt:'Alternating'})[move.rhythm]} · ${move.depth.name} reveal`,
+    });
+  }
+  return{base:baseM,variants:out};
+}
 function materialOf(s){if(!s||s._custom)return null;const k=s.material||(s.fam?S.famMaterial[s.fam]:null);return(k&&MATERIALS[k]&&MATERIALS[k].hatch)?MATERIALS[k]:null;}
 // ── Elevation shadows ──
 // Architectural convention: sun from the upper-left, rays at 45° toward lower-right.
@@ -4587,7 +4687,8 @@ function isFacadePanel(s){
 // L-shaped reveal-shadow polygon (top band + left band) for a recessed facade panel.
 function facadeShadowPts(s){
   if(!S.fcShadow||!isFacadePanel(s)||s._custom||s.poly)return null; // flat markers / merged polys → no reveal depth
-  const d=Math.max(FC_SHADOW.min,Math.min(FC_SHADOW.max,Math.min(s.w,s.h)*FC_SHADOW.depth));
+  const depth=(S.fcDepth!=null?S.fcDepth:FC_SHADOW.depth);
+  const d=Math.max(FC_SHADOW.min,Math.min(FC_SHADOW.max,Math.min(s.w,s.h)*depth));
   if(d<=0||d>=Math.min(s.w,s.h)/2)return null;
   const x=s.x,y=s.y,w=s.w,h=s.h;
   return `${x},${y} ${x+w},${y} ${x+w},${y+d} ${x+d},${y+d} ${x+d},${y+h} ${x},${y+h}`;
@@ -4691,7 +4792,9 @@ function facadeGlazing(poly,opt,guides){
   let mnX=Infinity,mnY=Infinity,mxX=-Infinity,mxY=-Infinity;
   for(const p of poly){mnX=Math.min(mnX,p.x);mnY=Math.min(mnY,p.y);mxX=Math.max(mxX,p.x);mxY=Math.max(mxY,p.y);}
   const cw=(mxX-mnX)/cols,ch=(mxY-mnY)/rows;
-  const inset=p=>({x:p.x+gap/2,y:p.y+gap/2,w:p.w-gap,h:p.h-gap,custom:p.custom,region:p.region});
+  // inset by the gap, but never below 1px (a boundary-cut cell narrower than the gap would
+  // otherwise get a negative width → invalid SVG rect)
+  const inset=p=>({x:p.x+gap/2,y:p.y+gap/2,w:Math.max(1,p.w-gap),h:Math.max(1,p.h-gap),custom:p.custom,region:p.region});
   // 1. raw inside-cells (keyed by grid coords for neighbour lookup)
   const cells=[],idx=new Map();
   for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
@@ -5180,9 +5283,35 @@ document.getElementById('peb-done').addEventListener('click',exitPanelEdit);
     saveH();render();});
   const rb=$('mx-rationalize');if(rb)rb.addEventListener('click',rationalizePanels);
   const cb=$('mx-csv');if(cb)cb.addEventListener('click',exportSchedule);
+  const vb=$('mx-variants');if(vb)vb.addEventListener('click',openVariants);
   const box=$('metrics-box');if(box)box.addEventListener('mousedown',e=>e.stopPropagation());
   if(sl)reconfig();
 })();
+// ── Variations gallery (the "Yes, And" engine) ──
+function openVariants(){
+  const modal=document.getElementById('variants-modal'),grid=document.getElementById('var-grid');
+  if(!modal||!grid)return;
+  if(!S.shapes.some(isFacadePanel)){setStatus('Generate a facade first, then ✦ Variations');return;}
+  const{base,variants}=facadeVariants(6);
+  grid.innerHTML='';
+  if(!variants.length){grid.innerHTML='<div class="vm-empty">No variants stayed within the WWR band — try a facade with both glazing and spandrel.</div>';}
+  for(const v of variants){
+    const card=document.createElement('div');card.className='var-card';
+    const thumb=libThumb(v.doc);card.appendChild(thumb);
+    const dW=Math.round((v.metrics.WWR-base.WWR)*100),dC=(v.metrics.carbon-base.carbon)/1000;
+    const sign=n=>(n>0?'+':'')+n;
+    card.insertAdjacentHTML('beforeend',
+      `<div class="vc-lbl">${v.label}</div><div class="vc-moves">${v.moves}</div>`+
+      `<div class="vc-badges"><span class="vc-b">WWR ${(v.metrics.WWR*100).toFixed(0)}%</span>`+
+      `<span class="vc-b">U ${v.metrics.Uavg.toFixed(2)}</span>`+
+      `<span class="vc-b">C ${sign(+dC.toFixed(1))}t</span></div>`);
+    card.addEventListener('click',()=>{authBackdrop.classList.remove('show');modal.classList.remove('show');
+      loadDoc(v.doc);S.sceneKey='facade';fitScreen();render();renderMetrics();setStatus('Applied variant — “'+v.label+'”');});
+    grid.appendChild(card);
+  }
+  authBackdrop.classList.add('show');modal.classList.add('show');
+}
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){const m=document.getElementById('variants-modal');if(m&&m.classList.contains('show')){m.classList.remove('show');authBackdrop.classList.remove('show');}}});
 function openFacadeBox(){document.getElementById('facade-box').classList.add('show');document.getElementById('btn-facade').classList.add('on');openFamPanel();}
 function closeFacadeBox(){document.getElementById('facade-box').classList.remove('show');document.getElementById('btn-facade').classList.remove('on');}
 document.getElementById('btn-facade').addEventListener('click',()=>{
