@@ -288,6 +288,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #metrics-box.show{display:block}
 #metrics-box .mx-title{font-size:11px;font-weight:700;color:var(--text);margin-bottom:9px}
 #metrics-box .mx-title span{display:block;font-size:10px;font-weight:500;color:var(--muted);margin-top:2px}
+#metrics-box .mx-drag{cursor:move;user-select:none}
+#metrics-box .mx-drag::before{content:"⠿";margin-right:6px;color:var(--muted2);font-weight:400;letter-spacing:-1px}
 .mx-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;padding:3px 0;border-top:1px solid #F1F0ED}
 .mx-row:first-of-type{border-top:none}
 .mx-row .mx-k{color:var(--muted);font-weight:500}
@@ -599,7 +601,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 <div id="demo-cap" title="Click or press Esc to stop"></div>
 
 <div id="metrics-box">
-  <div class="mx-title">Facade performance<span>live — updates as you edit</span></div>
+  <div class="mx-title mx-drag">Facade performance<span>live — updates as you edit · drag to move</span></div>
   <div id="mx-auto">
     <div class="mx-sec">Auto-design</div>
     <label class="mx-ctl">Objective<select id="mx-obj">
@@ -616,7 +618,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
     <div class="mx-btns"><button id="mx-variants">✦ Variations</button></div>
   </div>
   <div id="mx-body"></div>
-  <div class="mx-foot">Indicative values from assembly defaults (FC_PROPS). For early-design comparison, not code submission.</div>
 </div>
 
 <div id="region-box">
@@ -3012,8 +3013,12 @@ document.getElementById('btn-annot')?.addEventListener('click',e=>{
   e.stopPropagation();
   if(S.tool==='annot'||S.tool==='cloud'||S.tool==='line'){setTool('rect');closeMarkupMenu();return;} // active → turn off
   const open=!_markupMenu.classList.contains('show');
-  if(open){const r=e.currentTarget.getBoundingClientRect();_markupMenu.style.left=(r.right+8)+'px';_markupMenu.style.top=Math.max(8,r.top-6)+'px';}
-  _markupMenu.classList.toggle('show',open);
+  if(open){const r=e.currentTarget.getBoundingClientRect();
+    _markupMenu.classList.add('show');                          // show first so we can measure its height
+    _markupMenu.style.left=(r.right+8)+'px';
+    const h=_markupMenu.offsetHeight;                           // bottom-anchored to the button, clamped into view (opens upward)
+    _markupMenu.style.top=Math.max(8,Math.min(window.innerHeight-h-8,r.bottom-h))+'px';
+  }else _markupMenu.classList.remove('show');
 });
 _markupMenu.addEventListener('mousedown',e=>e.stopPropagation());
 document.getElementById('mk-annot').addEventListener('click',()=>{setTool('annot');closeMarkupMenu();});
@@ -3807,6 +3812,7 @@ function makeDraggable(box,handle){
   });
 }
 makeDraggable(document.getElementById('region-box'),document.querySelector('#region-box .rg-title'));
+makeDraggable(document.getElementById('metrics-box'),document.querySelector('#metrics-box .mx-drag'));
 
 // ─────────────────────────────────────────
 //  LIBRARY — save plans locally (localStorage); open / rename / duplicate / delete
@@ -4235,8 +4241,10 @@ document.getElementById('btn-explain').addEventListener('click',e=>{
   if(EXPLAIN.demoOn){EXPLAIN._abort=true;return;}   // running → stop it
   const open=!_demoMenu.classList.contains('show');
   if(open){const r=document.getElementById('btn-explain').getBoundingClientRect();
-    _demoMenu.style.left=(r.right+8)+'px';_demoMenu.style.top=Math.max(8,r.top-6)+'px';}
-  _demoMenu.classList.toggle('show',open);
+    _demoMenu.classList.add('show');
+    _demoMenu.style.left=(r.right+8)+'px';
+    const h=_demoMenu.offsetHeight;_demoMenu.style.top=Math.max(8,Math.min(window.innerHeight-h-8,r.bottom-h))+'px';
+  }else _demoMenu.classList.remove('show');
   document.getElementById('btn-explain').classList.toggle('on',open);
 });
 _demoMenu.addEventListener('mousedown',e=>e.stopPropagation());
