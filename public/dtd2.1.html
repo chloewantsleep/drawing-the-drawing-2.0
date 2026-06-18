@@ -38,6 +38,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #fctools-menu.show{display:flex}
 #demo-menu{position:fixed;z-index:560;display:none;flex-direction:column;gap:2px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:150px}
 #demo-menu.show{display:flex}
+/* ── inline canvas text editor (text / annotation) ── */
+#ctext-edit{position:absolute;z-index:880}
+#ctext-edit .cte-size{position:absolute;bottom:100%;left:0;margin-bottom:5px;display:flex;gap:5px;align-items:center;
+  background:#1C1C1C;color:#fff;border-radius:6px;padding:2px 7px;font-size:11px;font-family:'SF Mono',Menlo,monospace;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#ctext-edit .cte-size button{border:none;background:rgba(255,255,255,.2);color:#fff;border-radius:4px;width:22px;height:18px;cursor:pointer;font-weight:700;font-size:10px}
+#ctext-edit .cte-size button:hover{background:var(--accent)}
+#ctext-edit #cte-num{min-width:20px;text-align:center}
+#cte-input{border:1px dashed var(--accent);background:rgba(255,255,255,.9);outline:none;padding:0 3px;line-height:1.15;color:#1C1C1C;min-width:48px;border-radius:2px}
 #demo-cap{position:fixed;top:54px;left:50%;transform:translateX(-50%);z-index:700;display:none;max-width:600px;
   background:rgba(20,20,18,.92);color:#fff;border-radius:10px;padding:10px 16px;font-size:12.5px;line-height:1.5;
   box-shadow:0 8px 24px rgba(0,0,0,.28);backdrop-filter:blur(6px);cursor:pointer}
@@ -546,13 +554,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
     <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="17.5" x2="21" y2="17.5"/><line x1="17.5" y1="14" x2="17.5" y2="21"/></svg></span>
     <span class="fc-label">Facade tools</span>
   </button>
-  <button class="float-chip" id="btn-text" title="Text — click to place a label / logo">
-    <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6.5h14"/><path d="M12 6.5V19"/><path d="M8.5 19h7"/></svg></span>
-    <span class="fc-label">Text</span>
-  </button>
-  <button class="float-chip" id="btn-annot" title="Annotate — arrow + note pointing at the drawing">
+  <button class="float-chip" id="btn-annot" title="Annotate — drag an arrow then type · click for plain text/logo">
     <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l7-7"/><path d="M14 5h5v5"/><path d="M19 5l-8 8"/></svg></span>
     <span class="fc-label">Annotate</span>
+  </button>
+  <button class="float-chip" id="btn-cloud" title="Revision cloud — drag to enclose an area">
+    <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-.5-7.97A5 5 0 0 1 16 8.5a3.5 3.5 0 0 1 1 6.86"/><path d="M7 18h9"/></svg></span>
+    <span class="fc-label">Cloud</span>
   </button>
 </div>
 <div id="fctools-menu">
@@ -692,6 +700,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <div id="ctx"></div>
   <div id="floatbar"></div>
   <div id="floatpal"></div>
+  <div id="ctext-edit" style="display:none">
+    <div class="cte-size"><button id="cte-minus" title="Smaller">A−</button><span id="cte-num">42</span><button id="cte-plus" title="Bigger">A+</button></div>
+    <input id="cte-input" type="text" autocomplete="off" spellcheck="false"/>
+  </div>
   <div id="scene-box">
     <div class="sc-title">✦ Describe a building — an LLM writes the scene</div>
     <input id="scene-inp" type="text" autocomplete="off" spellcheck="false"
@@ -1096,10 +1108,52 @@ function mkLine(pts){return{id:S.nextId++,type:'line',pts,stroke:'#94A3B8',strok
 // Free text label (logo / signage) + leader annotation (arrow + note) — placeable shapes.
 function mkText(x,y,text){return{id:S.nextId++,type:'text',x,y,text:text||'',size:42,color:'#1C1C1C',opacity:1,_new:Date.now()};}
 function mkAnnot(x,y,tx,ty,text){return{id:S.nextId++,type:'annot',x,y,tx,ty,text:text||'',size:16,color:'#1C1C1C',opacity:1,_new:Date.now()};}
-function editTextShape(id){const s=getS(id);if(!s||(s.type!=='text'&&s.type!=='annot'))return;
-  const cur=s.text||'',v=prompt(s.type==='text'?'Text (logo / label):':'Note:',cur);
-  if(v==null){if(!cur){delS(id);S.selIds.delete(id);render();}return;}   // cancel a brand-new empty → remove
-  s.text=v;saveH();render();}
+// Revision cloud (architectural) — a scalloped outline around a rectangle.
+function mkCloud(x,y,w,h){return{id:S.nextId++,type:'cloud',x,y,w,h,color:'#DC2626',opacity:1,_new:Date.now()};}
+function cloudPath(s){
+  const x=s.x,y=s.y,w=s.w,h=s.h,cx=x+w/2,cy=y+h/2;
+  const step=Math.max(16,Math.min(40,Math.min(w,h)/3||16)),bulge=step*0.52,pts=[];
+  const edge=(ax,ay,bx,by)=>{const len=Math.hypot(bx-ax,by-ay),n=Math.max(1,Math.round(len/step));
+    for(let i=0;i<n;i++)pts.push({x:ax+(bx-ax)*i/n,y:ay+(by-ay)*i/n});};
+  edge(x,y,x+w,y);edge(x+w,y,x+w,y+h);edge(x+w,y+h,x,y+h);edge(x,y+h,x,y);
+  if(!pts.length)return'';
+  let d=`M ${pts[0].x} ${pts[0].y}`;
+  for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];
+    const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;let nx=mx-cx,ny=my-cy;const nl=Math.hypot(nx,ny)||1;nx/=nl;ny/=nl;
+    d+=` Q ${mx+nx*bulge} ${my+ny*bulge} ${b.x} ${b.y}`;}
+  return d+' Z';
+}
+// Inline on-canvas text editing for text / annotation (no popup). Font size adjustable.
+function startInlineEdit(id){
+  const s=getS(id);if(!s||(s.type!=='text'&&s.type!=='annot'))return;
+  S.editId=id;render();                                   // hide the shape's own glyphs while editing
+  const wrap=document.getElementById('ctext-edit'),inp=document.getElementById('cte-input'),num=document.getElementById('cte-num');
+  const place=()=>{const sp=w2s(s.x,s.y);wrap.style.left=sp.x+'px';wrap.style.top=sp.y+'px';
+    inp.style.fontSize=(s.size*S.zoom)+'px';
+    inp.style.fontFamily=s.type==='annot'?"'SF Mono','Menlo',monospace":"'Helvetica Neue','Arial',sans-serif";
+    inp.style.fontWeight=s.type==='text'?'700':'500';inp.style.color=s.color||'#1C1C1C';
+    inp.style.width=Math.max(48,(inp.value.length+1)*s.size*0.6*S.zoom)+'px';
+    if(num)num.textContent=Math.round(s.size);};
+  inp.value=s.text||'';wrap.style.display='block';place();
+  setTimeout(()=>{inp.focus();inp.select();},10);
+  inp.oninput=()=>{const sh=getS(id);if(!sh)return;sh.text=inp.value;place();render();};
+  inp.onkeydown=ev=>{ev.stopPropagation();
+    if(ev.key==='Enter'){ev.preventDefault();commitInlineEdit();}
+    else if(ev.key==='Escape'){ev.preventDefault();commitInlineEdit();}};
+  inp.onblur=()=>commitInlineEdit();
+  const bump=d=>{const sh=getS(id);if(!sh)return;sh.size=Math.max(6,Math.min(400,sh.size+d));place();render();inp.focus();};
+  const mn=document.getElementById('cte-minus'),pl=document.getElementById('cte-plus');
+  mn.onmousedown=pl.onmousedown=e=>e.preventDefault();   // keep the input focused (don't blur → commit)
+  mn.onclick=()=>bump(-Math.max(2,Math.round(getS(id).size*0.12)));
+  pl.onclick=()=>bump(Math.max(2,Math.round(getS(id).size*0.12)));
+}
+function commitInlineEdit(){
+  const id=S.editId;if(id==null)return;S.editId=null;
+  const wrap=document.getElementById('ctext-edit');if(wrap)wrap.style.display='none';
+  const s=getS(id);
+  if(s&&!(s.text||'').trim()){delS(id);S.selIds.delete(id);}  // left empty → remove
+  saveH();render();
+}
 function getS(id){return S.shapes.find(s=>s.id===id)}
 function updS(id,p){const i=S.shapes.findIndex(s=>s.id===id);if(i>=0)S.shapes[i]={...S.shapes[i],...p}}
 function delS(id){S.shapes=S.shapes.filter(s=>s.id!==id)}
@@ -1198,6 +1252,7 @@ function bounds(s){
   if(s.type==='text'){const tw=Math.max((s.text||' ').length*s.size*0.6,s.size);return{x:s.x,y:s.y,r:s.x+tw,b:s.y+s.size};}
   if(s.type==='annot'){const tw=Math.max((s.text||' ').length*s.size*0.6,s.size);
     return{x:Math.min(s.x,s.tx),y:Math.min(s.y,s.ty),r:Math.max(s.x+tw,s.tx),b:Math.max(s.y+s.size,s.ty)};}
+  if(s.type==='cloud')return{x:s.x,y:s.y,r:s.x+s.w,b:s.y+s.h};
 }
 function rectToPoly(s){return[{x:s.x,y:s.y},{x:s.x+s.w,y:s.y},{x:s.x+s.w,y:s.y+s.h},{x:s.x,y:s.y+s.h}];}
 function selBounds(){
@@ -1260,6 +1315,12 @@ function hitTest(wx,wy){
       const tw=Math.max((s.text||' ').length*s.size*0.6,s.size);
       if(wx>=s.x-th&&wx<=s.x+tw+th&&wy>=s.y-th&&wy<=s.y+s.size+th)return s.id;          // note box
       if(distSeg(wx,wy,s.x,s.y+s.size*0.6,s.tx,s.ty)<th+2)return s.id;                   // leader line
+    }else if(s.type==='cloud'){
+      const m=22+th; // near the scalloped border (not deep inside)
+      const outer=wx>=s.x-m&&wx<=s.x+s.w+m&&wy>=s.y-m&&wy<=s.y+s.h+m;
+      const inset=Math.max(8,Math.min(s.w,s.h)*0.25);
+      const deep=wx>s.x+inset&&wx<s.x+s.w-inset&&wy>s.y+inset&&wy<s.y+s.h-inset;
+      if(outer&&!deep)return s.id;
     }
   }
   return null;
@@ -1666,21 +1727,26 @@ function renderShapeEl(s){
   }else if(s.type==='text'){
     const b=bounds(s);
     if(isSel||isHov)g.appendChild(ns('rect',{x:b.x-3*inv,y:b.y-3*inv,width:(b.r-b.x)+6*inv,height:(b.b-b.y)+6*inv,fill:'none',stroke:C_SEL,'stroke-width':1*inv,'stroke-dasharray':`${4*inv} ${3*inv}`,style:'pointer-events:none'}));
-    const t=ns('text',{x:s.x,y:s.y,'dominant-baseline':'hanging','font-size':s.size,fill:s.color||'#1C1C1C','font-weight':'700','font-family':"'Helvetica Neue','Arial',sans-serif",style:'pointer-events:none;user-select:none'});
-    t.textContent=s.text||'';g.appendChild(t);
+    if(s.id!==S.editId){const t=ns('text',{x:s.x,y:s.y,'dominant-baseline':'hanging','font-size':s.size,fill:s.color||'#1C1C1C','font-weight':'700','font-family':"'Helvetica Neue','Arial',sans-serif",style:'pointer-events:none;user-select:none'});
+      t.textContent=s.text||'';g.appendChild(t);}
     g.appendChild(ns('rect',{x:b.x,y:b.y,width:b.r-b.x,height:b.b-b.y,fill:'transparent','data-sid':s.id})); // hit target
   }else if(s.type==='annot'){
     const col=s.color||'#1C1C1C',ax=s.x,ay=s.y+s.size*0.6;
     g.appendChild(ns('line',{x1:ax,y1:ay,x2:s.tx,y2:s.ty,stroke:col,'stroke-width':1.4*inv,style:'pointer-events:none'}));
     const ang=Math.atan2(s.ty-ay,s.tx-ax),hl=10*inv,sp=0.42;
     g.appendChild(ns('polygon',{points:`${s.tx},${s.ty} ${s.tx-hl*Math.cos(ang-sp)},${s.ty-hl*Math.sin(ang-sp)} ${s.tx-hl*Math.cos(ang+sp)},${s.ty-hl*Math.sin(ang+sp)}`,fill:col,style:'pointer-events:none'}));
-    const t=ns('text',{x:s.x,y:s.y,'dominant-baseline':'hanging','font-size':s.size,fill:col,'font-family':"'SF Mono','Menlo',monospace",style:'pointer-events:none;user-select:none'});
-    t.textContent=s.text||'';g.appendChild(t);
+    if(s.id!==S.editId){const t=ns('text',{x:s.x,y:s.y,'dominant-baseline':'hanging','font-size':s.size,fill:col,'font-family':"'SF Mono','Menlo',monospace",style:'pointer-events:none;user-select:none'});
+      t.textContent=s.text||'';g.appendChild(t);}
     const b=bounds(s);
     if(isSel||isHov)g.appendChild(ns('rect',{x:b.x-3*inv,y:b.y-3*inv,width:(b.r-b.x)+6*inv,height:(b.b-b.y)+6*inv,fill:'none',stroke:C_SEL,'stroke-width':1*inv,'stroke-dasharray':`${4*inv} ${3*inv}`,style:'pointer-events:none'}));
     const tw=Math.max((s.text||' ').length*s.size*0.6,s.size);
     g.appendChild(ns('rect',{x:s.x,y:s.y,width:tw,height:s.size,fill:'transparent','data-sid':s.id}));                       // note hit
     g.appendChild(ns('line',{x1:ax,y1:ay,x2:s.tx,y2:s.ty,stroke:'transparent','stroke-width':12*inv,'data-sid':s.id}));     // leader hit
+  }else if(s.type==='cloud'){
+    const col=s.color||'#DC2626',d=cloudPath(s);
+    g.appendChild(ns('path',{d,fill:'none',stroke:col,'stroke-width':(isSel?1.7:1.2)*inv,'stroke-linejoin':'round','stroke-linecap':'round',style:'pointer-events:none'}));
+    g.appendChild(ns('path',{d,fill:'none',stroke:'transparent','stroke-width':12*inv,'data-sid':s.id})); // hit
+    if(isSel){const b=bounds(s);g.appendChild(ns('rect',{x:b.x,y:b.y,width:b.r-b.x,height:b.b-b.y,fill:'none',stroke:C_SEL,'stroke-width':1*inv,'stroke-dasharray':`${4*inv} ${3*inv}`,style:'pointer-events:none'}));}
   }
   return g;
 }
@@ -2555,7 +2621,7 @@ function moveShapeBy(s,dx,dy){
   if(Math.abs(dx)<1e-9&&Math.abs(dy)<1e-9)return;
   if(s.type==='rect'){if(s.poly)updS(s.id,{poly:s.poly.map(p=>({x:p.x+dx,y:p.y+dy}))});else updS(s.id,{x:s.x+dx,y:s.y+dy});}
   else if(s.type==='line')updS(s.id,{pts:s.pts.map(p=>({x:p.x+dx,y:p.y+dy}))});
-  else if(s.type==='text')updS(s.id,{x:s.x+dx,y:s.y+dy});
+  else if(s.type==='text'||s.type==='cloud')updS(s.id,{x:s.x+dx,y:s.y+dy});
   else if(s.type==='annot')updS(s.id,{x:s.x+dx,y:s.y+dy,tx:s.tx+dx,ty:s.ty+dy});
 }
 // align the (unlocked) selection by their bounding boxes
@@ -2659,7 +2725,7 @@ function copySel(){if(!S.selIds.size)return;S.clip=[...S.selIds].map(id=>JSON.pa
 function pasteSel(){
   if(!S.clip.length)return;const off=GRID*2,nids=[];
   for(const s of S.clip){const nc=JSON.parse(JSON.stringify(s));nc.id=S.nextId++;nc._new=Date.now();
-    if(nc.type==='rect'||nc.type==='text'){nc.x+=off;nc.y+=off;}
+    if(nc.type==='rect'||nc.type==='text'||nc.type==='cloud'){nc.x+=off;nc.y+=off;}
     else if(nc.type==='annot'){nc.x+=off;nc.y+=off;nc.tx+=off;nc.ty+=off;}
     else if(nc.type==='line'){nc.pts=nc.pts.map(p=>({x:p.x+off,y:p.y+off}));}
     S.shapes.push(nc);nids.push(nc.id);}
@@ -2897,9 +2963,9 @@ function setTool(t){
   const fcd=document.getElementById('fctm-divider');if(fcd)fcd.classList.toggle('on',t==='line');
   const bd=document.getElementById('btn-fctools');if(bd)bd.classList.toggle('on',t==='line');
   document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
-  document.getElementById('btn-text')?.classList.toggle('on',t==='text');
   document.getElementById('btn-annot')?.classList.toggle('on',t==='annot');
-  document.getElementById('s-tool').textContent={rect:'Rectangle',line:'Line',pan:'Pan',select:'Rectangle',text:'Text — click to place',annot:'Annotate — click a target'}[t]||t;
+  document.getElementById('btn-cloud')?.classList.toggle('on',t==='cloud');
+  document.getElementById('s-tool').textContent={rect:'Rectangle',line:'Line',pan:'Pan',select:'Rectangle',annot:'Annotate — drag an arrow, then type (click = plain text)',cloud:'Revision cloud — drag to enclose'}[t]||t;
   updateCursor();
 }
 function updateCursor(){
@@ -2907,13 +2973,12 @@ function updateCursor(){
   if(S.panning){cwrap.style.cursor='grabbing';return;}
   if(S.tool==='rect'||S.tool==='line')cwrap.style.cursor='default';
   else if(S.tool==='pan')cwrap.style.cursor='grab';
-  else if(S.tool==='text')cwrap.style.cursor='text';
-  else if(S.tool==='annot')cwrap.style.cursor='crosshair';
+  else if(S.tool==='annot'||S.tool==='cloud')cwrap.style.cursor='crosshair';
   else cwrap.style.cursor='default';
 }
 document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
-document.getElementById('btn-text')?.addEventListener('click',()=>setTool(S.tool==='text'?'rect':'text'));
 document.getElementById('btn-annot')?.addEventListener('click',()=>setTool(S.tool==='annot'?'rect':'annot'));
+document.getElementById('btn-cloud')?.addEventListener('click',()=>setTool(S.tool==='cloud'?'rect':'cloud'));
 
 // ─────────────────────────────────────────
 //  RESIZE / DEFORM
@@ -3045,15 +3110,8 @@ function onDown(e){
     if(!S.lineDrawing){S.lineDrawing=true;S.linePts=[{x:sn.x,y:sn.y}];}else S.linePts.push({x:sn.x,y:sn.y});
     e.preventDefault();return;
   }
-  if(S.tool==='text'){                                   // click to place a text label / logo
-    const t=mkText(wp.x,wp.y,'');S.shapes.push(t);S.selIds=new Set([t.id]);
-    saveH();render();setTool('rect');setTimeout(()=>editTextShape(t.id),0);
-    e.preventDefault();return;
-  }
-  if(S.tool==='annot'){                                  // click a target → arrow tip there, note offset up-left
-    const a=mkAnnot(wp.x-120/S.zoom,wp.y-70/S.zoom,wp.x,wp.y,'');S.shapes.push(a);S.selIds=new Set([a.id]);
-    saveH();render();setTool('rect');setTimeout(()=>editTextShape(a.id),0);
-    e.preventDefault();return;
+  if(S.tool==='annot'||S.tool==='cloud'){                // drag to draw (annot: arrowhead→end · cloud: enclose)
+    S.drawing=true;S.drawP0={x:wp.x,y:wp.y};e.preventDefault();return;
   }
   // Format painter: click a panel to apply the captured type; click empty space to stop
   if(_fmtSrc){
@@ -3238,6 +3296,12 @@ function onMove(e){
     render();return;
   }
   if(S.drawing&&S.tool==='rect'){const sn=smartSnap(wp.x,wp.y);showSnap(sn);if(S.drawFrame)renderPreviewFrame(S.drawP0,sn,S.drawFrame);else renderPreview(S.drawP0,sn);drawRulers();return;}
+  if(S.drawing&&S.tool==='annot'){const inv=1/S.zoom,a=S.drawP0;lPreview.innerHTML='';   // arrowhead at the start, line to the cursor (end/text side)
+    lPreview.appendChild(ns('line',{x1:wp.x,y1:wp.y,x2:a.x,y2:a.y,stroke:'#1C1C1C','stroke-width':1.4*inv}));
+    const ang=Math.atan2(a.y-wp.y,a.x-wp.x),hl=10*inv,sp=0.42;
+    lPreview.appendChild(ns('polygon',{points:`${a.x},${a.y} ${a.x-hl*Math.cos(ang-sp)},${a.y-hl*Math.sin(ang-sp)} ${a.x-hl*Math.cos(ang+sp)},${a.y-hl*Math.sin(ang+sp)}`,fill:'#1C1C1C'}));
+    return;}
+  if(S.drawing&&S.tool==='cloud'){renderPreview(S.drawP0,{x:wp.x,y:wp.y});return;}
   if(S.lineDrawing){let sn=smartSnap(wp.x,wp.y);if(e.shiftKey&&S.linePts.length)sn=orthoFrom(S.linePts[S.linePts.length-1],sn);showSnap(sn);renderLinePreview(S.linePts,sn);drawRulers();return;}
   if(S.dragging){
     let dx=wp.x-S.dragWP.x,dy=wp.y-S.dragWP.y;
@@ -3254,7 +3318,7 @@ function onMove(e){
         if(o.poly)updS(id,{poly:o.poly.map(p=>({x:p.x+ddx,y:p.y+ddy}))});
         else updS(id,{x:o.x+ddx,y:o.y+ddy});
       }else if(o.type==='line')updS(id,{pts:o.pts.map(p=>({x:p.x+ddx,y:p.y+ddy}))});
-      else if(o.type==='text')updS(id,{x:o.x+ddx,y:o.y+ddy});
+      else if(o.type==='text'||o.type==='cloud')updS(id,{x:o.x+ddx,y:o.y+ddy});
       else if(o.type==='annot')updS(id,{x:o.x+ddx,y:o.y+ddy,tx:o.tx+ddx,ty:o.ty+ddy});
     }
     render();return;
@@ -3298,6 +3362,20 @@ function onUp(e){
     S.rgRotating=null;
     document.getElementById('s-tool').textContent='Rectangle';
     saveH();if(S.sceneKey)S.candidates=predictNextRooms();renderRegions();render();return;
+  }
+  if(S.drawing&&S.tool==='annot'){                 // drag head→end: short = plain text/logo, long = arrow + note
+    const wp=evtWP(e);S.drawing=false;lPreview.innerHTML='';
+    const tip=S.drawP0,dist=Math.hypot(wp.x-tip.x,wp.y-tip.y)*S.zoom;
+    let id;
+    if(dist<6){const t=mkText(tip.x,tip.y,'');S.shapes.push(t);id=t.id;}
+    else{const a=mkAnnot(wp.x,wp.y,tip.x,tip.y,'');S.shapes.push(a);id=a.id;}  // tip=arrowhead(start), end=text(release)
+    S.selIds=new Set([id]);setTool('rect');render();startInlineEdit(id);return;
+  }
+  if(S.drawing&&S.tool==='cloud'){
+    const wp=evtWP(e);S.drawing=false;lPreview.innerHTML='';
+    const rx=Math.min(S.drawP0.x,wp.x),ry=Math.min(S.drawP0.y,wp.y),rw=Math.abs(wp.x-S.drawP0.x),rh=Math.abs(wp.y-S.drawP0.y);
+    if(rw>8&&rh>8){const c=mkCloud(rx,ry,rw,rh);S.shapes.push(c);S.selIds=new Set([c.id]);saveH();render();}
+    setTool('rect');return;
   }
   if(S.drawing&&S.tool==='rect'){
     const wp=evtWP(e),sn=smartSnap(wp.x,wp.y);
@@ -3355,7 +3433,7 @@ cwrap.addEventListener('dblclick',e=>{
     if(e.target.closest('.handle')||e.target.closest('.plus-dup'))return;
     const wp=evtWP(e);const shEl=e.target.closest('[data-sid]');
     let sid=shEl?parseInt(shEl.dataset.sid):hitTest(wp.x,wp.y);
-    if(sid){const s0=getS(sid);if(s0&&(s0.type==='text'||s0.type==='annot')){editTextShape(sid);e.preventDefault();return;}}
+    if(sid){const s0=getS(sid);if(s0&&(s0.type==='text'||s0.type==='annot')){startInlineEdit(sid);e.preventDefault();return;}}
     if(sid){const s=getS(sid);if(s&&s.type==='rect'){
       // facade panel (or any panel with a type) → edit its interior; otherwise rename.
       // in the facade scene a loose rect gets its own type on the fly so editing always works.
