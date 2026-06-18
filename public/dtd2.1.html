@@ -1325,8 +1325,11 @@ function polyLabelPoint(poly){
 }
 function hitTest(wx,wy){
   const th=Math.max(5,7/S.zoom);
-  for(let i=S.shapes.length-1;i>=0;i--){
-    const s=S.shapes[i];
+  // annotations render on top → hit-test them first so clicks prefer the top layer
+  const annot=S.shapes.filter(s=>s.type==='text'||s.type==='annot'||s.type==='cloud');
+  const rest=S.shapes.filter(s=>!(s.type==='text'||s.type==='annot'||s.type==='cloud'));
+  const scan=arr=>{for(let i=arr.length-1;i>=0;i--){
+    const s=arr[i];
     if(S.iso&&!isoHas(s.id))continue; // isolate mode → only the isolated region is hittable
     if(s.type==='rect'){
       if(s.poly){if(pointInPoly(wx,wy,s.poly))return s.id;}
@@ -1346,8 +1349,8 @@ function hitTest(wx,wy){
       const deep=wx>s.x+inset&&wx<s.x+s.w-inset&&wy>s.y+inset&&wy<s.y+s.h-inset;
       if(outer&&!deep)return s.id;
     }
-  }
-  return null;
+  } return null;};
+  return scan(annot)??scan(rest);   // top layer (annotations) wins
 }
 
 // ─────────────────────────────────────────
@@ -2482,14 +2485,16 @@ function render(){
   // Elevation mode → desaturate the whole shapes layer to black & white (native SVG filter)
   if(elevationOn())lShapes.setAttribute('filter','url(#elev-gray)');else lShapes.removeAttribute('filter');
   lShapes.innerHTML='';lDims.innerHTML='';lHandles.innerHTML='';
-  for(const s of S.shapes){
-    const el=renderShapeEl(s);
-    if(S.iso&&!isoHas(s.id)){el.style.opacity=0.12;el.style.pointerEvents='none';} // dim everything outside the isolated region
-    lShapes.appendChild(el);
-  }
+  // annotation shapes (text · arrow · cloud) render LAST → on top of panels, details & frame
+  const isAnnotEl=s=>s.type==='text'||s.type==='annot'||s.type==='cloud';
+  const drawShape=s=>{const el=renderShapeEl(s);
+    if(S.iso&&!isoHas(s.id)){el.style.opacity=0.12;el.style.pointerEvents='none';}
+    lShapes.appendChild(el);};
+  for(const s of S.shapes)if(!isAnnotEl(s))drawShape(s);
   renderElevationFrame(); // ground line + building boundary, on top of the panels
-  renderMetrics();        // live facade-performance panel (no-op unless shown)
   renderPanelDetails();
+  for(const s of S.shapes)if(isAnnotEl(s))drawShape(s);  // annotations on top of everything
+  renderMetrics();        // live facade-performance panel (no-op unless shown)
   if(S.selIds.size===1){
     const s=getS([...S.selIds][0]);
     if(s){lDims.appendChild(renderDims(s));lHandles.appendChild(renderHandles(s));}
