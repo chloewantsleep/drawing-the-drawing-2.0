@@ -605,6 +605,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
   <input id="signin-email" type="email" placeholder="you@example.com" autocomplete="email"/>
   <button id="signin-magic" class="am-btn">Email me a magic link</button>
   <div class="am-msg" id="signin-msg"></div>
+  <button id="signin-cancel" class="am-btn ghost">Cancel</button>
 </div>
 <div id="mydrawings-modal">
   <div class="am-title">My drawings</div>
@@ -3698,6 +3699,8 @@ const signinModal=document.getElementById('signin-modal');
 const mydrawingsModal=document.getElementById('mydrawings-modal');
 function closeAuthModals(){signinModal.classList.remove('show');mydrawingsModal.classList.remove('show');authBackdrop.classList.remove('show');}
 authBackdrop.addEventListener('click',closeAuthModals);
+document.getElementById('signin-cancel')?.addEventListener('click',closeAuthModals);
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&(signinModal.classList.contains('show')||mydrawingsModal.classList.contains('show')))closeAuthModals();});
 function saveFeedback(msg){const b=document.getElementById('btn-save');if(!b)return;const o=b.textContent;b.textContent=msg;setTimeout(()=>{b.textContent=o;},1500);}
 
 if(!SB){
