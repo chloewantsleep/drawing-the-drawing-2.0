@@ -4442,6 +4442,22 @@ function panelAreaM2(s){
   else apx=(s.w||0)*(s.h||0);
   return apx*FT_SCALE*FT_SCALE*0.092903; // px² → ft² → m²
 }
+// A panel's material breakdown by area: if its type has a saved interior (famDetail) with
+// per-sub-area materials, blend those (area-weighted) with the base material on the rest —
+// so editing a panel's interior actually moves the metrics. Returns [{A, mat}].
+function panelParts(s){
+  const A=panelAreaM2(s),base=panelMatKey(s);
+  const tmpl=(!s._custom&&s.fam)?S.famDetail[s.fam]:null;
+  if(!tmpl||!tmpl.length)return [{A,mat:base}];
+  const mats=[];let cov=0;
+  for(const d of tmpl){if(d.type!=='rect'||!d.material||!FC_PROPS[d.material])continue;
+    const f=Math.max(0,Math.min(1,(d.uw||0)*(d.vh||0)));if(f>0){mats.push({f,mat:d.material});cov+=f;}}
+  if(!mats.length)return [{A,mat:base}];
+  const parts=[];
+  if(cov>1){const k=1/cov;for(const m of mats)parts.push({A:A*m.f*k,mat:m.mat});}        // over-covered → normalise
+  else{for(const m of mats)parts.push({A:A*m.f,mat:m.mat});if(cov<0.999)parts.push({A:A*(1-cov),mat:base});}
+  return parts;
+}
 // Aggregate live facade metrics over every panel + building outline on the canvas.
 function facadeMetrics(shapes){
   shapes=shapes||S.shapes;
@@ -4449,9 +4465,12 @@ function facadeMetrics(shapes){
   for(const s of shapes){
     if(s.type!=='rect'||s._area||s._detail)continue; // _detail = transient interior-edit sub-shapes
     if(isFacadePanel(s)){
-      const A=panelAreaM2(s),pr=panelProps(s);nP++;if(s._custom)nC++;
-      aAll+=A;uAll+=A*pr.U;cost+=A*pr.cost;carbon+=A*pr.carbon;
-      if(pr.glazed){glz+=A;gU+=A*pr.U;gS+=A*pr.SHGC;}else opq+=A;
+      nP++;if(s._custom)nC++;
+      for(const part of panelParts(s)){     // blend the panel's interior composition
+        const A=part.A,pr=FC_PROPS[part.mat]||FC_PROPS.glazing;
+        aAll+=A;uAll+=A*pr.U;cost+=A*pr.cost;carbon+=A*pr.carbon;
+        if(pr.glazed){glz+=A;gU+=A*pr.U;gS+=A*pr.SHGC;}else opq+=A;
+      }
       if(!s._custom){const k=Math.round(s.w)+'x'+Math.round(s.h);sizes[k]=(sizes[k]||0)+1;}
     }else wall+=panelAreaM2(s);            // building outline → gross wall area
   }
