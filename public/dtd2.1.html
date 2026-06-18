@@ -36,8 +36,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
 #fctools-menu{position:fixed;left:70px;bottom:34px;z-index:560;display:none;flex-direction:column;gap:2px;
   background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:150px}
 #fctools-menu.show{display:flex}
-#demo-menu{position:fixed;z-index:560;display:none;flex-direction:column;gap:2px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:150px}
-#demo-menu.show{display:flex}
+#demo-menu,#markup-menu{position:fixed;z-index:560;display:none;flex-direction:column;gap:2px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.14);min-width:150px}
+#demo-menu.show,#markup-menu.show{display:flex}
 /* ── inline canvas text editor (text / annotation) ── */
 #ctext-edit{position:absolute;z-index:880}
 #ctext-edit .cte-size{position:absolute;bottom:100%;left:0;margin-bottom:5px;display:flex;gap:5px;align-items:center;
@@ -554,14 +554,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif;
     <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="17.5" x2="21" y2="17.5"/><line x1="17.5" y1="14" x2="17.5" y2="21"/></svg></span>
     <span class="fc-label">Facade tools</span>
   </button>
-  <button class="float-chip" id="btn-annot" title="Annotate — drag an arrow then type · click for plain text/logo">
+  <button class="float-chip" id="btn-annot" title="Markup — text / arrow note / revision cloud">
     <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l7-7"/><path d="M14 5h5v5"/><path d="M19 5l-8 8"/></svg></span>
-    <span class="fc-label">Annotate</span>
+    <span class="fc-label">Markup</span>
   </button>
-  <button class="float-chip" id="btn-cloud" title="Revision cloud — drag to enclose an area">
-    <span class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-.5-7.97A5 5 0 0 1 16 8.5a3.5 3.5 0 0 1 1 6.86"/><path d="M7 18h9"/></svg></span>
-    <span class="fc-label">Cloud</span>
-  </button>
+</div>
+<div id="markup-menu">
+  <button class="fctm-item" id="mk-annot"><span>Arrow + text</span><em>drag</em></button>
+  <button class="fctm-item" id="mk-cloud"><span>Revision cloud</span><em>drag</em></button>
 </div>
 <div id="fctools-menu">
   <button class="fctm-item" id="fctm-divider"><span>Divider line</span><em>L</em></button>
@@ -2963,8 +2963,7 @@ function setTool(t){
   const fcd=document.getElementById('fctm-divider');if(fcd)fcd.classList.toggle('on',t==='line');
   const bd=document.getElementById('btn-fctools');if(bd)bd.classList.toggle('on',t==='line');
   document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
-  document.getElementById('btn-annot')?.classList.toggle('on',t==='annot');
-  document.getElementById('btn-cloud')?.classList.toggle('on',t==='cloud');
+  document.getElementById('btn-annot')?.classList.toggle('on',t==='annot'||t==='cloud');
   document.getElementById('s-tool').textContent={rect:'Rectangle',line:'Line',pan:'Pan',select:'Rectangle',annot:'Annotate — drag an arrow, then type (click = plain text)',cloud:'Revision cloud — drag to enclose'}[t]||t;
   updateCursor();
 }
@@ -2977,8 +2976,20 @@ function updateCursor(){
   else cwrap.style.cursor='default';
 }
 document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
-document.getElementById('btn-annot')?.addEventListener('click',()=>setTool(S.tool==='annot'?'rect':'annot'));
-document.getElementById('btn-cloud')?.addEventListener('click',()=>setTool(S.tool==='cloud'?'rect':'cloud'));
+// Markup chip → small menu (Arrow+text · Revision cloud) — both markup tools under one button
+const _markupMenu=document.getElementById('markup-menu');
+function closeMarkupMenu(){_markupMenu.classList.remove('show');}
+document.getElementById('btn-annot')?.addEventListener('click',e=>{
+  e.stopPropagation();
+  if(S.tool==='annot'||S.tool==='cloud'){setTool('rect');closeMarkupMenu();return;} // active → turn off
+  const open=!_markupMenu.classList.contains('show');
+  if(open){const r=e.currentTarget.getBoundingClientRect();_markupMenu.style.left=(r.right+8)+'px';_markupMenu.style.top=Math.max(8,r.top-6)+'px';}
+  _markupMenu.classList.toggle('show',open);
+});
+_markupMenu.addEventListener('mousedown',e=>e.stopPropagation());
+document.getElementById('mk-annot').addEventListener('click',()=>{setTool('annot');closeMarkupMenu();});
+document.getElementById('mk-cloud').addEventListener('click',()=>{setTool('cloud');closeMarkupMenu();});
+window.addEventListener('mousedown',e=>{if(_markupMenu.classList.contains('show')&&!_markupMenu.contains(e.target)&&!e.target.closest('#btn-annot'))closeMarkupMenu();});
 
 // ─────────────────────────────────────────
 //  RESIZE / DEFORM
