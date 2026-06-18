@@ -4494,10 +4494,11 @@ function renderMetrics(){
   if(orients.length){let h='<div class="mx-sec">WWR by orientation</div>';
     for(const o of orients)h+=row('WWR '+o,`${oWall[o]>0?((oGlz[o]||0)/oWall[o]*100).toFixed(0):0}%`);
     body.innerHTML+=h;}
-  // reflect the selected building's orientation in the Auto-design control
+  // reflect the selected building's orientation — only when exactly one outline is selected,
+  // and never while the dropdown is focused (would clobber the user's in-progress choice)
   const selO=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect'&&!s._area&&!isFacadePanel(s));
   const oe=document.getElementById('mx-orient');
-  if(oe)oe.value=(selO.length===1&&selO[0]._orient)?selO[0]._orient:'';
+  if(oe&&selO.length===1&&document.activeElement!==oe)oe.value=selO[0]._orient||'';
 }
 function toggleMetrics(){const box=document.getElementById('metrics-box');
   const on=box.classList.toggle('show');const it=document.getElementById('fctm-metrics');
@@ -5291,9 +5292,13 @@ document.getElementById('peb-done').addEventListener('click',exitPanelEdit);
   const orient=$('mx-orient');
   if(orient)orient.addEventListener('change',()=>{
     const v=orient.value||undefined;
-    const selO=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect'&&!s._area&&!isFacadePanel(s));
-    for(const o of selO)o._orient=v;
-    saveH();render();});
+    // tag the selected building outline(s); if none selected, tag ALL building outlines
+    let targets=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect'&&!s._area&&!isFacadePanel(s));
+    if(!targets.length)targets=S.shapes.filter(s=>s.type==='rect'&&!s._area&&!isFacadePanel(s));
+    if(!targets.length){setStatus('Draw a building outline first to tag its orientation');return;}
+    for(const o of targets)o._orient=v;
+    saveH();render();
+    setStatus(v?`Tagged ${targets.length} building${targets.length>1?'s':''} as ${v}`:'Cleared orientation tag');});
   const rb=$('mx-rationalize');if(rb)rb.addEventListener('click',rationalizePanels);
   const cb=$('mx-csv');if(cb)cb.addEventListener('click',exportSchedule);
   const vb=$('mx-variants');if(vb)vb.addEventListener('click',openVariants);
