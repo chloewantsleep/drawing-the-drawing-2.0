@@ -3412,8 +3412,9 @@ function onUp(e){
   if(S.resizing){
     const ec=S.edgeClick;
     S.resizing=false;S.resHandle=null;S.deformDrag=false;S.shiftScale=false;S.edgeClick=null;hideHint();
-    if(ec&&!ec.moved){ // edge was clicked, not dragged → wall-type menu
-      render();openWallMenu(ec.sid,ec.side,ec.sx,ec.sy);return;
+    if(ec&&!ec.moved){ // edge was clicked, not dragged → wall-type menu (not in the facade scene — no walls there)
+      if(S.sceneKey!=='facade'){render();openWallMenu(ec.sid,ec.side,ec.sx,ec.sy);return;}
+      render();return;
     }
     saveH();if(S.sceneKey)S.candidates=predictNextRooms();render();refreshFam();return;
   }
@@ -4810,29 +4811,41 @@ function buildFacade(){
 // Mark the guide-divided sub-areas as selectable overlays → pick one, then Generate fills just it.
 function markFacadeAreas(){
   const opt={cols:FC.cols,rows:FC.rows,gap:FC.gap};
-  const sel=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect'&&!s._area&&!(s.fam&&/^fac-/.test(s.fam)));
-  if(sel.length!==1){setStatus('Select the building outline first, then Mark areas');return;}
+  // outline = selected non-area/non-panel rect; else the only such rect on the canvas
+  let sel=[...S.selIds].map(getS).filter(s=>s&&s.type==='rect'&&!s._area&&!(s.fam&&/^fac-/.test(s.fam)));
+  if(sel.length!==1){
+    const cands=S.shapes.filter(s=>s.type==='rect'&&!s._area&&!(s.fam&&/^fac-/.test(s.fam)));
+    if(cands.length===1)sel=[cands[0]];
+    else{setStatus(cands.length?'Select the building outline first, then Mark areas':'Draw a building outline first, then Mark areas');return;}
+  }
   const o=sel[0],poly=o.poly?o.poly.map(p=>({x:p.x,y:p.y})):rectToPoly(o);
   if(o._fcid==null)o._fcid=S.fcSeq++;   // tag the building so each filled area joins the right namespace
   const guides=[];
   for(const s of S.shapes){if(s.type!=='line'||!s.pts||s.pts.length<2)continue;
     for(let i=0;i<s.pts.length-1;i++)guides.push([s.pts[i],s.pts[i+1]]);}
   const{regionCount,regionCells}=facadeGlazing(poly,opt,guides);
-  if(regionCount<2){setStatus('Draw guide lines (L) across the outline first to divide it into areas');return;}
-  // group cells by region, then UNION them into a polygon → the area follows the (possibly
-  // irregular) building boundary instead of snapping to a bounding rectangle
-  const byR={};for(const c of regionCells)(byR[c.region]||(byR[c.region]=[])).push(c);
   S.shapes=S.shapes.filter(s=>!s._area);   // clear old markers
   let n=0;
-  for(const r of Object.keys(byR)){
-    const loops=shapesUnionLoops(byR[r].map(c=>({x:c.x,y:c.y,w:c.w,h:c.h})))
-      .filter(l=>l.length>=3).sort((a,b)=>polyAreaAbs(b)-polyAreaAbs(a));
-    if(!loops.length)continue;
+  if(regionCount>=2){
+    // group cells by region, then UNION them into a polygon → the area follows the (possibly
+    // irregular) building boundary instead of snapping to a bounding rectangle
+    const byR={};for(const c of regionCells)(byR[c.region]||(byR[c.region]=[])).push(c);
+    for(const r of Object.keys(byR)){
+      const loops=shapesUnionLoops(byR[r].map(c=>({x:c.x,y:c.y,w:c.w,h:c.h})))
+        .filter(l=>l.length>=3).sort((a,b)=>polyAreaAbs(b)-polyAreaAbs(a));
+      if(!loops.length)continue;
+      const a=mkRect(0,0,1,1,{fill:'#1D6AF5',stroke:'#1D6AF5'});
+      a.poly=loops[0].map(p=>({x:p.x,y:p.y}));a._area=true;a._fcid=o._fcid;a.opacity=0.16;a.name='Area '+(++n);S.shapes.push(a);
+    }
+  }else{
+    // undivided → one area covering the whole outline (so Mark areas always yields something)
     const a=mkRect(0,0,1,1,{fill:'#1D6AF5',stroke:'#1D6AF5'});
-    a.poly=loops[0].map(p=>({x:p.x,y:p.y}));a._area=true;a._fcid=o._fcid;a.opacity=0.16;a.name='Area '+(++n);S.shapes.push(a);
+    a.poly=poly.map(p=>({x:p.x,y:p.y}));a._area=true;a._fcid=o._fcid;a.opacity=0.16;a.name='Area '+(++n);S.shapes.push(a);
   }
   S.sceneKey='facade';S.selIds=new Set();saveH();render();
-  setStatus(`${n} areas — click one (or several), then Generate to fill just that area`);
+  setStatus(regionCount>=2
+    ? `${n} areas — click one (or several), then Generate to fill just that area`
+    : `1 area (whole outline) — draw guide lines (L) first to split into more, then re-run Mark areas`);
 }
 // ── Panel families: link selected panels into one "type" (shared size + color);
 //    resizing/recoloring any member updates the whole family (Revit-like). ──
