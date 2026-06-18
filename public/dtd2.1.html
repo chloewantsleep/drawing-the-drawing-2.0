@@ -1525,7 +1525,7 @@ function shapeStyle(s,isSel,isHov){
       return{fill:'none',stroke:bs,'stroke-width':(0.8/S.zoom)*(isSel?1.8:isHov?1.3:1),'stroke-dasharray':`${4/S.zoom} ${3/S.zoom}`};
     const a=isFac?facadeFillAlpha(s,baseA):(elevationOn()?1:baseA);
     const fa=isSel?Math.min(1,a+.1):isHov?Math.min(1,a+.05):a;
-    const lw=elevationOn()?((isFac?0.8:2.2)/S.zoom):sw;
+    const lw=elevationOn()?(0.8/S.zoom):sw; // thin for all; the bold comes from the union silhouette
     return{fill:hexToRgba(bf,fa),stroke:bs,'stroke-width':lw*(isSel?1.8:isHov?1.3:1)};
   }
   return{fill,stroke:bs,'stroke-width':sw*(isSel?2:isHov?1.4:1)};
@@ -4450,21 +4450,20 @@ function pruneFamMeta(){
 // top, inside #L-shapes so they pick up the B&W filter (black stays black).
 function renderElevationFrame(){
   if(!elevationOn())return;
-  // The hand-drawn building geometry = facade rects that aren't panels/areas (rect OR
-  // irregular poly). These define the boundary; their bbox gives the ground-line span.
-  const outlines=[];let mnx=Infinity,mxx=-Infinity,mxy=-Infinity;
-  for(const s of S.shapes){
-    if(s.type!=='rect'||s._area||isFacadePanel(s))continue;
-    outlines.push(s);const b=rectBox(s);
-    mnx=Math.min(mnx,b.x);mxx=Math.max(mxx,b.x+b.w);mxy=Math.max(mxy,b.y+b.h);
-  }
-  if(!outlines.length||!isFinite(mnx))return;
+  // Every facade element (panels + outline + merged shapes), minus area markers / lines.
+  const els=S.shapes.filter(s=>s.type==='rect'&&!s._area);
+  if(!els.length)return;
+  let mnx=Infinity,mxx=-Infinity,mxy=-Infinity;
+  for(const s of els){const b=rectBox(s);mnx=Math.min(mnx,b.x);mxx=Math.max(mxx,b.x+b.w);mxy=Math.max(mxy,b.y+b.h);}
+  if(!isFinite(mnx))return;
   const inv=1/S.zoom,W=mxx-mnx,ext=Math.max(40,W*0.1),C='#141412';
-  // building boundary — trace the actual drawn outline (poly or rect), heavy line
-  for(const o of outlines){
-    if(o.poly)lShapes.appendChild(ns('polygon',{points:o.poly.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:C,'stroke-width':2.4*inv,'stroke-linejoin':'miter',style:'pointer-events:none'}));
-    else lShapes.appendChild(ns('rect',{x:o.x,y:o.y,width:o.w,height:o.h,fill:'none',stroke:C,'stroke-width':2.4*inv,'stroke-linejoin':'miter',style:'pointer-events:none'}));
-  }
+  // Outer silhouette = boolean union of every element's outline (Rhino curve-boolean style),
+  // stroked heavy. NOT the drawn boundary — the true outer contour of all elements.
+  try{
+    const fn=(typeof isAxisAligned==='function'&&els.every(isAxisAligned))?shapesUnionLoops:generalUnionLoops;
+    for(const loop of fn(els))if(loop.length>=3&&polyAreaAbs(loop)>1)
+      lShapes.appendChild(ns('polygon',{points:loop.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:C,'stroke-width':2.6*inv,'stroke-linejoin':'miter',style:'pointer-events:none'}));
+  }catch(e){/* union failed → just skip the silhouette */}
   // ground line — heaviest, overshooting both ends (grade datum)
   lShapes.appendChild(ns('line',{x1:mnx-ext,y1:mxy,x2:mxx+ext,y2:mxy,stroke:C,'stroke-width':3.6*inv,'stroke-linecap':'square',style:'pointer-events:none'}));
 }
