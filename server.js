@@ -15,7 +15,7 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const { genArch, DEFAULT_CONFIG } = require('./arch.js');
 const { generateScene, explainAdjacencies } = require('./scene.js');
 
-const DIR = __dirname, CFG_PATH = path.join(DIR, 'arch-config.json');
+const DIR = __dirname, CFG_PATH = process.env.CONFIG_PATH || path.join(DIR, 'arch-config.json');
 function loadConfig() {
   try { return JSON.parse(fs.readFileSync(CFG_PATH, 'utf8')); }
   catch (e) { fs.writeFileSync(CFG_PATH, JSON.stringify(DEFAULT_CONFIG, null, 2)); return JSON.parse(JSON.stringify(DEFAULT_CONFIG)); }

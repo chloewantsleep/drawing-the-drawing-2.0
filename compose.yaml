@@ -1,0 +1,16 @@
+services:
+  dtd2:
+    build: .
+    restart: unless-stopped
+    env_file: .env            # ANTHROPIC_API_KEY=...  (created by the deploy workflow)
+    environment:
+      - CONFIG_PATH=/app/data/arch-config.json
+    # Bound to localhost only — the VM's existing nginx proxies to this port.
+    ports:
+      - "127.0.0.1:5178:5178"
+    # Named volume (a directory) holds the tuner config so it survives redeploys.
+    volumes:
+      - dtd2-config:/app/data
+
+volumes:
+  dtd2-config:
